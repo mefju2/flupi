@@ -1,6 +1,7 @@
 pub mod error;
 pub mod services;
 pub mod commands;
+pub mod models;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -16,6 +17,10 @@ pub fn run() {
             greet,
             commands::project::create_project,
             commands::project::open_project,
+            commands::app_data::get_recent_projects,
+            commands::app_data::add_recent_project,
+            commands::app_data::get_preferences,
+            commands::app_data::save_preferences,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
