@@ -12,11 +12,91 @@
     createCollection,
     deleteCollection,
     renameCollection,
+    moveRequest,
     type RequestTreeNode,
   } from '$lib/services/tauri-commands';
+  import {
+    buildDndItems,
+    getCollectionKeys,
+    hasRootRequests,
+    findContainerKey,
+    type DndItem,
+  } from '$lib/services/request-tree-dnd';
+  import { dndzone } from 'svelte-dnd-action';
   import TreeNode from '$lib/components/shared/TreeNode.svelte';
   import ContextMenu from '$lib/components/shared/ContextMenu.svelte';
 
+  // ── DnD state ──────────────────────────────────────────────────────────────
+  // Map from containerKey (folder_name or '__root__') to its DnD items array
+  let dndItems = $state<Record<string, DndItem[]>>({});
+
+  const ROOT_KEY = '__root__';
+
+  function containerKeyToArg(key: string): string | null {
+    return key === ROOT_KEY ? null : key;
+  }
+
+  function argToContainerKey(arg: string | null): string {
+    return arg === null ? ROOT_KEY : arg;
+  }
+
+  function rebuildDndItems() {
+    const tree = $requestTree;
+    const next: Record<string, DndItem[]> = {};
+    for (const key of getCollectionKeys(tree)) {
+      next[key] = buildDndItems(tree, key);
+    }
+    if (hasRootRequests(tree)) {
+      next[ROOT_KEY] = buildDndItems(tree, null);
+    } else {
+      next[ROOT_KEY] = [];
+    }
+    dndItems = next;
+  }
+
+  // ── Toast ───────────────────────────────────────────────────────────────────
+  let toast = $state<string | null>(null);
+  function showToast(msg: string) {
+    toast = msg;
+    setTimeout(() => (toast = null), 3000);
+  }
+
+  // ── DnD handlers ────────────────────────────────────────────────────────────
+  function handleConsider(e: CustomEvent<{ items: DndItem[] }>, containerKey: string) {
+    dndItems = { ...dndItems, [containerKey]: e.detail.items };
+  }
+
+  async function handleFinalize(
+    e: CustomEvent<{ items: DndItem[]; info: { trigger: string; id: string } }>,
+    containerKey: string
+  ) {
+    const droppedId = e.detail.info.id;
+    dndItems = { ...dndItems, [containerKey]: e.detail.items };
+
+    if (!$project.path) return;
+
+    // Find where the item came from before the drop
+    const originalKey = argToContainerKey(findContainerKey($requestTree, droppedId) ?? null);
+
+    if (originalKey !== containerKey) {
+      // Cross-container move — call Tauri
+      const targetArg = containerKeyToArg(containerKey);
+      try {
+        await moveRequest($project.path, droppedId, targetArg);
+        await reload();
+
+        // Show cross-collection notice
+        const targetLabel = targetArg === null ? 'root' : targetArg;
+        showToast(`Request will now inherit auth and headers from ${targetLabel}.`);
+      } catch (err) {
+        console.error('Failed to move request:', err);
+        await reload(); // restore state on error
+      }
+    }
+    // Same-container reorder: no file-system order tracked, just refresh visuals
+  }
+
+  // ── Context menu ─────────────────────────────────────────────────────────────
   let contextMenu: { x: number; y: number; items: { label: string; action: () => void; danger?: boolean }[] } | null = $state(null);
 
   let pendingInput = $state<{
@@ -34,6 +114,7 @@
     if (!$project.path) return;
     try {
       requestTree.set(await loadRequestTree($project.path));
+      rebuildDndItems();
     } catch (e) {
       console.error('Failed to load request tree:', e);
     }
@@ -60,11 +141,8 @@
       ];
     }
     if (node.type === 'Folder') {
-      return [
-        { label: 'New Request', action: () => handleNewRequest(null) },
-      ];
+      return [{ label: 'New Request', action: () => handleNewRequest(null) }];
     }
-    // Request node
     return [
       { label: 'Rename', action: () => handleRenameRequest(node.id) },
       { label: 'Duplicate', action: () => handleDuplicateRequest(node.id) },
@@ -141,6 +219,14 @@
     if (e.key === 'Enter') confirmPendingInput();
     if (e.key === 'Escape') pendingInput = null;
   }
+
+  // ── Derived tree splits ──────────────────────────────────────────────────────
+  // Collections from tree (for rendering headers)
+  let collections = $derived(
+    $requestTree.filter(
+      (n): n is RequestTreeNode & { type: 'Collection' } => n.type === 'Collection'
+    )
+  );
 </script>
 
 <div class="flex flex-col h-full bg-zinc-900">
@@ -149,19 +235,70 @@
   </div>
 
   <div class="flex-1 overflow-y-auto px-1 py-1">
-    {#each $requestTree as node}
+    <!-- Collections with DnD zones for their request children -->
+    {#each collections as collection (collection.folder_name)}
+      {@const key = collection.folder_name}
+      {@const items = dndItems[key] ?? []}
+      <!-- Collection header (non-draggable) -->
       <TreeNode
-        {node}
+        node={{ ...collection, children: [] }}
         activeRequestId={$activeRequestId}
         onSelect={selectRequest}
         onContextMenu={openContextMenu}
       />
+      <!-- DnD zone for requests in this collection -->
+      <div
+        class="ml-3 border-l border-zinc-800 pl-1 min-h-1"
+        use:dndzone={{ items, type: 'request', flipDurationMs: 150 }}
+        onconsider={(e: CustomEvent<{ items: DndItem[] }>) => handleConsider(e, key)}
+        onfinalize={(e: CustomEvent<{ items: DndItem[]; info: { trigger: string; id: string } }>) => handleFinalize(e, key)}
+      >
+        {#each items as item (item.id)}
+          <TreeNode
+            node={item.node}
+            activeRequestId={$activeRequestId}
+            onSelect={selectRequest}
+            onContextMenu={openContextMenu}
+            showDragHandle={true}
+          />
+        {/each}
+        {#if items.length === 0}
+          <p class="px-2 py-1 text-xs text-zinc-600 italic">Empty</p>
+        {/if}
+      </div>
     {/each}
+
+    <!-- Root-level requests DnD zone -->
+    {#if (dndItems[ROOT_KEY] ?? []).length > 0}
+      {@const rootItems = dndItems[ROOT_KEY] ?? []}
+      <div
+        class="min-h-1"
+        use:dndzone={{ items: rootItems, type: 'request', flipDurationMs: 150 }}
+        onconsider={(e: CustomEvent<{ items: DndItem[] }>) => handleConsider(e, ROOT_KEY)}
+        onfinalize={(e: CustomEvent<{ items: DndItem[]; info: { trigger: string; id: string } }>) => handleFinalize(e, ROOT_KEY)}
+      >
+        {#each rootItems as item (item.id)}
+          <TreeNode
+            node={item.node}
+            activeRequestId={$activeRequestId}
+            onSelect={selectRequest}
+            onContextMenu={openContextMenu}
+            showDragHandle={true}
+          />
+        {/each}
+      </div>
+    {/if}
 
     {#if $requestTree.length === 0}
       <p class="px-3 py-4 text-xs text-zinc-600">No collections yet.</p>
     {/if}
   </div>
+
+  {#if toast}
+    <div class="px-3 py-2 text-xs text-cyan-400 bg-zinc-800 border-t border-zinc-700 animate-pulse">
+      {toast}
+    </div>
+  {/if}
 
   {#if pendingInput}
     <div class="px-3 py-2 border-t border-zinc-800">

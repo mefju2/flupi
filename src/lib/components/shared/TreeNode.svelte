@@ -8,9 +8,10 @@
     activeRequestId: string | null;
     onSelect: (id: string) => void;
     onContextMenu: (e: MouseEvent, node: RequestTreeNode) => void;
+    showDragHandle?: boolean;
   }
 
-  let { node, activeRequestId, onSelect, onContextMenu }: Props = $props();
+  let { node, activeRequestId, onSelect, onContextMenu, showDragHandle = false }: Props = $props();
 
   // Collections start expanded, Folders start collapsed
   let expanded = $state(node.type === 'Collection');
@@ -51,7 +52,7 @@
 {:else if node.type === 'Request'}
   {@const isActive = activeRequestId === node.id}
   <div
-    class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none rounded
+    class="group flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none rounded
       {isActive ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100'}"
     role="button"
     tabindex="0"
@@ -59,6 +60,12 @@
     onkeydown={(e) => e.key === 'Enter' && onSelect(node.id)}
     oncontextmenu={(e) => { e.preventDefault(); onContextMenu(e, node); }}
   >
+    {#if showDragHandle}
+      <span
+        class="drag-handle text-zinc-600 group-hover:text-zinc-400 cursor-grab active:cursor-grabbing text-xs shrink-0 select-none"
+        title="Drag to reorder"
+      >⠿</span>
+    {/if}
     <span class="font-mono text-xs w-12 shrink-0 {getMethodColor(node.method)}">{node.method}</span>
     <span class="truncate">{node.name}</span>
   </div>
