@@ -8,7 +8,7 @@
 
 **Tech Stack:** Tauri v2, Rust, reqwest, serde, SvelteKit (static adapter, SSR disabled), Svelte 5, TypeScript, Tailwind CSS, shadcn-svelte, jsonpath-plus, svelte-dnd-action
 
-**Component size rule:** No file should exceed ~150 lines. When a component grows beyond that, split it. Prefer many small, focused components over large monoliths — a component that does one thing is easier to test, read, and reuse.
+**Coding conventions:** See `CLAUDE.md` — Coding Conventions section.
 
 **Specs:**
 - Main spec: `flupi-spec.md`

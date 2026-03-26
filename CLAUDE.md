@@ -31,3 +31,15 @@ The name comes from *flux* + *api* (verlan) — data flowing through an API pipe
 4. **Monospace is data, sans-serif is UI.** Apply this distinction consistently. Variable tokens (`{{...}}`), request paths, response bodies, extracted values — monospace. Labels, tooltips, nav items, headings — sans-serif. This creates a reliable visual grammar.
 
 5. **No decorative complexity.** Color, motion, and visual weight are reserved for meaning: active state, error state, drift badge, running indicator. If an element doesn't communicate state or guide attention, simplify or remove it.
+
+---
+
+## Coding Conventions
+
+### File size
+
+No file should exceed ~200 lines. When a file grows beyond that, split it. Prefer many small, focused files over large monoliths — a file that does one thing is easier to test, read, and reuse.
+
+### Rust test placement
+
+Tests for each Rust module belong in a dedicated file under a `tests/` subdirectory alongside the source, not inline in the module file. For example, tests for `src-tauri/src/models/environment.rs` go in `src-tauri/src/models/tests/environment.rs`, declared as `#[cfg(test)] mod tests;` in the module and `mod environment;` in `src-tauri/src/models/tests/mod.rs`. This keeps source files focused on implementation and makes tests easy to locate. Existing modules with inline `#[cfg(test)]` blocks should be migrated to this structure.
