@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use indexmap::IndexMap;
-use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -32,7 +31,7 @@ pub enum AuthConfig {
     #[serde(rename = "apiKey")]
     ApiKey { header: String, value: String },
     #[serde(rename = "custom")]
-    Custom { headers: HashMap<String, String> },
+    Custom { headers: IndexMap<String, String> },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -41,7 +40,7 @@ pub enum BodyConfig {
     #[serde(rename = "json")]
     Json { content: serde_json::Value },
     #[serde(rename = "form")]
-    Form { content: HashMap<String, String> },
+    Form { content: IndexMap<String, String> },
     #[serde(rename = "raw")]
     Raw { content: String },
     #[serde(rename = "none")]
@@ -62,32 +61,55 @@ pub struct TemplateRef {
     pub response_schema: serde_json::Value,
 }
 
-pub fn derive_request_id(project_root: &Path, request_path: &Path) -> String {
-    let relative = request_path.strip_prefix(project_root).unwrap();
-    let parts: Vec<&str> = relative.iter().map(|s| s.to_str().unwrap()).collect();
+pub fn derive_request_id(project_root: &Path, request_path: &Path) -> crate::error::Result<String> {
+    let relative = request_path.strip_prefix(project_root)
+        .map_err(|_| crate::error::FlupiError::Custom("Request path is not under project root".to_string()))?;
+    let parts: Vec<&str> = relative.iter()
+        .map(|s| s.to_str().ok_or_else(|| crate::error::FlupiError::Custom("Invalid path component".to_string())))
+        .collect::<crate::error::Result<Vec<_>>>()?;
+
+    if parts.is_empty() {
+        return Err(crate::error::FlupiError::Custom("Request path has no components".to_string()));
+    }
 
     if parts[0] == "collections" {
         // collections/{folderName}/requests/[subpath/]fileName.json
+        if parts.len() < 4 {
+            return Err(crate::error::FlupiError::Custom("Invalid collection request path structure".to_string()));
+        }
         let folder_name = parts[1];
         // Skip "requests" at parts[2]
         let rest: Vec<&str> = parts[3..].to_vec();
-        let file_stem = Path::new(rest.last().unwrap()).file_stem().unwrap().to_str().unwrap();
+        if rest.is_empty() {
+            return Err(crate::error::FlupiError::Custom("Collection request path has no file".to_string()));
+        }
+        let file_stem = Path::new(rest.last().unwrap()).file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| crate::error::FlupiError::Custom("Unable to extract file stem".to_string()))?;
         let mut id_parts = vec![folder_name];
         for part in &rest[..rest.len() - 1] {
             id_parts.push(part);
         }
         id_parts.push(file_stem);
-        id_parts.join("/")
+        Ok(id_parts.join("/"))
     } else {
         // requests/[subpath/]fileName.json
+        if parts.len() < 2 {
+            return Err(crate::error::FlupiError::Custom("Invalid root request path structure".to_string()));
+        }
         let rest: Vec<&str> = parts[1..].to_vec();
-        let file_stem = Path::new(rest.last().unwrap()).file_stem().unwrap().to_str().unwrap();
+        if rest.is_empty() {
+            return Err(crate::error::FlupiError::Custom("Root request path has no file".to_string()));
+        }
+        let file_stem = Path::new(rest.last().unwrap()).file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| crate::error::FlupiError::Custom("Unable to extract file stem".to_string()))?;
         let mut id_parts: Vec<&str> = Vec::new();
         for part in &rest[..rest.len() - 1] {
             id_parts.push(part);
         }
         id_parts.push(file_stem);
-        id_parts.join("/")
+        Ok(id_parts.join("/"))
     }
 }
 
@@ -99,27 +121,27 @@ mod tests {
     fn test_derive_request_id_collection() {
         let project = Path::new("/project");
         let path = Path::new("/project/collections/auth-service/requests/get-token.json");
-        assert_eq!(derive_request_id(project, path), "auth-service/get-token");
+        assert_eq!(derive_request_id(project, path).unwrap(), "auth-service/get-token");
     }
 
     #[test]
     fn test_derive_request_id_collection_nested() {
         let project = Path::new("/project");
         let path = Path::new("/project/collections/auth-service/requests/admin/create-user.json");
-        assert_eq!(derive_request_id(project, path), "auth-service/admin/create-user");
+        assert_eq!(derive_request_id(project, path).unwrap(), "auth-service/admin/create-user");
     }
 
     #[test]
     fn test_derive_request_id_root() {
         let project = Path::new("/project");
         let path = Path::new("/project/requests/health-check.json");
-        assert_eq!(derive_request_id(project, path), "health-check");
+        assert_eq!(derive_request_id(project, path).unwrap(), "health-check");
     }
 
     #[test]
     fn test_derive_request_id_root_nested() {
         let project = Path::new("/project");
         let path = Path::new("/project/requests/monitoring/status.json");
-        assert_eq!(derive_request_id(project, path), "monitoring/status");
+        assert_eq!(derive_request_id(project, path).unwrap(), "monitoring/status");
     }
 }
