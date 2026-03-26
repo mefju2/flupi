@@ -13,6 +13,7 @@ fn greet(name: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             commands::project::create_project,
@@ -26,6 +27,18 @@ pub fn run() {
             commands::environment::save_secrets,
             commands::environment::get_resolved_variables,
             commands::environment::delete_environment,
+            commands::request::load_request_tree,
+            commands::request::get_request,
+            commands::request::save_request,
+            commands::request::create_request,
+            commands::request::delete_request,
+            commands::request::rename_request,
+            commands::request::move_request,
+            commands::request::duplicate_request,
+            commands::collection::create_collection,
+            commands::collection::save_collection,
+            commands::collection::delete_collection,
+            commands::collection::rename_collection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
