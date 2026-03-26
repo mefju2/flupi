@@ -3,10 +3,7 @@ use tauri::command;
 use crate::error::FlupiError;
 use crate::models::collection::Collection;
 use crate::services::file_io;
-
-fn name_to_slug(name: &str) -> String {
-    name.to_lowercase().replace(' ', "-")
-}
+use crate::utils::name_to_slug;
 
 #[command]
 pub fn create_collection(project_path: PathBuf, name: String) -> Result<String, FlupiError> {

@@ -2,6 +2,7 @@ pub mod error;
 pub mod services;
 pub mod commands;
 pub mod models;
+pub mod utils;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -27,7 +28,7 @@ pub fn run() {
             commands::environment::save_secrets,
             commands::environment::get_resolved_variables,
             commands::environment::delete_environment,
-            commands::request::load_request_tree,
+            commands::request_tree::load_request_tree,
             commands::request::get_request,
             commands::request::save_request,
             commands::request::create_request,
