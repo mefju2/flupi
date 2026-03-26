@@ -42,4 +42,12 @@ No file should exceed ~200 lines. When a file grows beyond that, split it. Prefe
 
 ### Rust test placement
 
-Tests for each Rust module belong in a dedicated file under a `tests/` subdirectory alongside the source, not inline in the module file. For example, tests for `src-tauri/src/models/environment.rs` go in `src-tauri/src/models/tests/environment.rs`, declared as `#[cfg(test)] mod tests;` in the module and `mod environment;` in `src-tauri/src/models/tests/mod.rs`. This keeps source files focused on implementation and makes tests easy to locate. Existing modules with inline `#[cfg(test)]` blocks should be migrated to this structure.
+**Never write inline tests.** Tests for each Rust module must go in a dedicated file under a `tests/` subdirectory alongside the source. The source file declares them with:
+
+```rust
+#[cfg(test)]
+#[path = "tests/module_name.rs"]
+mod tests;
+```
+
+The test file lives at e.g. `src-tauri/src/models/tests/environment.rs` and starts with `use super::*;`. There is no `mod.rs` in the `tests/` directories — each module references its own test file directly via `#[path]`. This keeps source files focused on implementation and makes tests easy to locate.

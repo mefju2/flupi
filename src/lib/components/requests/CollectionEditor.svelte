@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { project } from '$lib/stores/project';
   import { saveCollection, type CollectionData, type AuthConfig } from '$lib/services/tauri-commands';
   import { createDebouncedSave } from '$lib/services/debounced-save';
@@ -13,8 +14,13 @@
 
   let { folderName, collection, onUpdate }: Props = $props();
 
-  // Local mutable copy
+  // Local mutable copy — reset when switching to a different collection (folderName changes)
   let local = $state<CollectionData>({ ...collection, headers: { ...collection.headers } });
+
+  $effect(() => {
+    folderName; // track folderName as the reset signal
+    local = untrack(() => ({ ...collection, headers: { ...collection.headers } }));
+  });
 
   const debouncedSave = createDebouncedSave(async () => {
     const path = $project.path;
@@ -46,8 +52,9 @@
 <div class="p-4 space-y-5 text-sm">
   <!-- Collection Name -->
   <div>
-    <label class="text-xs text-zinc-400 block mb-1">Collection Name</label>
+    <label for="collection-name" class="text-xs text-zinc-400 block mb-1">Collection Name</label>
     <input
+      id="collection-name"
       class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
       value={local.name}
       placeholder="My Collection"
@@ -57,8 +64,9 @@
 
   <!-- Base URL -->
   <div>
-    <label class="text-xs text-zinc-400 block mb-1">Base URL</label>
+    <label for="collection-base-url" class="text-xs text-zinc-400 block mb-1">Base URL</label>
     <input
+      id="collection-base-url"
       class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
       value={local.baseUrl ?? ''}
       placeholder="https://api.example.com"
@@ -69,7 +77,7 @@
 
   <!-- Default Auth -->
   <div>
-    <label class="text-xs text-zinc-400 block mb-1">Default Auth</label>
+    <span class="text-xs text-zinc-400 block mb-1">Default Auth</span>
     <div class="bg-zinc-900 border border-zinc-800 rounded">
       <AuthTab
         auth={local.auth}
@@ -80,7 +88,7 @@
 
   <!-- Default Headers -->
   <div>
-    <label class="text-xs text-zinc-400 block mb-2">Default Headers</label>
+    <span class="text-xs text-zinc-400 block mb-2">Default Headers</span>
     <p class="text-xs text-zinc-600 mb-2">Applied to all requests — request-level headers override these.</p>
     <KeyValueTable rows={headerRows} onUpdate={handleHeadersUpdate} />
   </div>

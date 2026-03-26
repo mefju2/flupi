@@ -29,7 +29,7 @@
 
 <div class="p-4 space-y-3">
   <div class="flex items-center gap-2">
-    <label class="text-xs text-zinc-400">Body</label>
+    <span class="text-xs text-zinc-400">Body</span>
     {#each ['none', 'json', 'form', 'raw'] as t}
       <button
         class="text-xs px-2 py-0.5 rounded transition-colors {bodyType === t ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}"

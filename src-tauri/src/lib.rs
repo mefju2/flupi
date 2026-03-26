@@ -40,6 +40,7 @@ pub fn run() {
             commands::collection::save_collection,
             commands::collection::delete_collection,
             commands::collection::rename_collection,
+            commands::execution::send_request,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -28,8 +28,9 @@
 
 <div class="p-4 space-y-4">
   <div>
-    <label class="text-xs text-zinc-400 block mb-1">Auth Type</label>
+    <label for="auth-type" class="text-xs text-zinc-400 block mb-1">Auth Type</label>
     <select
+      id="auth-type"
       class="bg-zinc-800 border border-zinc-700 text-zinc-100 text-sm px-2 py-1.5 rounded focus:outline-none focus:border-zinc-500"
       value={authType}
       onchange={(e) => setType(e.currentTarget.value as AuthConfig['type'])}
@@ -49,8 +50,9 @@
     <p class="text-sm text-zinc-500">Authentication is inherited from the parent collection.</p>
   {:else if auth?.type === 'bearer'}
     <div>
-      <label class="text-xs text-zinc-400 block mb-1">Token</label>
+      <label for="auth-bearer-token" class="text-xs text-zinc-400 block mb-1">Token</label>
       <textarea
+        id="auth-bearer-token"
         class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 min-h-[60px] resize-y"
         value={auth.token}
         placeholder="Bearer token..."
@@ -60,8 +62,9 @@
   {:else if auth?.type === 'basic'}
     <div class="space-y-2">
       <div>
-        <label class="text-xs text-zinc-400 block mb-1">Username</label>
+        <label for="auth-basic-username" class="text-xs text-zinc-400 block mb-1">Username</label>
         <input
+          id="auth-basic-username"
           class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
           value={auth.username}
           placeholder="username"
@@ -69,8 +72,9 @@
         />
       </div>
       <div>
-        <label class="text-xs text-zinc-400 block mb-1">Password</label>
+        <label for="auth-basic-password" class="text-xs text-zinc-400 block mb-1">Password</label>
         <input
+          id="auth-basic-password"
           type="password"
           class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
           value={auth.password}
@@ -82,8 +86,9 @@
   {:else if auth?.type === 'apiKey'}
     <div class="space-y-2">
       <div>
-        <label class="text-xs text-zinc-400 block mb-1">Header Name</label>
+        <label for="auth-apikey-header" class="text-xs text-zinc-400 block mb-1">Header Name</label>
         <input
+          id="auth-apikey-header"
           class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
           value={auth.header}
           placeholder="X-API-Key"
@@ -91,8 +96,9 @@
         />
       </div>
       <div>
-        <label class="text-xs text-zinc-400 block mb-1">Value</label>
+        <label for="auth-apikey-value" class="text-xs text-zinc-400 block mb-1">Value</label>
         <input
+          id="auth-apikey-value"
           class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
           value={auth.value}
           placeholder="api key value"
@@ -102,7 +108,7 @@
     </div>
   {:else if auth?.type === 'custom'}
     <div>
-      <label class="text-xs text-zinc-400 block mb-2">Custom Headers</label>
+      <span class="text-xs text-zinc-400 block mb-2">Custom Headers</span>
       <KeyValueTable
         rows={customRows(auth)}
         onUpdate={(rows) => {

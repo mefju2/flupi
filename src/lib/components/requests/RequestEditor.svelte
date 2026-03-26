@@ -1,7 +1,9 @@
 <script lang="ts">
   import { activeRequest, activeRequestId } from '$lib/stores/requests';
   import { project } from '$lib/stores/project';
-  import { saveRequest, type AuthConfig, type BodyConfig } from '$lib/services/tauri-commands';
+  import { activeEnvironment } from '$lib/stores/environment';
+  import { isExecuting, lastResponse } from '$lib/stores/execution';
+  import { saveRequest, sendRequest, type AuthConfig, type BodyConfig } from '$lib/services/tauri-commands';
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import { getMethodColor } from '$lib/utils/format';
   import ParamsTab from './ParamsTab.svelte';
@@ -30,6 +32,23 @@
     debouncedSave.trigger();
   }
 
+  async function handleSend() {
+    const id = $activeRequestId;
+    const path = $project.path;
+    const env = $activeEnvironment ?? '';
+    if (!id || !path || $isExecuting) return;
+
+    isExecuting.set(true);
+    lastResponse.set(null);
+    try {
+      const response = await sendRequest(path, id, env);
+      lastResponse.set(response);
+    } catch (e) {
+      console.error('Request failed:', e);
+    } finally {
+      isExecuting.set(false);
+    }
+  }
 </script>
 
 <div class="flex flex-col h-full bg-zinc-950">
@@ -58,9 +77,10 @@
       />
 
       <button
-        class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded transition-colors shrink-0"
-        onclick={() => console.log('Send not implemented yet')}
-      >Send</button>
+        class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm rounded transition-colors shrink-0"
+        onclick={handleSend}
+        disabled={$isExecuting}
+      >{$isExecuting ? 'Sending…' : 'Send'}</button>
     </div>
 
     <!-- Tab Bar -->

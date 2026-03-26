@@ -166,3 +166,23 @@ export async function deleteCollection(projectPath: string, folderName: string):
 export async function renameCollection(projectPath: string, folderName: string, newName: string): Promise<string> {
   return invoke('rename_collection', { projectPath, folderName, newName });
 }
+
+// === Execution Commands ===
+
+export interface HttpResponse {
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  body: string;
+  durationMs: number;
+  bodyTruncated: boolean;
+}
+
+export async function sendRequest(
+  projectPath: string,
+  requestId: string,
+  envFileName: string,
+  timeoutMs: number = 30000,
+): Promise<HttpResponse> {
+  return invoke('send_request', { projectPath, requestId, envFileName, timeoutMs });
+}
