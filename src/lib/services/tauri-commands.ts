@@ -186,3 +186,86 @@ export async function sendRequest(
 ): Promise<HttpResponse> {
   return invoke('send_request', { projectPath, requestId, envFileName, timeoutMs });
 }
+
+// === Scenario Types ===
+
+export interface ScenarioInput {
+  name: string;
+  description: string;
+  default: string;
+  required: boolean;
+}
+
+export interface Extraction {
+  variable: string;
+  from: string; // "response.body" | "response.headers"
+  path: string;
+}
+
+export interface ScenarioStep {
+  id: string;
+  name: string;
+  requestId: string;
+  overrides: Record<string, string>;
+  extract: Extraction[];
+}
+
+export interface ScenarioData {
+  name: string;
+  inputs: ScenarioInput[];
+  steps: ScenarioStep[];
+}
+
+export type ScenarioTreeNode =
+  | { type: 'Scenario'; id: string; name: string }
+  | { type: 'Group'; name: string; children: ScenarioTreeNode[] };
+
+// === Scenario CRUD Commands ===
+
+export async function loadScenarioTree(projectPath: string): Promise<ScenarioTreeNode[]> {
+  return invoke('load_scenario_tree', { projectPath });
+}
+
+export async function getScenario(projectPath: string, scenarioId: string): Promise<ScenarioData> {
+  return invoke('get_scenario', { projectPath, scenarioId });
+}
+
+export async function saveScenario(projectPath: string, scenarioId: string, scenario: ScenarioData): Promise<void> {
+  return invoke('save_scenario', { projectPath, scenarioId, scenario });
+}
+
+export async function createScenario(projectPath: string, group: string | null, name: string): Promise<string> {
+  return invoke('create_scenario', { projectPath, group, name });
+}
+
+export async function deleteScenario(projectPath: string, scenarioId: string): Promise<void> {
+  return invoke('delete_scenario', { projectPath, scenarioId });
+}
+
+export async function renameScenario(projectPath: string, scenarioId: string, newName: string): Promise<string> {
+  return invoke('rename_scenario', { projectPath, scenarioId, newName });
+}
+
+export async function duplicateScenario(projectPath: string, scenarioId: string): Promise<string> {
+  return invoke('duplicate_scenario', { projectPath, scenarioId });
+}
+
+// === Scenario Runner ===
+
+export interface StepResult {
+  step_id: string;
+  status: 'success' | 'error';
+  response?: HttpResponse;
+  error?: string;
+  extracted: Record<string, string>;
+}
+
+export async function runScenario(
+  projectPath: string,
+  scenarioId: string,
+  envFileName: string,
+  inputs: Record<string, string>,
+  timeoutMs: number = 30000,
+): Promise<void> {
+  return invoke('run_scenario', { projectPath, scenarioId, envFileName, inputs, timeoutMs });
+}

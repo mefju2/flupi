@@ -41,6 +41,14 @@ pub fn run() {
             commands::collection::delete_collection,
             commands::collection::rename_collection,
             commands::execution::send_request,
+            commands::execution_runner::run_scenario,
+            commands::scenario::load_scenario_tree,
+            commands::scenario::get_scenario,
+            commands::scenario::save_scenario,
+            commands::scenario::create_scenario,
+            commands::scenario::delete_scenario,
+            commands::scenario::rename_scenario,
+            commands::scenario::duplicate_scenario,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

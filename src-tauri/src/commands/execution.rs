@@ -10,14 +10,14 @@ use crate::models::environment;
 
 static EXECUTION_LOCK: AtomicBool = AtomicBool::new(false);
 
-fn acquire_lock() -> Result<(), FlupiError> {
+pub fn acquire_lock() -> Result<(), FlupiError> {
     if EXECUTION_LOCK.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_err() {
         return Err(FlupiError::Custom("Another execution is already in progress".to_string()));
     }
     Ok(())
 }
 
-fn release_lock() {
+pub fn release_lock() {
     EXECUTION_LOCK.store(false, Ordering::SeqCst);
 }
 
@@ -52,7 +52,7 @@ fn collection_folder_for(request_id: &str, project_path: &Path) -> Option<String
     None
 }
 
-async fn execute_single_request(
+pub async fn execute_single_request(
     project_path: &Path,
     request_id: &str,
     env_file_name: &str,

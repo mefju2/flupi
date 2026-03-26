@@ -4,6 +4,10 @@
   import { listEnvironments, saveEnvironment, deleteEnvironment } from '$lib/services/tauri-commands';
   import { project } from '$lib/stores/project';
 
+  let creatingNew = false;
+  let newName = '';
+  let inputEl: HTMLInputElement;
+
   onMount(async () => {
     if ($project.path) {
       try {
@@ -24,14 +28,21 @@
     }
   });
 
-  async function createEnvironment() {
-    if (!$project.path) return;
-    const name = prompt('Environment name:');
-    if (!name || !name.trim()) return;
+  function startCreating() {
+    creatingNew = true;
+    newName = '';
+    setTimeout(() => inputEl?.focus(), 0);
+  }
 
-    const trimmed = name.trim();
+  async function confirmCreate() {
+    if (!$project.path || !newName.trim()) { cancelCreate(); return; }
+
+    const trimmed = newName.trim();
     const fileName = `${trimmed.toLowerCase().replace(/\s+/g, '-')}.env.json`;
     const env = { name: trimmed, variables: {}, secrets: [] };
+
+    creatingNew = false;
+    newName = '';
 
     try {
       await saveEnvironment($project.path, fileName, env);
@@ -40,6 +51,11 @@
     } catch (e) {
       console.error('Failed to create environment:', e);
     }
+  }
+
+  function cancelCreate() {
+    creatingNew = false;
+    newName = '';
   }
 
   async function removeEnvironment(fileName: string) {
@@ -90,9 +106,20 @@
   </div>
 
   <div class="border-t border-zinc-800 px-3 py-2">
-    <button
-      class="text-xs text-cyan-500 hover:text-cyan-400 transition-colors"
-      onclick={createEnvironment}
-    >+ New Environment</button>
+    {#if creatingNew}
+      <input
+        bind:this={inputEl}
+        bind:value={newName}
+        class="w-full bg-zinc-800 text-zinc-100 text-xs px-2 py-1 rounded outline-none border border-zinc-600 focus:border-cyan-500 font-mono"
+        placeholder="Environment name"
+        onkeydown={(e) => { if (e.key === 'Enter') confirmCreate(); else if (e.key === 'Escape') cancelCreate(); }}
+        onblur={confirmCreate}
+      />
+    {:else}
+      <button
+        class="text-xs text-cyan-500 hover:text-cyan-400 transition-colors"
+        onclick={startCreating}
+      >+ New Environment</button>
+    {/if}
   </div>
 </div>
