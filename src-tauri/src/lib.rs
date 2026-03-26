@@ -36,6 +36,7 @@ pub fn run() {
             commands::request::rename_request,
             commands::request::move_request,
             commands::request::duplicate_request,
+            commands::request::get_request_references,
             commands::collection::create_collection,
             commands::collection::save_collection,
             commands::collection::delete_collection,

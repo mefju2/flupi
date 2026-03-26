@@ -116,7 +116,9 @@ pub fn rename_request(
     }
 
     // Derive new ID
+    let old_id = request_id;
     let new_id = derive_request_id(&project_path, &new_path)?;
+    crate::services::referential_integrity::update_references(&project_path, &old_id, &new_id)?;
     Ok(new_id)
 }
 
@@ -146,7 +148,9 @@ pub fn move_request(
     file_io::write_json(&new_path, &request)?;
     file_io::delete_file(&old_path)?;
 
+    let old_id = request_id;
     let new_id = derive_request_id(&project_path, &new_path)?;
+    crate::services::referential_integrity::update_references(&project_path, &old_id, &new_id)?;
     Ok(new_id)
 }
 
@@ -212,6 +216,16 @@ pub fn duplicate_request(
 
     let new_id = derive_request_id(&project_path, &new_path)?;
     Ok(new_id)
+}
+
+#[tauri::command]
+pub async fn get_request_references(
+    project_path: String,
+    request_id: String,
+) -> Result<Vec<String>, FlupiError> {
+    let project_path = std::path::Path::new(&project_path);
+    let refs = crate::services::referential_integrity::find_references(project_path, &request_id)?;
+    Ok(refs.iter().map(|p| p.to_string_lossy().to_string()).collect())
 }
 
 #[cfg(test)]
