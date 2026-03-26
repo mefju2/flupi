@@ -10,11 +10,16 @@
     return 'bg-zinc-800 text-zinc-300 border-zinc-700';
   }
 
-  function prettyBody(body: string): string {
+  const MAX_BODY_BYTES = 1_048_576; // 1MB
+
+  function formatBody(raw: string): string {
+    if (raw.length > MAX_BODY_BYTES) {
+      return raw.slice(0, MAX_BODY_BYTES) + '\n\n[Response truncated at 1MB]';
+    }
     try {
-      return JSON.stringify(JSON.parse(body), null, 2);
+      return JSON.stringify(JSON.parse(raw), null, 2);
     } catch {
-      return body;
+      return raw;
     }
   }
 </script>
@@ -55,7 +60,7 @@
 
       <div>
         <p class="text-xs text-zinc-500 mb-1">Body</p>
-        <pre class="text-xs font-mono text-zinc-200 bg-zinc-900 border border-zinc-800 p-3 overflow-auto max-h-[300px] whitespace-pre-wrap break-all">{prettyBody($lastResponse.body)}</pre>
+        <pre class="text-xs font-mono text-zinc-200 bg-zinc-900 border border-zinc-800 p-3 overflow-auto max-h-[300px] whitespace-pre-wrap break-all">{formatBody($lastResponse.body)}</pre>
       </div>
     </div>
   {/if}

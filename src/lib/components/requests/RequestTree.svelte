@@ -19,6 +19,17 @@
 
   let contextMenu: { x: number; y: number; items: { label: string; action: () => void; danger?: boolean }[] } | null = $state(null);
 
+  let pendingInput = $state<{
+    type: 'rename-request' | 'rename-collection' | 'new-request' | 'new-collection';
+    id: string;
+    value: string;
+  } | null>(null);
+
+  function focusOnMount(el: HTMLElement) {
+    el.focus();
+    if (el instanceof HTMLInputElement) el.select();
+  }
+
   async function reload() {
     if (!$project.path) return;
     try {
@@ -65,24 +76,12 @@
     contextMenu = { x: e.clientX, y: e.clientY, items: buildContextMenuItems(node) };
   }
 
-  async function handleNewRequest(collectionFolder: string | null) {
-    if (!$project.path) return;
-    const name = prompt('Request name:');
-    if (!name?.trim()) return;
-    try {
-      await createRequest($project.path, collectionFolder, name.trim());
-      await reload();
-    } catch (e) { console.error(e); }
+  function handleNewRequest(collectionFolder: string | null) {
+    pendingInput = { type: 'new-request', id: collectionFolder ?? '', value: 'New Request' };
   }
 
-  async function handleRenameRequest(id: string) {
-    if (!$project.path) return;
-    const name = prompt('New name:');
-    if (!name?.trim()) return;
-    try {
-      await renameRequest($project.path, id, name.trim());
-      await reload();
-    } catch (e) { console.error(e); }
+  function handleRenameRequest(id: string) {
+    pendingInput = { type: 'rename-request', id, value: '' };
   }
 
   async function handleDeleteRequest(id: string) {
@@ -102,24 +101,12 @@
     } catch (e) { console.error(e); }
   }
 
-  async function handleNewCollection() {
-    if (!$project.path) return;
-    const name = prompt('Collection name:');
-    if (!name?.trim()) return;
-    try {
-      await createCollection($project.path, name.trim());
-      await reload();
-    } catch (e) { console.error(e); }
+  function handleNewCollection() {
+    pendingInput = { type: 'new-collection', id: '', value: 'New Collection' };
   }
 
-  async function handleRenameCollection(folderName: string) {
-    if (!$project.path) return;
-    const name = prompt('New name:');
-    if (!name?.trim()) return;
-    try {
-      await renameCollection($project.path, folderName, name.trim());
-      await reload();
-    } catch (e) { console.error(e); }
+  function handleRenameCollection(folderName: string) {
+    pendingInput = { type: 'rename-collection', id: folderName, value: '' };
   }
 
   async function handleDeleteCollection(folderName: string) {
@@ -128,6 +115,31 @@
       await deleteCollection($project.path, folderName);
       await reload();
     } catch (e) { console.error(e); }
+  }
+
+  async function confirmPendingInput() {
+    if (!pendingInput || !$project.path) return;
+    const { type, id, value } = pendingInput;
+    const trimmed = value.trim();
+    if (!trimmed) { pendingInput = null; return; }
+    pendingInput = null;
+    try {
+      if (type === 'new-request') {
+        await createRequest($project.path, id || null, trimmed);
+      } else if (type === 'new-collection') {
+        await createCollection($project.path, trimmed);
+      } else if (type === 'rename-request') {
+        await renameRequest($project.path, id, trimmed);
+      } else if (type === 'rename-collection') {
+        await renameCollection($project.path, id, trimmed);
+      }
+      await reload();
+    } catch (e) { console.error(e); }
+  }
+
+  function handlePendingInputKey(e: KeyboardEvent) {
+    if (e.key === 'Enter') confirmPendingInput();
+    if (e.key === 'Escape') pendingInput = null;
   }
 </script>
 
@@ -150,6 +162,22 @@
       <p class="px-3 py-4 text-xs text-zinc-600">No collections yet.</p>
     {/if}
   </div>
+
+  {#if pendingInput}
+    <div class="px-3 py-2 border-t border-zinc-800">
+      <p class="text-xs text-zinc-500 mb-1">{pendingInput.type.startsWith('new') ? 'Create:' : 'Rename to:'}</p>
+      <input
+        class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono focus:outline-none focus:border-cyan-600"
+        bind:value={pendingInput.value}
+        onkeydown={handlePendingInputKey}
+        use:focusOnMount
+      />
+      <div class="flex gap-2 mt-1">
+        <button class="text-xs text-cyan-500" onclick={confirmPendingInput}>OK</button>
+        <button class="text-xs text-zinc-500" onclick={() => pendingInput = null}>Cancel</button>
+      </div>
+    </div>
+  {/if}
 
   <div class="border-t border-zinc-800 px-3 py-2">
     <button

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { RequestTreeNode } from '$lib/services/tauri-commands';
   import TreeNode from './TreeNode.svelte';
+  import { getMethodColor } from '$lib/utils/format';
 
   interface Props {
     node: RequestTreeNode;
@@ -12,22 +13,8 @@
   let { node, activeRequestId, onSelect, onContextMenu }: Props = $props();
 
   // Collections start expanded, Folders start collapsed
-  let expanded = $state(false);
-  $effect(() => {
-    expanded = node.type === 'Collection';
-  });
+  let expanded = $state(node.type === 'Collection');
 
-  const METHOD_COLORS: Record<string, string> = {
-    GET: 'text-blue-400',
-    POST: 'text-green-400',
-    PUT: 'text-yellow-400',
-    PATCH: 'text-orange-400',
-    DELETE: 'text-red-400',
-  };
-
-  function methodColor(method: string): string {
-    return METHOD_COLORS[method.toUpperCase()] ?? 'text-zinc-400';
-  }
 </script>
 
 {#if node.type === 'Collection' || node.type === 'Folder'}
@@ -72,7 +59,7 @@
     onkeydown={(e) => e.key === 'Enter' && onSelect(node.id)}
     oncontextmenu={(e) => { e.preventDefault(); onContextMenu(e, node); }}
   >
-    <span class="font-mono text-xs w-12 shrink-0 {methodColor(node.method)}">{node.method}</span>
+    <span class="font-mono text-xs w-12 shrink-0 {getMethodColor(node.method)}">{node.method}</span>
     <span class="truncate">{node.name}</span>
   </div>
 {/if}

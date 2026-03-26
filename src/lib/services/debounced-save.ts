@@ -7,7 +7,7 @@ export function createDebouncedSave(saveFn: () => Promise<void>, delay = 500): {
   function trigger() {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
-      saveFn();
+      saveFn().catch((e) => console.error('[auto-save] failed:', e));
       timer = null;
     }, delay);
   }

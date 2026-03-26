@@ -3,6 +3,7 @@
   import { project } from '$lib/stores/project';
   import { saveRequest, type AuthConfig, type BodyConfig } from '$lib/services/tauri-commands';
   import { createDebouncedSave } from '$lib/services/debounced-save';
+  import { getMethodColor } from '$lib/utils/format';
   import ParamsTab from './ParamsTab.svelte';
   import HeadersTab from './HeadersTab.svelte';
   import AuthTab from './AuthTab.svelte';
@@ -29,18 +30,6 @@
     debouncedSave.trigger();
   }
 
-  function methodColor(method: string): string {
-    const m: Record<string, string> = {
-      GET: 'text-emerald-400',
-      POST: 'text-cyan-400',
-      PUT: 'text-yellow-400',
-      PATCH: 'text-orange-400',
-      DELETE: 'text-red-400',
-      HEAD: 'text-purple-400',
-      OPTIONS: 'text-zinc-400',
-    };
-    return m[method] ?? 'text-zinc-400';
-  }
 </script>
 
 <div class="flex flex-col h-full bg-zinc-950">
@@ -52,7 +41,7 @@
     <!-- URL Bar -->
     <div class="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
       <select
-        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm font-semibold {methodColor($activeRequest.method)} focus:outline-none focus:border-zinc-500 shrink-0"
+        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm font-semibold {getMethodColor($activeRequest.method)} focus:outline-none focus:border-zinc-500 shrink-0"
         value={$activeRequest.method}
         onchange={(e) => updateRequest({ method: e.currentTarget.value })}
       >

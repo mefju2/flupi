@@ -26,8 +26,7 @@
 
 <div class="p-4">
   <div class="mb-3 flex items-center gap-2 py-1.5 px-2 bg-zinc-900 border border-zinc-800 rounded">
-    <span class="text-xs text-zinc-500 italic">Inherited from collection</span>
-    <span class="text-xs text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded">inherited</span>
+    <span class="text-xs text-zinc-500 italic">Collection headers will be visible here once a collection is selected.</span>
   </div>
   <KeyValueTable rows={rows} onUpdate={handleUpdate} />
 </div>
