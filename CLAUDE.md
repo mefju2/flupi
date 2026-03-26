@@ -1,0 +1,33 @@
+# Flupi — Project Guidelines
+
+## Design Context
+
+### Users
+Mixed audience: backend engineers integrating microservices, solo full-stack developers, and QA/test engineers. All are tool-savvy and comfortable with developer tooling. Design for the power user without alienating the newcomer — density is acceptable when it's organized.
+
+### Brand Personality
+Friendly, developer-focused, slightly playful — not corporate.
+Three words: **fluid, precise, alive**.
+The name comes from *flux* + *api* (verlan) — data flowing through an API pipeline. The personality echoes that: things move, things connect, nothing is static or heavy.
+
+### Emotional Goal
+**Fast & fluid.** Using Flupi should feel like flow state — snappy responses, no friction, the UI disappears and the work takes center stage. Every interaction should feel immediate.
+
+### Aesthetic Direction
+- **Dark mode by default**, light mode supported. Toggle in Settings.
+- **Accent color**: electric cyan (`#06b6d4` range) or violet (`#7c3aed` range). Pick one and commit — don't mix both as primaries. Used for emphasis only: active states, badges, CTAs. Not decoration.
+- **Typography**: monospace for all request/response data (URLs, headers, body, extracted values, variable tokens). Clean sans-serif for UI chrome (labels, nav, headings).
+- **References**: Linear (dark, polished, fast, confident typography, subtle motion) and Bruno/Hoppscotch (familiar API tool patterns, not reinventing the wheel for users coming from those tools).
+- **Anti-references**: Postman — avoid toolbar-heavy layouts, icon overload, and cluttered panels. No gradients. No glassmorphism. Flat and solid. Timeless over fashionable.
+
+### Design Principles
+
+1. **Invisible chrome.** UI elements should recede. Sidebars, tab bars, and toolbars use low-contrast backgrounds. The content (requests, responses, scenario steps) is always the brightest thing on screen.
+
+2. **Density with structure.** Developer tools display a lot of information. Don't fight it — organize it. Use tight spacing within sections, generous spacing between sections. Every pixel of density should be intentional.
+
+3. **Immediate feedback.** Every action gets instant visual response: save indicators appear and vanish quickly, step cards update in real time during runs, autocomplete opens without delay. Never leave the user wondering if something happened.
+
+4. **Monospace is data, sans-serif is UI.** Apply this distinction consistently. Variable tokens (`{{...}}`), request paths, response bodies, extracted values — monospace. Labels, tooltips, nav items, headings — sans-serif. This creates a reliable visual grammar.
+
+5. **No decorative complexity.** Color, motion, and visual weight are reserved for meaning: active state, error state, drift badge, running indicator. If an element doesn't communicate state or guide attention, simplify or remove it.

@@ -43,3 +43,29 @@ export async function savePreferences(preferences: Preferences): Promise<void> {
 export async function pickFolder(): Promise<string | null> {
   return open({ directory: true });
 }
+
+export interface Environment {
+  name: string;
+  variables: Record<string, string>;
+  secrets: string[];
+}
+
+export async function listEnvironments(projectPath: string): Promise<[string, Environment][]> {
+  return invoke('list_environments', { projectPath });
+}
+
+export async function saveEnvironment(projectPath: string, fileName: string, env: Environment): Promise<void> {
+  return invoke('save_environment', { projectPath, fileName, env });
+}
+
+export async function saveSecrets(projectPath: string, fileName: string, secrets: Record<string, string>): Promise<void> {
+  return invoke('save_secrets', { projectPath, fileName, secrets });
+}
+
+export async function getResolvedVariables(projectPath: string, fileName: string): Promise<Record<string, string>> {
+  return invoke('get_resolved_variables', { projectPath, fileName });
+}
+
+export async function deleteEnvironment(projectPath: string, fileName: string): Promise<void> {
+  return invoke('delete_environment', { projectPath, fileName });
+}
