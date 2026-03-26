@@ -1,0 +1,78 @@
+<script lang="ts">
+  import type { RequestTreeNode } from '$lib/services/tauri-commands';
+  import TreeNode from './TreeNode.svelte';
+
+  interface Props {
+    node: RequestTreeNode;
+    activeRequestId: string | null;
+    onSelect: (id: string) => void;
+    onContextMenu: (e: MouseEvent, node: RequestTreeNode) => void;
+  }
+
+  let { node, activeRequestId, onSelect, onContextMenu }: Props = $props();
+
+  // Collections start expanded, Folders start collapsed
+  let expanded = $state(false);
+  $effect(() => {
+    expanded = node.type === 'Collection';
+  });
+
+  const METHOD_COLORS: Record<string, string> = {
+    GET: 'text-blue-400',
+    POST: 'text-green-400',
+    PUT: 'text-yellow-400',
+    PATCH: 'text-orange-400',
+    DELETE: 'text-red-400',
+  };
+
+  function methodColor(method: string): string {
+    return METHOD_COLORS[method.toUpperCase()] ?? 'text-zinc-400';
+  }
+</script>
+
+{#if node.type === 'Collection' || node.type === 'Folder'}
+  <div>
+    <div
+      class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100 rounded"
+      role="button"
+      tabindex="0"
+      onclick={() => (expanded = !expanded)}
+      onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)}
+      oncontextmenu={(e) => { e.preventDefault(); onContextMenu(e, node); }}
+    >
+      <span class="text-zinc-500 text-xs">{expanded ? '▾' : '▸'}</span>
+      <span class="text-zinc-400 text-xs">📁</span>
+      <span class="truncate">{node.name}</span>
+    </div>
+
+    {#if expanded}
+      <div class="ml-3 border-l border-zinc-800 pl-1">
+        {#each node.children as child}
+          <TreeNode
+            node={child}
+            {activeRequestId}
+            {onSelect}
+            {onContextMenu}
+          />
+        {/each}
+        {#if node.children.length === 0}
+          <p class="px-2 py-1 text-xs text-zinc-600 italic">Empty</p>
+        {/if}
+      </div>
+    {/if}
+  </div>
+{:else if node.type === 'Request'}
+  {@const isActive = activeRequestId === node.id}
+  <div
+    class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none rounded
+      {isActive ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100'}"
+    role="button"
+    tabindex="0"
+    onclick={() => onSelect(node.id)}
+    onkeydown={(e) => e.key === 'Enter' && onSelect(node.id)}
+    oncontextmenu={(e) => { e.preventDefault(); onContextMenu(e, node); }}
+  >
+    <span class="font-mono text-xs w-12 shrink-0 {methodColor(node.method)}">{node.method}</span>
+    <span class="truncate">{node.name}</span>
+  </div>
+{/if}
