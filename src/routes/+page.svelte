@@ -1,156 +1,100 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import RecentProjectList from '$lib/components/project-picker/RecentProjectList.svelte';
+  import {
+    getRecentProjects,
+    createProject,
+    openProject,
+    addRecentProject,
+    pickFolder,
+  } from '$lib/services/tauri-commands';
+  import { project } from '$lib/stores/project';
+  import type { RecentProject } from '$lib/services/tauri-commands';
 
-  let name = $state("");
-  let greetMsg = $state("");
+  let recentProjects: RecentProject[] = $state([]);
+  let error = $state('');
 
-  async function greet(event: Event) {
-    event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsg = await invoke("greet", { name });
+  onMount(async () => {
+    const data = await getRecentProjects();
+    recentProjects = data.projects;
+  });
+
+  async function openAndNavigate(path: string, name: string) {
+    project.set({ isOpen: true, path, name });
+    await addRecentProject(name, path);
+    goto('/requests');
+  }
+
+  async function handleNewProject() {
+    const path = await pickFolder();
+    if (!path) return;
+    try {
+      await createProject(path);
+      await openAndNavigate(path, path.split('/').pop() || path);
+    } catch (e) {
+      error = String(e);
+    }
+  }
+
+  async function handleOpenFolder() {
+    const path = await pickFolder();
+    if (!path) return;
+    try {
+      const state = await openProject(path);
+      if (state === 'empty') {
+        if (!confirm("This folder doesn't appear to be a Flupi project. Initialize it?")) return;
+        await createProject(path);
+      }
+      await openAndNavigate(path, path.split('/').pop() || path);
+    } catch (e) {
+      error = String(e);
+    }
+  }
+
+  async function handleSelectRecent(p: RecentProject) {
+    try {
+      const state = await openProject(p.path);
+      if (state === 'empty') {
+        if (!confirm("This folder doesn't appear to be a Flupi project. Initialize it?")) return;
+        await createProject(p.path);
+      }
+      await openAndNavigate(p.path, p.name);
+    } catch (e) {
+      error = String(e);
+      recentProjects = recentProjects.filter((rp) => rp.path !== p.path);
+    }
   }
 </script>
 
-<main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
-
-  <div class="row">
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
+<div class="flex flex-col items-center justify-center h-screen bg-zinc-950 text-zinc-100">
+  <div class="mb-8 text-center">
+    <h1 class="text-2xl font-semibold tracking-tight mb-1">Flupi</h1>
+    <p class="text-sm text-zinc-500">API test scenarios, powered by Git</p>
   </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
 
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{greetMsg}</p>
-</main>
+  {#if error}
+    <p class="text-red-400 text-sm mb-4 max-w-sm text-center">{error}</p>
+  {/if}
 
-<style>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
+  <div class="flex gap-3 mb-10">
+    <button
+      class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium text-sm rounded transition-colors"
+      onclick={handleNewProject}
+    >
+      New Project
+    </button>
+    <button
+      class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium text-sm rounded transition-colors"
+      onclick={handleOpenFolder}
+    >
+      Open Folder
+    </button>
+  </div>
 
-.logo.svelte-kit:hover {
-  filter: drop-shadow(0 0 2em #ff3e00);
-}
-
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
-}
-
-</style>
+  {#if recentProjects.length > 0}
+    <RecentProjectList projects={recentProjects} onSelect={handleSelectRecent} />
+  {:else}
+    <p class="text-zinc-600 text-sm">No recent projects</p>
+  {/if}
+</div>

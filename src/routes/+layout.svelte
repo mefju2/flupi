@@ -1,10 +1,11 @@
 <script lang="ts">
-  import '../app.css';
-  import { onMount } from 'svelte';
+	import './layout.css';
+	import '../app.css';
+	import { onMount } from 'svelte';
 
-  onMount(() => {
-    document.documentElement.classList.add('dark');
-  });
+	onMount(() => {
+		document.documentElement.classList.add('dark');
+	});
 </script>
 
-<slot />
+<slot></slot>
