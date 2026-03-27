@@ -6,6 +6,7 @@
   import { requestTree, activeRequestId, activeRequest } from '$lib/stores/requests';
   import { project } from '$lib/stores/project';
   import { searchOpen } from '$lib/stores/ui';
+  import { getMethodColor } from '$lib/utils/format';
 
   interface RequestOption {
     id: string;
@@ -13,14 +14,6 @@
     method: string;
     collectionPath: string;
   }
-
-  const METHOD_COLORS: Record<string, string> = {
-    GET: 'text-green-400',
-    POST: 'text-cyan-400',
-    PUT: 'text-yellow-400',
-    PATCH: 'text-orange-400',
-    DELETE: 'text-red-400',
-  };
 
   let search = $state('');
   let activeIndex = $state(0);
@@ -107,7 +100,7 @@
 {#if $searchOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-zinc-950/80"
+    class="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-zinc-950/60 backdrop-blur-sm"
     onclick={handleBackdropClick}
   >
     <div class="w-full max-w-[560px] mx-4 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl">
@@ -120,6 +113,11 @@
           oninput={() => (activeIndex = 0)}
           onkeydown={handleKeydown}
         />
+        <div class="flex gap-3 mt-2 px-1 text-xs text-zinc-600">
+          <span>↑↓ Navigate</span>
+          <span>↵ Select</span>
+          <span>Esc Close</span>
+        </div>
       </div>
 
       <ul class="max-h-80 overflow-y-auto py-1">
@@ -136,10 +134,7 @@
                 onclick={() => select(req.id)}
                 onmouseenter={() => (activeIndex = idx)}
               >
-                <span
-                  class="font-mono text-xs {METHOD_COLORS[req.method] ??
-                    'text-zinc-400'} w-16 shrink-0">{req.method}</span
-                >
+                <span class="font-mono text-xs {getMethodColor(req.method)} w-16 shrink-0">{req.method}</span>
                 <span class="text-sm text-zinc-100 truncate flex-1">{req.name}</span>
                 {#if req.collectionPath}
                   <span class="text-xs text-zinc-500 shrink-0 truncate max-w-[160px]"

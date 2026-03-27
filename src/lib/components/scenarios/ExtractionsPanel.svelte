@@ -29,7 +29,8 @@
 </script>
 
 <div class="space-y-1">
-  <p class="text-xs text-zinc-500 mb-2">Extract values from the response into variables.</p>
+  <p class="text-xs text-zinc-500 mb-1">Extract values from the response into variables.</p>
+  <p class="text-xs text-zinc-500 mt-1">JSONPath: $.field, $.array[0].value</p>
 
   {#if extractions.length > 0}
     <div class="grid grid-cols-[1fr_auto_1fr_auto] gap-2 mb-1">

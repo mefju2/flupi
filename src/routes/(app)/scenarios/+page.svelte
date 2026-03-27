@@ -8,6 +8,7 @@
   import {
     loadScenarioTree, saveScenario, runScenario, type ScenarioData,
   } from '$lib/services/tauri-commands';
+  import { fade } from 'svelte/transition';
   import ScenarioTree from '$lib/components/scenarios/ScenarioTree.svelte';
   import ScenarioEditor from '$lib/components/scenarios/ScenarioEditor.svelte';
   import ScenarioRunner from '$lib/components/scenarios/ScenarioRunner.svelte';
@@ -67,7 +68,7 @@
   <!-- Main area -->
   <div class="flex-1 flex flex-col min-w-0 relative">
     {#if saveToast}
-      <div class="absolute top-2 right-4 z-10 text-xs text-cyan-400 bg-zinc-800 border border-zinc-700 rounded px-2 py-1">
+      <div transition:fade={{ duration: 150 }} class="absolute top-2 right-4 z-10 text-xs text-cyan-400 bg-zinc-800 border border-zinc-700 rounded px-2 py-1">
         {saveToast}
       </div>
     {/if}

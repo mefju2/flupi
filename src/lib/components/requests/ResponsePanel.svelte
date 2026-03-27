@@ -28,7 +28,7 @@
   {#if $isExecuting}
     <div class="p-6 text-sm text-zinc-500">Sending...</div>
   {:else if !$lastResponse}
-    <div class="p-6 text-sm text-zinc-600">Send a request to see the response.</div>
+    <div class="p-6 text-sm text-zinc-600">Ready to send — press Ctrl+Enter or click Send</div>
   {:else}
     <div class="p-4 space-y-3">
       <div class="flex items-center gap-3">
@@ -40,7 +40,7 @@
 
       <div>
         <button
-          class="text-xs text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1 mb-1"
+          class="text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded px-2 transition-colors flex items-center gap-1 mb-1 -mx-2"
           onclick={() => (headersOpen = !headersOpen)}
         >
           <span>{headersOpen ? '▾' : '▸'}</span>

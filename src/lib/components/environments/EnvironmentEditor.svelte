@@ -4,6 +4,7 @@
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import { project } from '$lib/stores/project';
   import KeyValueTable from '$lib/components/shared/KeyValueTable.svelte';
+  import { fade } from 'svelte/transition';
 
   interface Row {
     key: string;
@@ -17,6 +18,7 @@
 
   let rows = $state<Row[]>([]);
   let syncedFileName = $state<string | undefined>(undefined);
+  let savedRecently = $state(false);
 
   $effect(() => {
     const fileName = currentEntry?.fileName;
@@ -53,6 +55,8 @@
 
     await saveEnvironment($project.path, currentEntry.fileName, updatedEnv);
     await saveSecrets($project.path, currentEntry.fileName, secretValues);
+    savedRecently = true;
+    setTimeout(() => (savedRecently = false), 2000);
   });
 
   function handleUpdate(updatedRows: Row[]) {
@@ -90,7 +94,12 @@
 
 <div class="bg-zinc-950 p-6 h-full">
   {#if currentEntry}
-    <h2 class="text-zinc-100 text-base font-semibold mb-4">{currentEntry.environment.name}</h2>
+    <div class="flex items-center gap-3 mb-4">
+      <h2 class="text-zinc-100 text-base font-semibold">{currentEntry.environment.name}</h2>
+      {#if savedRecently}
+        <span class="text-xs text-green-400" transition:fade={{ duration: 150 }}>Saved</span>
+      {/if}
+    </div>
     <KeyValueTable
       rows={rows}
       showSecretToggle={true}

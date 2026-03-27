@@ -6,9 +6,10 @@
 
   interface Props {
     onClose: () => void;
+    onAdded?: (sourceId: string) => void;
   }
 
-  let { onClose }: Props = $props();
+  let { onClose, onAdded }: Props = $props();
 
   let tab = $state<'url' | 'file'>('url');
   let name = $state('');
@@ -51,6 +52,7 @@
 
       await addOpenApiSource($project.path, source);
       openApiSources.set(await listOpenApiSources($project.path));
+      onAdded?.(generatedId);
       onClose();
     } catch (e) {
       error = String(e);
@@ -75,11 +77,11 @@
   <!-- Tab selector -->
   <div class="flex gap-1 bg-zinc-800 rounded p-0.5 w-fit">
     <button
-      class="px-3 py-1 text-xs rounded transition-colors {tab === 'url' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'}"
+      class="px-3 py-1 text-xs rounded transition-colors {tab === 'url' ? 'bg-cyan-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}"
       onclick={() => (tab = 'url')}
     >URL</button>
     <button
-      class="px-3 py-1 text-xs rounded transition-colors {tab === 'file' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'}"
+      class="px-3 py-1 text-xs rounded transition-colors {tab === 'file' ? 'bg-cyan-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}"
       onclick={() => (tab = 'file')}
     >File</button>
   </div>

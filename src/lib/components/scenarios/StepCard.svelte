@@ -55,7 +55,7 @@
   let methodColor = $derived(requestInfo ? (methodColors[requestInfo.method] ?? 'text-zinc-400') : 'text-zinc-600');
 </script>
 
-<div class="border border-zinc-800 rounded bg-zinc-900 mb-2">
+<div class="border border-zinc-800 rounded bg-zinc-900 mb-2 {expanded ? 'border-l-2 border-l-cyan-500' : 'border-l-2 border-l-transparent'}">
   <div class="flex items-center gap-2 px-3 py-2 cursor-pointer select-none" role="button" tabindex="0"
     onclick={() => expanded = !expanded}
     onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)}
@@ -64,7 +64,7 @@
     <span class="text-xs text-zinc-500 w-5 shrink-0">{index + 1}</span>
 
     <div class="flex-1 flex items-center gap-2 min-w-0">
-      <span class="text-sm text-zinc-200 truncate">{step.name || 'Unnamed Step'}</span>
+      <span class="font-mono text-sm text-zinc-200 truncate">{step.name || 'Unnamed Step'}</span>
       {#if !requestInfo}
         <span class="text-xs text-amber-400 bg-amber-950/40 border border-amber-800/60 rounded px-1.5 py-0.5 shrink-0">
           Request not found

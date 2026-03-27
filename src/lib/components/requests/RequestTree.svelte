@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import { project } from '$lib/stores/project';
   import { requestTree, activeRequestId, activeRequest } from '$lib/stores/requests';
   import {
@@ -146,7 +147,7 @@
   </div>
 
   {#if toast}
-    <div class="px-3 py-2 text-xs text-cyan-400 bg-zinc-800 border-t border-zinc-700 animate-pulse">{toast}</div>
+    <div class="px-3 py-2 text-xs text-cyan-400 bg-zinc-800 border-t border-zinc-700" transition:fade={{ duration: 150 }}>{toast}</div>
   {/if}
 
   {#if pendingInput}

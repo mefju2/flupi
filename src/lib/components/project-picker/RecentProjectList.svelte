@@ -15,11 +15,11 @@
     {#each projects as p}
       <li>
         <button
-          class="w-full text-left px-3 py-2 rounded hover:bg-zinc-800 transition-colors group"
+          class="w-full text-left px-3 py-2 rounded hover:bg-zinc-800 transition-colors duration-150 group cursor-pointer"
           onclick={() => onSelect(p)}
         >
           <div class="font-medium text-zinc-100">{p.name}</div>
-          <div class="text-xs text-zinc-500 font-mono truncate">{p.path}</div>
+          <div class="text-xs text-zinc-500 group-hover:text-zinc-300 font-mono truncate transition-colors duration-150">{p.path}</div>
         </button>
       </li>
     {/each}

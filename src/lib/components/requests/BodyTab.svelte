@@ -31,12 +31,14 @@
 <div class="p-4 space-y-3">
   <div class="flex items-center gap-2">
     <span class="text-xs text-zinc-400">Body</span>
-    {#each ['none', 'json', 'form', 'raw'] as t}
-      <button
-        class="text-xs px-2 py-0.5 rounded transition-colors {bodyType === t ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}"
-        onclick={() => setType(t as BodyConfig['type'])}
-      >{t.charAt(0).toUpperCase() + t.slice(1)}</button>
-    {/each}
+    <div class="flex border border-zinc-700 rounded overflow-hidden">
+      {#each ['none', 'json', 'form', 'raw'] as t}
+        <button
+          class="text-xs px-2 py-0.5 transition-colors {bodyType === t ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}"
+          onclick={() => setType(t as BodyConfig['type'])}
+        >{t.charAt(0).toUpperCase() + t.slice(1)}</button>
+      {/each}
+    </div>
   </div>
 
   {#if body?.type === 'none' || !body}

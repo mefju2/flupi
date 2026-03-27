@@ -41,9 +41,12 @@
         <span class="text-xs text-zinc-500">{duration}ms</span>
       {/if}
       {#if extractedEntries.length > 0}
-        {#each extractedEntries as [key]}
+        {#each extractedEntries.slice(0, 3) as [key]}
           <span class="text-xs text-cyan-400 bg-cyan-950/40 border border-cyan-800/60 rounded px-1.5 py-0.5">{key}</span>
         {/each}
+        {#if extractedEntries.length > 3}
+          <span class="text-xs text-zinc-500">+{extractedEntries.length - 3} more</span>
+        {/if}
       {/if}
       <span class="text-zinc-500 text-xs">{expanded ? '▾' : '▸'}</span>
     </div>

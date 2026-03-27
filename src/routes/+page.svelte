@@ -14,10 +14,12 @@
 
   let recentProjects: RecentProject[] = $state([]);
   let error = $state('');
+  let loaded = $state(false);
 
   onMount(async () => {
     const data = await getRecentProjects();
     recentProjects = data.projects;
+    loaded = true;
   });
 
   async function openAndNavigate(path: string, name: string) {
@@ -74,27 +76,32 @@
   </div>
 
   {#if error}
-    <p class="text-red-400 text-sm mb-4 max-w-sm text-center">{error}</p>
+    <div class="bg-red-950/50 border border-red-900 rounded px-3 py-2 text-sm text-red-400 mb-4 max-w-sm text-center">
+      {error}
+    </div>
   {/if}
 
   <div class="flex gap-3 mb-10">
     <button
-      class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium text-sm rounded transition-colors"
+      class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium text-sm rounded transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
       onclick={handleNewProject}
     >
       New Project
     </button>
     <button
-      class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium text-sm rounded transition-colors"
+      class="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-100 font-medium text-sm rounded transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
       onclick={handleOpenFolder}
     >
       Open Folder
     </button>
   </div>
 
-  {#if recentProjects.length > 0}
+  {#if !loaded}
+    <p class="text-xs text-zinc-500">Loading…</p>
+  {:else if recentProjects.length > 0}
     <RecentProjectList projects={recentProjects} onSelect={handleSelectRecent} />
   {:else}
-    <p class="text-zinc-600 text-sm">No recent projects</p>
+    <p class="text-zinc-600 text-sm">No recent projects yet</p>
+    <p class="text-xs text-zinc-500 mt-1">Create a project or open an existing folder to get started</p>
   {/if}
 </div>

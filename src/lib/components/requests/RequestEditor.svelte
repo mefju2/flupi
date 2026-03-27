@@ -93,6 +93,7 @@
         class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm rounded transition-colors shrink-0"
         onclick={handleSend}
         disabled={$isExecuting}
+        title="Send (Ctrl+Enter)"
       >{$isExecuting ? 'Sending…' : 'Send'}</button>
     </div>
 
@@ -100,7 +101,7 @@
     <div class="flex border-b border-zinc-800 px-4">
       {#each TABS as tab}
         <button
-          class="text-sm px-3 py-2 transition-colors border-b-2 -mb-px {activeTab === tab ? 'text-cyan-400 border-cyan-500' : 'text-zinc-500 border-transparent hover:text-zinc-300'}"
+          class="text-sm px-3 py-2 transition-all duration-150 border-b-2 -mb-px {activeTab === tab ? 'text-cyan-300 border-cyan-500' : 'text-zinc-500 border-transparent hover:text-zinc-300'}"
           onclick={() => (activeTab = tab)}
         >{tab}</button>
       {/each}

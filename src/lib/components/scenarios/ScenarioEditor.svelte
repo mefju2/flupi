@@ -45,12 +45,14 @@
       placeholder="Scenario name"
     />
     <button
-      class="px-3 py-1 text-xs text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
+      class="px-3 py-1 text-xs bg-transparent border border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-200 rounded transition-colors"
       onclick={onSave}
     >Save</button>
     <button
-      class="px-3 py-1 text-xs text-zinc-900 bg-cyan-400 hover:bg-cyan-300 rounded font-medium transition-colors"
+      class="px-3 py-1 text-xs text-zinc-900 bg-cyan-400 hover:bg-cyan-300 rounded font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       onclick={onRun}
+      disabled={scenario.steps.length === 0}
+      title={scenario.steps.length === 0 ? 'Add at least one step to run' : 'Run scenario (Ctrl+Shift+Enter)'}
     >Run</button>
   </div>
 

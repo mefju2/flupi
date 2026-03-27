@@ -96,7 +96,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <!-- Backdrop -->
-<div class="fixed inset-0 bg-black/60 z-40" role="presentation" onclick={onClose}></div>
+<div class="fixed inset-0 bg-black/40 z-40" role="presentation" onclick={onClose}></div>
 
 <!-- Modal -->
 <div class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
@@ -105,6 +105,14 @@
     <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
       <span class="text-sm font-semibold text-zinc-100">Import from OpenAPI</span>
       <button class="text-zinc-500 hover:text-zinc-300 text-xs" onclick={onClose}>✕</button>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="flex items-center gap-2 px-6 py-3 border-b border-zinc-800 text-xs">
+      {#each ['Select Source', 'Choose Operations', 'Collection Folder'] as label, i}
+        <span class="{step === i + 1 ? 'text-cyan-400 font-medium' : 'text-zinc-600'}">{label}</span>
+        {#if i < 2}<span class="text-zinc-700">→</span>{/if}
+      {/each}
     </div>
 
     <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
@@ -176,6 +184,7 @@
             bind:value={collectionFolder}
             placeholder="my-api"
           />
+          <p class="text-xs text-zinc-500 mt-1">Lowercase letters, numbers, and hyphens (e.g. users-service)</p>
           <p class="text-xs text-zinc-600">{selectedIds.size} operations will be imported</p>
         </div>
         {#if error}<p class="text-xs text-red-400">{error}</p>{/if}

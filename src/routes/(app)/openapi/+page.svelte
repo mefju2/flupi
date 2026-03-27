@@ -9,6 +9,7 @@
 
   let showAddForm = $state(false);
   let wizardSourceId = $state<string | null>(null);
+  let newlyAddedSourceId = $state<string | null>(null);
 
   onMount(async () => {
     if (!$project.path) return;
@@ -18,6 +19,10 @@
 
   function handleAddSource() { showAddForm = true; }
   function handleCloseAddForm() { showAddForm = false; }
+  function handleSourceAdded(sourceId: string) {
+    newlyAddedSourceId = sourceId;
+    setTimeout(() => { newlyAddedSourceId = null; }, 2000);
+  }
   function handleOpenImport(sourceId: string) { wizardSourceId = sourceId; }
   function handleCloseWizard() { wizardSourceId = null; }
 </script>
@@ -30,10 +35,10 @@
 
   <div class="p-6 flex flex-col gap-4 max-w-2xl">
     {#if showAddForm}
-      <AddSourceForm onClose={handleCloseAddForm} />
+      <AddSourceForm onClose={handleCloseAddForm} onAdded={handleSourceAdded} />
     {/if}
 
-    <SourceList onAddSource={handleAddSource} onImport={handleOpenImport} />
+    <SourceList onAddSource={handleAddSource} onImport={handleOpenImport} addedSourceId={newlyAddedSourceId} />
   </div>
 </div>
 

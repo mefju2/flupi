@@ -125,6 +125,11 @@
 	html {
 		@apply font-sans;
 	}
+	input:focus-visible,
+	textarea:focus-visible,
+	select:focus-visible {
+		@apply outline-none border-cyan-500 ring-1 ring-cyan-500/20;
+	}
 }
 
 @custom-variant data-open {

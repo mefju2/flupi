@@ -39,7 +39,7 @@
     {:else}
       <div class="space-y-4 mb-6">
         {#each scenario.inputs as input}
-          <div>
+          <div class="{input.required ? 'border-l-2 border-red-500 pl-2' : ''}">
             <label class="flex items-center gap-2 text-sm text-zinc-300 mb-1">
               <span class="font-mono">{input.name}</span>
               {#if input.required}

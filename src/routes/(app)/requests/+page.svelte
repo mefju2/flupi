@@ -12,7 +12,7 @@
     {#if $activeRequest}
       <RequestEditor />
     {:else}
-      <p class="p-6 text-zinc-500 text-sm">Select a request to edit it.</p>
+      <p class="p-6 text-zinc-500 text-sm">Pick a request from the sidebar to get started</p>
     {/if}
   </div>
 </div>

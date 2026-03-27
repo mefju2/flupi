@@ -6,11 +6,13 @@
   interface Props {
     onAddSource: () => void;
     onImport: (sourceId: string) => void;
+    addedSourceId?: string | null;
   }
 
-  let { onAddSource, onImport }: Props = $props();
+  let { onAddSource, onImport, addedSourceId = null }: Props = $props();
 
   let loadingIds = $state<Set<string>>(new Set());
+  let syncedSources = $state<Set<string>>(new Set());
 
   function driftCount(sourceId: string): number {
     let count = 0;
@@ -31,6 +33,10 @@
         return next;
       });
       openApiSources.set(await listOpenApiSources($project.path));
+      syncedSources = new Set([...syncedSources, sourceId]);
+      setTimeout(() => {
+        syncedSources = new Set([...syncedSources].filter((id) => id !== sourceId));
+      }, 2000);
     } catch (e) {
       console.error('Failed to refresh source:', e);
     } finally {
@@ -81,13 +87,17 @@
   </div>
 
   {#if $openApiSources.length === 0}
-    <p class="text-sm text-zinc-600 py-4">No sources registered. Add one to import API operations.</p>
+    <div class="flex flex-col items-center justify-center py-16 gap-4">
+      <p class="text-sm text-zinc-500">No OpenAPI sources yet</p>
+      <p class="text-xs text-zinc-600">Start by adding a source to import API endpoints</p>
+    </div>
   {/if}
 
   {#each $openApiSources as source (source.id)}
     {@const loading = loadingIds.has(source.id)}
     {@const drift = driftCount(source.id)}
-    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3 flex flex-col gap-2">
+    {@const synced = syncedSources.has(source.id)}
+    <div class="bg-zinc-900 border {source.id === addedSourceId ? 'border-cyan-700' : 'border-zinc-800'} rounded-lg p-3 flex flex-col gap-2 transition-colors">
       <div class="flex items-start justify-between gap-2">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
@@ -109,11 +119,11 @@
             Import
           </button>
           <button
-            class="px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-cyan-400 rounded transition-colors disabled:opacity-50"
+            class="px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 {synced ? 'text-green-400' : 'text-cyan-400'} rounded transition-colors disabled:opacity-50"
             disabled={loading}
             onclick={() => handleRefresh(source.id)}
           >
-            {loading ? '…' : 'Sync'}
+            {loading ? '…' : synced ? 'Synced ✓' : 'Sync'}
           </button>
           <button
             class="px-2 py-1 text-xs bg-zinc-800 hover:bg-red-900 text-zinc-500 hover:text-red-300 rounded transition-colors"

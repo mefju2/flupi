@@ -110,7 +110,7 @@
             {#if status.result}
               <StepResultCard {step} result={status.result} />
             {:else}
-              <div class="border border-zinc-800 rounded bg-zinc-900 px-3 py-2">
+              <div class="border border-zinc-800 rounded bg-zinc-900 px-3 py-2 {status.state === 'running' ? 'ring-1 ring-cyan-500/30' : ''}">
                 <span class="text-sm {status.state === 'running' ? 'text-cyan-300' : 'text-zinc-500'}">{step.name}</span>
               </div>
             {/if}

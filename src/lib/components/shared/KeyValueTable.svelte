@@ -42,13 +42,16 @@
         placeholder="Key"
       />
       {#if row.isSecret}
-        <input
-          class="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
-          type="password"
-          value={row.value}
-          oninput={(e) => updateRow(i, 'value', e.currentTarget.value)}
-          placeholder="Value"
-        />
+        <div class="flex-1 flex items-center gap-1">
+          <input
+            class="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 opacity-60"
+            type="password"
+            value={row.value}
+            oninput={(e) => updateRow(i, 'value', e.currentTarget.value)}
+            placeholder="Value"
+          />
+          <span class="text-zinc-500 text-xs shrink-0" title="Secret">🔒</span>
+        </div>
       {:else}
         <VariableAutocomplete
           class="flex-1"
@@ -69,7 +72,7 @@
         </label>
       {/if}
       <button
-        class="text-zinc-600 hover:text-red-400 transition-colors text-lg leading-none"
+        class="opacity-30 hover:opacity-100 text-zinc-600 hover:text-red-400 transition-opacity text-lg leading-none"
         onclick={() => removeRow(i)}
         aria-label="Remove row"
       >×</button>
