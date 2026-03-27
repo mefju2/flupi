@@ -18,6 +18,33 @@ pub fn read_spec_from_file(path: &Path) -> Result<serde_json::Value> {
     file_io::read_json(path)
 }
 
+fn derive_operation_id(method: &str, path: &str) -> String {
+    // Build a camelCase id from method + path segments, e.g. GET /api/Role/{roleId} → getApiRoleRoleId
+    let mut parts = vec![method.to_lowercase()];
+    for segment in path.split('/') {
+        if segment.is_empty() { continue; }
+        // Strip path parameter braces and colons: {roleId} → roleId, :ping → ping
+        let clean = segment
+            .trim_start_matches('{').trim_end_matches('}')
+            .trim_start_matches(':');
+        // Convert kebab-case / dot-separated segments to camelCase and capitalize first letter
+        let camel: String = clean.split(|c| c == '-' || c == '.')
+            .filter(|s| !s.is_empty())
+            .enumerate()
+            .map(|(i, word)| {
+                let mut c = word.chars();
+                match c.next() {
+                    None => String::new(),
+                    Some(f) => if i == 0 { f.to_uppercase().collect::<String>() + c.as_str() }
+                               else { f.to_uppercase().collect::<String>() + c.as_str() },
+                }
+            })
+            .collect();
+        parts.push(camel);
+    }
+    parts.join("")
+}
+
 pub fn parse_operations(spec: &serde_json::Value) -> Result<Vec<(ImportableOperation, serde_json::Value)>> {
     let paths = spec["paths"].as_object().ok_or_else(|| {
         FlupiError::Custom("OpenAPI spec missing 'paths' object".to_string())
@@ -43,7 +70,7 @@ pub fn parse_operations(spec: &serde_json::Value) -> Result<Vec<(ImportableOpera
 
             let operation_id = match op_obj.get("operationId").and_then(|v| v.as_str()) {
                 Some(id) => id.to_string(),
-                None => continue,
+                None => derive_operation_id(method, path_str),
             };
 
             let tag = op_obj

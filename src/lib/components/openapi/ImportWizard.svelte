@@ -11,7 +11,7 @@
 
   let { sourceId = $bindable(), onClose, onImported }: Props = $props();
 
-  let step = $state<1 | 2 | 3>(sourceId ? 2 : 1);
+  let step = $state<1 | 2 | 3>(1);
   let selectedSourceId = $state(sourceId ?? '');
   let operations = $state<ImportableOperation[]>([]);
   let selectedIds = $state<Set<string>>(new Set());
@@ -19,6 +19,13 @@
   let loading = $state(false);
   let error = $state<string | null>(null);
   let importedCount = $state<number | null>(null);
+
+  // If sourceId is pre-selected, fetch operations immediately
+  $effect(() => {
+    if (sourceId && $project.path) {
+      goToStep2();
+    }
+  });
 
   let groupedOps = $derived(() => {
     const map = new Map<string, ImportableOperation[]>();
