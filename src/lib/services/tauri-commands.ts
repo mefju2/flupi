@@ -269,3 +269,48 @@ export async function runScenario(
 ): Promise<void> {
   return invoke('run_scenario', { projectPath, scenarioId, envFileName, inputs, timeoutMs });
 }
+
+// === OpenAPI Types ===
+
+export type OpenApiSource =
+  | { type: 'url'; id: string; name: string; url: string; lastFetchedAt: string | null; lastHash: string | null }
+  | { type: 'file'; id: string; name: string; path: string; lastFetchedAt: string | null; lastHash: string | null };
+
+export interface ImportableOperation {
+  tag: string;
+  operationId: string;
+  method: string;
+  path: string;
+  summary: string | null;
+}
+
+// === OpenAPI Commands ===
+
+export async function listOpenApiSources(projectPath: string): Promise<OpenApiSource[]> {
+  return invoke('list_openapi_sources', { projectPath });
+}
+
+export async function addOpenApiSource(projectPath: string, source: OpenApiSource): Promise<void> {
+  return invoke('add_openapi_source', { projectPath, source });
+}
+
+export async function removeOpenApiSource(projectPath: string, sourceId: string): Promise<void> {
+  return invoke('remove_openapi_source', { projectPath, sourceId });
+}
+
+export async function fetchOperations(projectPath: string, sourceId: string): Promise<ImportableOperation[]> {
+  return invoke('fetch_operations', { projectPath, sourceId });
+}
+
+export async function importOperations(
+  projectPath: string,
+  sourceId: string,
+  operationIds: string[],
+  collectionFolder: string,
+): Promise<string[]> {
+  return invoke('import_operations', { projectPath, sourceId, operationIds, collectionFolder });
+}
+
+export async function refreshSource(projectPath: string, sourceId: string): Promise<string[]> {
+  return invoke('refresh_source', { projectPath, sourceId });
+}

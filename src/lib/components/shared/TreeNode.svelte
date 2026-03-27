@@ -2,6 +2,7 @@
   import type { RequestTreeNode } from '$lib/services/tauri-commands';
   import TreeNode from './TreeNode.svelte';
   import { getMethodColor } from '$lib/utils/format';
+  import { driftedRequestIds } from '$lib/stores/openapi';
 
   interface Props {
     node: RequestTreeNode;
@@ -68,5 +69,8 @@
     {/if}
     <span class="font-mono text-xs w-12 shrink-0 {getMethodColor(node.method)}">{node.method}</span>
     <span class="truncate">{node.name}</span>
+    {#if $driftedRequestIds.has(node.id)}
+      <span class="shrink-0 w-2 h-2 rounded-full bg-red-500" title="Schema drift detected"></span>
+    {/if}
   </div>
 {/if}

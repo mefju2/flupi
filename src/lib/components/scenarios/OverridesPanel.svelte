@@ -54,7 +54,7 @@
         class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
         value={value}
         oninput={(e) => updateValue(key, e.currentTarget.value)}
-        placeholder="{{variable}} or literal"
+        placeholder={"{{variable}} or literal"}
       />
       <button
         class="text-zinc-600 hover:text-red-400 transition-colors text-lg leading-none"
