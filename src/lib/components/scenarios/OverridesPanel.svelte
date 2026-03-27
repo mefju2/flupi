@@ -1,5 +1,6 @@
 <script lang="ts">
   import SchemaAutocomplete from './SchemaAutocomplete.svelte';
+  import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
   import { buildOverrideSuggestions } from '$lib/utils/schema-paths';
 
   interface Props {
@@ -60,10 +61,9 @@
         onSelect={(path) => updateKey(key, path)}
         onInput={(v) => updateKey(key, v)}
       />
-      <input
-        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+      <VariableAutocomplete
         value={value}
-        oninput={(e) => updateValue(key, e.currentTarget.value)}
+        onChange={(v) => updateValue(key, v)}
         placeholder={"{{variable}} or literal"}
       />
       <button
