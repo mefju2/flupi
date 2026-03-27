@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { activeRequest, activeRequestId } from '$lib/stores/requests';
   import { project } from '$lib/stores/project';
   import { activeEnvironment } from '$lib/stores/environment';
@@ -25,6 +26,17 @@
     const path = $project.path;
     if (!req || !id || !path) return;
     await saveRequest(path, id, req);
+  });
+
+  onMount(() => {
+    const onSend = () => handleSend();
+    const onSave = () => { debouncedSave.flush(); };
+    window.addEventListener('flupi:send-request', onSend);
+    window.addEventListener('flupi:save', onSave);
+    return () => {
+      window.removeEventListener('flupi:send-request', onSend);
+      window.removeEventListener('flupi:save', onSave);
+    };
   });
 
   function updateRequest(patch: Partial<typeof $activeRequest>) {

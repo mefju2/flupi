@@ -13,3 +13,5 @@ theme.subscribe((value) => {
     document.documentElement.classList.remove('dark');
   }
 });
+
+export const searchOpen = writable(false);

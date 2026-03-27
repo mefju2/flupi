@@ -30,6 +30,12 @@
     }
   });
 
+  onMount(() => {
+    const onRunShortcut = () => { if ($activeScenario) view = 'runner'; };
+    window.addEventListener('flupi:run-scenario', onRunShortcut);
+    return () => window.removeEventListener('flupi:run-scenario', onRunShortcut);
+  });
+
   async function handleSave() {
     if (!$project.path || !$activeScenarioId || !$activeScenario) return;
     try {
