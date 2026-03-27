@@ -1,0 +1,146 @@
+<script lang="ts">
+  import type { RequestTreeNode } from '$lib/services/tauri-commands';
+
+  interface RequestOption {
+    id: string;
+    name: string;
+    method: string;
+    collectionPath: string;
+  }
+
+  interface Props {
+    requestTree: RequestTreeNode[];
+    value: string;
+    onChange: (id: string) => void;
+  }
+
+  let { requestTree, value, onChange }: Props = $props();
+
+  let open = $state(false);
+  let search = $state('');
+  let activeIndex = $state(0);
+  let searchEl = $state<HTMLInputElement | null>(null);
+
+  const METHOD_COLORS: Record<string, string> = {
+    GET: 'text-green-400', POST: 'text-cyan-400', PUT: 'text-yellow-400',
+    PATCH: 'text-orange-400', DELETE: 'text-red-400',
+  };
+
+  function flattenTree(nodes: RequestTreeNode[], path: string): RequestOption[] {
+    const result: RequestOption[] = [];
+    for (const node of nodes) {
+      if (node.type === 'Request') {
+        result.push({ id: node.id, name: node.name, method: node.method, collectionPath: path });
+      } else if (node.children) {
+        const childPath = path ? `${path} / ${node.name}` : node.name;
+        result.push(...flattenTree(node.children, childPath));
+      }
+    }
+    return result;
+  }
+
+  const allRequests = $derived(flattenTree(requestTree, ''));
+
+  const filtered = $derived(
+    search.trim()
+      ? allRequests.filter(
+          (r) =>
+            r.name.toLowerCase().includes(search.toLowerCase()) ||
+            r.method.toLowerCase().includes(search.toLowerCase()) ||
+            r.collectionPath.toLowerCase().includes(search.toLowerCase()),
+        )
+      : allRequests,
+  );
+
+  const selected = $derived(allRequests.find((r) => r.id === value) ?? null);
+
+  function openPicker() {
+    open = true;
+    search = '';
+    activeIndex = 0;
+    setTimeout(() => searchEl?.focus(), 0);
+  }
+
+  function select(id: string) {
+    onChange(id);
+    open = false;
+    search = '';
+  }
+
+  function handleSearchBlur() {
+    setTimeout(() => { open = false; }, 150);
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, filtered.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+    } else if (e.key === 'Enter' && filtered[activeIndex]) {
+      e.preventDefault();
+      select(filtered[activeIndex].id);
+    } else if (e.key === 'Escape') {
+      open = false;
+    }
+  }
+</script>
+
+<div class="relative">
+  <button
+    type="button"
+    class="w-full text-left bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm focus:outline-none focus:border-zinc-500 flex items-center gap-2 min-w-0"
+    onclick={openPicker}
+  >
+    {#if selected}
+      <span class="font-mono text-xs {METHOD_COLORS[selected.method] ?? 'text-zinc-400'} shrink-0">{selected.method}</span>
+      <span class="text-zinc-100 truncate">{selected.name}</span>
+      {#if selected.collectionPath}
+        <span class="text-zinc-600 text-xs shrink-0 truncate max-w-[100px]">{selected.collectionPath}</span>
+      {/if}
+    {:else if value}
+      <span class="font-mono text-xs text-zinc-500 truncate">{value}</span>
+    {:else}
+      <span class="text-zinc-500">Select a request…</span>
+    {/if}
+    <span class="ml-auto text-zinc-600 text-xs shrink-0">▾</span>
+  </button>
+
+  {#if open}
+    <div class="absolute top-full left-0 mt-0.5 z-50 w-full min-w-[280px] bg-zinc-900 border border-zinc-700 rounded shadow-lg">
+      <div class="p-1.5 border-b border-zinc-800">
+        <input
+          bind:this={searchEl}
+          class="w-full bg-zinc-800 rounded px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none"
+          placeholder="Search requests…"
+          bind:value={search}
+          oninput={() => (activeIndex = 0)}
+          onkeydown={handleKeydown}
+          onblur={handleSearchBlur}
+        />
+      </div>
+      <ul class="max-h-52 overflow-y-auto py-1">
+        {#if filtered.length === 0}
+          <li class="px-3 py-2 text-sm text-zinc-500 italic">No requests found</li>
+        {:else}
+          {#each filtered as req, idx}
+            <li>
+              <button
+                type="button"
+                class="w-full text-left px-3 py-1.5 flex items-center gap-2 {idx === activeIndex ? 'bg-zinc-800' : 'hover:bg-zinc-800'}"
+                onmousedown={() => select(req.id)}
+              >
+                <span class="font-mono text-xs {METHOD_COLORS[req.method] ?? 'text-zinc-400'} w-14 shrink-0">{req.method}</span>
+                <span class="text-sm text-zinc-100 truncate flex-1">{req.name}</span>
+                {#if req.collectionPath}
+                  <span class="text-xs text-zinc-600 shrink-0 truncate max-w-[120px]">{req.collectionPath}</span>
+                {/if}
+              </button>
+            </li>
+          {/each}
+        {/if}
+      </ul>
+    </div>
+  {/if}
+</div>

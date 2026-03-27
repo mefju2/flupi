@@ -4,6 +4,7 @@
   import { project } from '$lib/stores/project';
   import OverridesPanel from './OverridesPanel.svelte';
   import ExtractionsPanel from './ExtractionsPanel.svelte';
+  import RequestPicker from './RequestPicker.svelte';
 
   interface Props {
     step: ScenarioStep;
@@ -97,12 +98,11 @@
           />
         </div>
         <div class="flex-1">
-          <label class="block text-xs text-zinc-500 mb-1">Request ID</label>
-          <input
-            class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono focus:outline-none focus:border-zinc-500"
+          <label class="block text-xs text-zinc-500 mb-1">Request</label>
+          <RequestPicker
+            {requestTree}
             value={step.requestId}
-            oninput={(e) => onUpdate({ ...step, requestId: e.currentTarget.value })}
-            placeholder="request-id"
+            onChange={(id) => onUpdate({ ...step, requestId: id })}
           />
         </div>
       </div>
