@@ -144,7 +144,7 @@
     {/each}
 
     {#if $scenarioTree.length === 0}
-      <p class="px-3 py-4 text-xs text-zinc-600">No scenarios yet.</p>
+      <p class="px-3 py-4 text-xs text-zinc-600">No scenarios yet. Create one to chain requests together.</p>
     {/if}
   </div>
 

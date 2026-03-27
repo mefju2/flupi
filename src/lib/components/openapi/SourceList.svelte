@@ -81,7 +81,7 @@
   </div>
 
   {#if $openApiSources.length === 0}
-    <p class="text-sm text-zinc-600 py-4">No OpenAPI sources added yet.</p>
+    <p class="text-sm text-zinc-600 py-4">No sources registered. Add one to import API operations.</p>
   {/if}
 
   {#each $openApiSources as source (source.id)}

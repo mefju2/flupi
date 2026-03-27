@@ -141,7 +141,7 @@
     {/if}
 
     {#if $requestTree.length === 0}
-      <p class="px-3 py-4 text-xs text-zinc-600">No collections yet.</p>
+      <p class="px-3 py-4 text-xs text-zinc-600">No requests yet. Create a request or import from OpenAPI.</p>
     {/if}
   </div>
 

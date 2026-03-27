@@ -1,1 +1,7 @@
-<p class="p-8 text-zinc-500 text-sm">Settings — coming soon</p>
+<script lang="ts">
+  import SettingsPanel from '$lib/components/settings/SettingsPanel.svelte';
+</script>
+
+<div class="h-full overflow-y-auto">
+  <SettingsPanel />
+</div>

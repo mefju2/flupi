@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { project } from '$lib/stores/project';
+  import { environments, activeEnvironment } from '$lib/stores/environment';
 </script>
 
 <header class="flex items-center h-10 px-4 border-b border-zinc-800 bg-zinc-900 shrink-0">
@@ -11,10 +12,20 @@
   {/if}
 
   <div class="ml-auto flex items-center gap-2">
-    <!-- Environment switcher placeholder - implemented in Phase 2 -->
-    <select class="text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 rounded px-2 py-1" disabled>
-      <option>No environment</option>
-    </select>
+    {#if $environments.length === 0}
+      <select class="text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 rounded px-2 py-1" disabled>
+        <option>No environment</option>
+      </select>
+    {:else}
+      <select
+        class="text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 rounded px-2 py-1"
+        bind:value={$activeEnvironment}
+      >
+        {#each $environments as env}
+          <option value={env.fileName}>{env.environment.name}</option>
+        {/each}
+      </select>
+    {/if}
 
     <button
       class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"

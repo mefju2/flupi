@@ -101,7 +101,7 @@
     {/each}
 
     {#if $environments.length === 0}
-      <p class="px-3 py-4 text-xs text-zinc-600">No environments yet.</p>
+      <p class="px-3 py-4 text-xs text-zinc-600">No environments yet. Create one to get started.</p>
     {/if}
   </div>
 
