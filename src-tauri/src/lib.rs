@@ -50,6 +50,12 @@ pub fn run() {
             commands::scenario::delete_scenario,
             commands::scenario::rename_scenario,
             commands::scenario::duplicate_scenario,
+            commands::openapi::add_openapi_source,
+            commands::openapi::remove_openapi_source,
+            commands::openapi::list_openapi_sources,
+            commands::openapi::fetch_operations,
+            commands::openapi::import_operations,
+            commands::openapi::refresh_source,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

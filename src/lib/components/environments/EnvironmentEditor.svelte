@@ -15,19 +15,18 @@
     $environments.find((e) => e.fileName === $activeEnvironment)
   );
 
-  let rows = $derived.by<Row[]>(() => {
-    if (!currentEntry) return [];
-    const regular = Object.entries(currentEntry.environment.variables).map(([key, value]) => ({
-      key,
-      value,
-      isSecret: false,
-    }));
-    const secrets = currentEntry.environment.secrets.map((key) => ({
-      key,
-      value: currentEntry!.secrets[key] ?? '',
-      isSecret: true,
-    }));
-    return [...regular, ...secrets];
+  let rows = $state<Row[]>([]);
+  let syncedFileName = $state<string | undefined>(undefined);
+
+  $effect(() => {
+    const fileName = currentEntry?.fileName;
+    if (fileName === syncedFileName) return;
+    syncedFileName = fileName;
+    if (!currentEntry) { rows = []; return; }
+    rows = [
+      ...Object.entries(currentEntry.environment.variables).map(([key, value]) => ({ key, value, isSecret: false as const })),
+      ...currentEntry.environment.secrets.map((key) => ({ key, value: currentEntry!.secrets[key] ?? '', isSecret: true as const })),
+    ];
   });
 
   const debouncedSave = createDebouncedSave(async () => {
@@ -57,6 +56,7 @@
   });
 
   function handleUpdate(updatedRows: Row[]) {
+    rows = updatedRows;
     if (!currentEntry) return;
     const variables: Record<string, string> = {};
     const secretKeys: string[] = [];

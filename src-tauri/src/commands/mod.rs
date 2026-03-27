@@ -7,3 +7,4 @@ pub mod collection;
 pub mod execution;
 pub mod execution_runner;
 pub mod scenario;
+pub mod openapi;
