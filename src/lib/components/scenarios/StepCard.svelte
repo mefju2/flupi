@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { ScenarioStep, RequestTreeNode } from '$lib/services/tauri-commands';
+  import { getRequest } from '$lib/services/tauri-commands';
+  import { project } from '$lib/stores/project';
   import OverridesPanel from './OverridesPanel.svelte';
   import ExtractionsPanel from './ExtractionsPanel.svelte';
 
@@ -14,8 +16,26 @@
   let { step, requestTree, index, onUpdate, onDelete }: Props = $props();
 
   let expanded = $state(false);
+  let requestSchema = $state<unknown>(null);
+  let responseSchema = $state<unknown>(null);
 
-  function findRequest(nodes: RequestTreeNode[], id: string): { method: string; name: string; path: string } | null {
+  $effect(() => {
+    const id = step.requestId;
+    const path = $project?.path;
+    if (!id || !path) return;
+    getRequest(path, id).then((r) => {
+      requestSchema = r.templateRef?.requestSchema ?? null;
+      responseSchema = r.templateRef?.responseSchema ?? null;
+    }).catch(() => {
+      requestSchema = null;
+      responseSchema = null;
+    });
+  });
+
+  function findRequest(
+    nodes: RequestTreeNode[],
+    id: string,
+  ): { method: string; name: string; path: string } | null {
     for (const node of nodes) {
       if (node.type === 'Request' && node.id === id) return { method: node.method, name: node.name, path: '' };
       if ((node.type === 'Collection' || node.type === 'Folder') && node.children) {
@@ -91,6 +111,7 @@
         <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Overrides</p>
         <OverridesPanel
           overrides={step.overrides}
+          {requestSchema}
           onUpdate={(overrides) => onUpdate({ ...step, overrides })}
         />
       </div>
@@ -99,6 +120,7 @@
         <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Extractions</p>
         <ExtractionsPanel
           extractions={step.extract}
+          {responseSchema}
           onUpdate={(extract) => onUpdate({ ...step, extract })}
         />
       </div>

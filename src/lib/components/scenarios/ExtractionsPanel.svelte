@@ -1,12 +1,17 @@
 <script lang="ts">
   import type { Extraction } from '$lib/services/tauri-commands';
+  import SchemaAutocomplete from './SchemaAutocomplete.svelte';
+  import { buildJsonPathSuggestions } from '$lib/utils/schema-paths';
 
   interface Props {
     extractions: Extraction[];
     onUpdate: (extractions: Extraction[]) => void;
+    responseSchema?: unknown;
   }
 
-  let { extractions, onUpdate }: Props = $props();
+  let { extractions, onUpdate, responseSchema = null }: Props = $props();
+
+  let suggestions = $derived(buildJsonPathSuggestions(responseSchema));
 
   function addRow() {
     onUpdate([...extractions, { variable: '', from: 'response.body', path: '' }]);
@@ -51,11 +56,13 @@
         <option value="response.body">response.body</option>
         <option value="response.headers">response.headers</option>
       </select>
-      <input
-        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+      <SchemaAutocomplete
+        {suggestions}
         value={extraction.path}
-        oninput={(e) => updateRow(i, 'path', e.currentTarget.value)}
         placeholder="$.data.id"
+        inputClass="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        onSelect={(path) => updateRow(i, 'path', path)}
+        onInput={(v) => updateRow(i, 'path', v)}
       />
       <button
         class="text-zinc-600 hover:text-red-400 transition-colors text-lg leading-none"
