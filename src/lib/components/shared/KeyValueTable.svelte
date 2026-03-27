@@ -1,4 +1,6 @@
 <script lang="ts">
+  import VariableAutocomplete from './VariableAutocomplete.svelte';
+
   interface Row {
     key: string;
     value: string;
@@ -39,13 +41,22 @@
         oninput={(e) => updateRow(i, 'key', e.currentTarget.value)}
         placeholder="Key"
       />
-      <input
-        class="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
-        type={row.isSecret ? 'password' : 'text'}
-        value={row.value}
-        oninput={(e) => updateRow(i, 'value', e.currentTarget.value)}
-        placeholder="Value"
-      />
+      {#if row.isSecret}
+        <input
+          class="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+          type="password"
+          value={row.value}
+          oninput={(e) => updateRow(i, 'value', e.currentTarget.value)}
+          placeholder="Value"
+        />
+      {:else}
+        <VariableAutocomplete
+          class="flex-1"
+          value={row.value}
+          placeholder="Value"
+          onChange={(v) => updateRow(i, 'value', v)}
+        />
+      {/if}
       {#if showSecretToggle}
         <label class="flex items-center gap-1 text-xs text-zinc-500 whitespace-nowrap cursor-pointer">
           <input

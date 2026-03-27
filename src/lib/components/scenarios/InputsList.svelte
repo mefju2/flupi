@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ScenarioInput } from '$lib/services/tauri-commands';
+  import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
 
   interface Props {
     inputs: ScenarioInput[];
@@ -48,11 +49,10 @@
         oninput={(e) => updateInput(i, 'description', e.currentTarget.value)}
         placeholder="description"
       />
-      <input
-        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+      <VariableAutocomplete
         value={input.default}
-        oninput={(e) => updateInput(i, 'default', e.currentTarget.value)}
         placeholder="default"
+        onChange={(v) => updateInput(i, 'default', v)}
       />
       <input
         type="checkbox"

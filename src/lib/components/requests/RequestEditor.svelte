@@ -11,6 +11,7 @@
   import AuthTab from './AuthTab.svelte';
   import BodyTab from './BodyTab.svelte';
   import ResponsePanel from './ResponsePanel.svelte';
+  import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
 
   const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
   const TABS = ['Params', 'Headers', 'Auth', 'Body'] as const;
@@ -69,11 +70,11 @@
         {/each}
       </select>
 
-      <input
-        class="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+      <VariableAutocomplete
+        class="flex-1"
         value={$activeRequest.path}
         placeholder="/api/endpoint"
-        oninput={(e) => updateRequest({ path: e.currentTarget.value })}
+        onChange={(v) => updateRequest({ path: v })}
       />
 
       <button

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AuthConfig } from '$lib/services/tauri-commands';
   import KeyValueTable from '$lib/components/shared/KeyValueTable.svelte';
+  import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
 
   interface Props {
     auth: AuthConfig | undefined;
@@ -51,35 +52,29 @@
   {:else if auth?.type === 'bearer'}
     <div>
       <label for="auth-bearer-token" class="text-xs text-zinc-400 block mb-1">Token</label>
-      <textarea
-        id="auth-bearer-token"
-        class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 min-h-[60px] resize-y"
+      <VariableAutocomplete
         value={auth.token}
         placeholder="Bearer token..."
-        oninput={(e) => onUpdate({ type: 'bearer', token: e.currentTarget.value })}
-      ></textarea>
+        multiline={true}
+        onChange={(v) => onUpdate({ type: 'bearer', token: v })}
+      />
     </div>
   {:else if auth?.type === 'basic'}
     <div class="space-y-2">
       <div>
         <label for="auth-basic-username" class="text-xs text-zinc-400 block mb-1">Username</label>
-        <input
-          id="auth-basic-username"
-          class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        <VariableAutocomplete
           value={auth.username}
           placeholder="username"
-          oninput={(e) => onUpdate({ type: 'basic', username: e.currentTarget.value, password: (auth as Extract<AuthConfig, {type:'basic'}>).password })}
+          onChange={(v) => onUpdate({ type: 'basic', username: v, password: (auth as Extract<AuthConfig, {type:'basic'}>).password })}
         />
       </div>
       <div>
         <label for="auth-basic-password" class="text-xs text-zinc-400 block mb-1">Password</label>
-        <input
-          id="auth-basic-password"
-          type="password"
-          class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        <VariableAutocomplete
           value={auth.password}
           placeholder="password"
-          oninput={(e) => onUpdate({ type: 'basic', username: (auth as Extract<AuthConfig, {type:'basic'}>).username, password: e.currentTarget.value })}
+          onChange={(v) => onUpdate({ type: 'basic', username: (auth as Extract<AuthConfig, {type:'basic'}>).username, password: v })}
         />
       </div>
     </div>
@@ -97,12 +92,10 @@
       </div>
       <div>
         <label for="auth-apikey-value" class="text-xs text-zinc-400 block mb-1">Value</label>
-        <input
-          id="auth-apikey-value"
-          class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        <VariableAutocomplete
           value={auth.value}
           placeholder="api key value"
-          oninput={(e) => onUpdate({ type: 'apiKey', header: (auth as Extract<AuthConfig, {type:'apiKey'}>).header, value: e.currentTarget.value })}
+          onChange={(v) => onUpdate({ type: 'apiKey', header: (auth as Extract<AuthConfig, {type:'apiKey'}>).header, value: v })}
         />
       </div>
     </div>

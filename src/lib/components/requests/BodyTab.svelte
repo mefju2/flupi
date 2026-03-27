@@ -2,6 +2,7 @@
   import type { BodyConfig } from '$lib/services/tauri-commands';
   import KeyValueTable from '$lib/components/shared/KeyValueTable.svelte';
   import JsonEditor from '$lib/components/shared/JsonEditor.svelte';
+  import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
 
   interface Props {
     body: BodyConfig | undefined;
@@ -56,11 +57,11 @@
       }}
     />
   {:else if body.type === 'raw'}
-    <textarea
-      class="w-full min-h-[120px] bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 resize-y rounded-none"
+    <VariableAutocomplete
       value={body.content}
       placeholder="Raw body content..."
-      oninput={(e) => onUpdate({ type: 'raw', content: e.currentTarget.value })}
-    ></textarea>
+      multiline={true}
+      onChange={(v) => onUpdate({ type: 'raw', content: v })}
+    />
   {/if}
 </div>
