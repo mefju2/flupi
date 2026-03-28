@@ -13,6 +13,7 @@
     argToContainerKey, buildContextMenuItems,
     type DndItem, type DndItems,
   } from '$lib/services/request-tree-dnd';
+  import { lastResponse, lastError } from '$lib/stores/execution';
   import { dndzone } from 'svelte-dnd-action';
   import TreeNode from '$lib/components/shared/TreeNode.svelte';
   import ContextMenu from '$lib/components/shared/ContextMenu.svelte';
@@ -57,6 +58,8 @@
 
   async function selectRequest(id: string) {
     if (!$project.path) return;
+    lastResponse.set(null);
+    lastError.set(null);
     activeRequestId.set(id);
     try { activeRequest.set(await getRequest($project.path, id)); }
     catch (e) { console.error('Failed to load request:', e); }

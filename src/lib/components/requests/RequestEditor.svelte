@@ -58,7 +58,7 @@
       const response = await sendRequest(path, id, env);
       lastResponse.set(response);
     } catch (e) {
-      lastError.set(e?.toString() ?? 'Request failed');
+      lastError.set(typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Request failed'));
     } finally {
       isExecuting.set(false);
     }

@@ -28,7 +28,7 @@
   {#if $isExecuting}
     <div class="p-6 text-sm text-app-text-3">Sending...</div>
   {:else if !$lastResponse && $lastError}
-    <div class="p-6 text-sm text-red-400">{$lastError}</div>
+    <div class="p-6 text-sm text-red-400"><span class="font-mono">Error: {$lastError}</span></div>
   {:else if !$lastResponse}
     <div class="p-6 text-sm text-app-text-4">Ready to send — press Ctrl+Enter or click Send</div>
   {:else}
