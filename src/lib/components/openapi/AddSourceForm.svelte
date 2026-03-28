@@ -68,57 +68,57 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 flex flex-col gap-4">
+<div class="bg-app-panel border border-app-border-2 rounded-lg p-4 flex flex-col gap-4">
   <div class="flex items-center justify-between">
-    <span class="text-sm font-semibold text-zinc-100">Add OpenAPI Source</span>
-    <button class="text-zinc-500 hover:text-zinc-300 text-xs" onclick={onClose}>✕</button>
+    <span class="text-sm font-semibold text-app-text">Add OpenAPI Source</span>
+    <button class="text-app-text-3 hover:text-app-text-2 text-xs" onclick={onClose}>✕</button>
   </div>
 
   <!-- Tab selector -->
-  <div class="flex gap-1 bg-zinc-800 rounded p-0.5 w-fit">
+  <div class="flex gap-1 bg-app-card rounded p-0.5 w-fit">
     <button
-      class="px-3 py-1 text-xs rounded transition-colors {tab === 'url' ? 'bg-cyan-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}"
+      class="px-3 py-1 text-xs rounded transition-colors {tab === 'url' ? 'bg-cyan-600 text-white' : 'bg-app-card text-app-text-3 hover:bg-app-hover'}"
       onclick={() => (tab = 'url')}
     >URL</button>
     <button
-      class="px-3 py-1 text-xs rounded transition-colors {tab === 'file' ? 'bg-cyan-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}"
+      class="px-3 py-1 text-xs rounded transition-colors {tab === 'file' ? 'bg-cyan-600 text-white' : 'bg-app-card text-app-text-3 hover:bg-app-hover'}"
       onclick={() => (tab = 'file')}
     >File</button>
   </div>
 
   <!-- Name field -->
   <div class="flex flex-col gap-1">
-    <label class="text-xs text-zinc-400">Name</label>
+    <label class="text-xs text-app-text-3">Name</label>
     <input
-      class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-cyan-600"
+      class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text focus:outline-none focus:border-cyan-600"
       bind:value={name}
       placeholder="My API"
     />
-    <p class="text-xs text-zinc-600 font-mono">ID: {generatedId}</p>
+    <p class="text-xs text-app-text-4 font-mono">ID: {generatedId}</p>
   </div>
 
   <!-- URL or file input -->
   {#if tab === 'url'}
     <div class="flex flex-col gap-1">
-      <label class="text-xs text-zinc-400">URL</label>
+      <label class="text-xs text-app-text-3">URL</label>
       <input
-        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm font-mono text-zinc-100 focus:outline-none focus:border-cyan-600"
+        class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
         bind:value={url}
         placeholder="https://api.example.com/openapi.json"
       />
     </div>
   {:else}
     <div class="flex flex-col gap-1">
-      <label class="text-xs text-zinc-400">File</label>
+      <label class="text-xs text-app-text-3">File</label>
       <div class="flex gap-2">
         <input
-          class="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm font-mono text-zinc-100 focus:outline-none focus:border-cyan-600"
+          class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
           bind:value={filePath}
           placeholder="/path/to/openapi.yaml"
           readonly
         />
         <button
-          class="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 rounded transition-colors"
+          class="px-3 py-1.5 text-xs bg-app-card hover:bg-app-hover border border-app-border-2 text-app-text-2 rounded transition-colors"
           onclick={handleBrowse}
         >Browse…</button>
       </div>
@@ -131,7 +131,7 @@
 
   <div class="flex gap-2 justify-end">
     <button
-      class="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded transition-colors"
+      class="px-3 py-1.5 text-xs bg-app-card hover:bg-app-hover text-app-text-2 rounded transition-colors"
       onclick={onClose}
     >Cancel</button>
     <button

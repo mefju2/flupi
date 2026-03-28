@@ -10,7 +10,7 @@
 </script>
 
 <textarea
-  class="w-full min-h-[120px] bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 resize-y rounded-none"
+  class="w-full min-h-[120px] bg-app-panel border border-app-border-2 px-3 py-2 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2 resize-y rounded-none"
   {value}
   {placeholder}
   {readonly}

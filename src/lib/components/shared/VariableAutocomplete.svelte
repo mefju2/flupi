@@ -105,7 +105,7 @@
     setTimeout(() => { showDropdown = false; }, 150);
   }
 
-  const baseClass = 'bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500';
+  const baseClass = 'bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2';
 </script>
 
 <div class="relative {className}">
@@ -132,15 +132,15 @@
   {/if}
 
   {#if showDropdown && filtered.length > 0}
-    <ul class="absolute z-50 top-full left-0 mt-0.5 w-full max-h-48 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded shadow-lg">
+    <ul class="absolute z-50 top-full left-0 mt-0.5 w-full max-h-48 overflow-y-auto bg-app-panel border border-app-border-2 rounded shadow-lg">
       {#each filtered as item, idx}
         <li>
           <button
-            class="w-full text-left px-3 py-1.5 flex items-center gap-2 {idx === activeIndex ? 'bg-zinc-800' : 'hover:bg-zinc-800'}"
+            class="w-full text-left px-3 py-1.5 flex items-center gap-2 {idx === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
             onmousedown={(e) => { e.preventDefault(); selectVar(item.name); }}
           >
-            <span class="font-mono text-sm {idx === activeIndex ? 'text-cyan-400' : 'text-zinc-200'}">{item.name}</span>
-            <span class="text-zinc-500 text-xs truncate">{item.masked ? '••••••' : item.value}</span>
+            <span class="font-mono text-sm {idx === activeIndex ? 'text-cyan-400' : 'text-app-text'}">{item.name}</span>
+            <span class="text-app-text-3 text-xs truncate">{item.masked ? '••••••' : item.value}</span>
           </button>
         </li>
       {/each}

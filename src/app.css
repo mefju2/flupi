@@ -5,6 +5,18 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+	/* App surface tokens — light mode */
+	--app-bg:       oklch(1 0 0);                    /* white      ≈ page bg      */
+	--app-panel:    oklch(0.985 0.002 247.839);       /* gray-50    ≈ sidebar/nav  */
+	--app-card:     oklch(0.967 0.003 264.542);       /* gray-100   ≈ cards/inputs */
+	--app-hover:    oklch(0.928 0.006 264.531);       /* gray-200   ≈ hover bg     */
+	--app-text:     oklch(0.13 0.028 261.692);        /* gray-950   ≈ primary text */
+	--app-text-2:   oklch(0.373 0.034 259.733);       /* gray-700   ≈ secondary    */
+	--app-text-3:   oklch(0.551 0.023 264.364);       /* gray-500   ≈ muted        */
+	--app-text-4:   oklch(0.707 0.022 261.325);       /* gray-400   ≈ ghost        */
+	--app-border:   oklch(0.928 0.006 264.531);       /* gray-200   ≈ subtle border*/
+	--app-border-2: oklch(0.872 0.01 258.338);        /* gray-300   ≈ default border*/
+
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
 	--card: oklch(1 0 0);
@@ -40,6 +52,18 @@
 }
 
 .dark {
+	/* App surface tokens — dark mode */
+	--app-bg:       oklch(0.141 0 286);              /* zinc-950   ≈ page bg      */
+	--app-panel:    oklch(0.21 0 286);               /* zinc-900   ≈ sidebar/nav  */
+	--app-card:     oklch(0.274 0 286);              /* zinc-800   ≈ cards/inputs */
+	--app-hover:    oklch(0.37 0 286);               /* zinc-700   ≈ hover bg     */
+	--app-text:     oklch(0.967 0 286);              /* zinc-100   ≈ primary text */
+	--app-text-2:   oklch(0.871 0 286);              /* zinc-300   ≈ secondary    */
+	--app-text-3:   oklch(0.552 0 286);              /* zinc-500   ≈ muted        */
+	--app-text-4:   oklch(0.442 0 286);              /* zinc-600   ≈ ghost        */
+	--app-border:   oklch(0.274 0 286);              /* zinc-800   ≈ subtle border*/
+	--app-border-2: oklch(0.37 0 286);               /* zinc-700   ≈ default border*/
+
 	--background: oklch(0.145 0 0);
 	--foreground: oklch(0.985 0 0);
 	--card: oklch(0.205 0 0);
@@ -75,6 +99,17 @@
 
 @theme inline {
 	--font-sans: 'Inter Variable', sans-serif;
+	/* App surface utilities */
+	--color-app-bg:       var(--app-bg);
+	--color-app-panel:    var(--app-panel);
+	--color-app-card:     var(--app-card);
+	--color-app-hover:    var(--app-hover);
+	--color-app-text:     var(--app-text);
+	--color-app-text-2:   var(--app-text-2);
+	--color-app-text-3:   var(--app-text-3);
+	--color-app-text-4:   var(--app-text-4);
+	--color-app-border:   var(--app-border);
+	--color-app-border-2: var(--app-border-2);
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

@@ -100,20 +100,20 @@
 {#if $searchOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-zinc-950/60 backdrop-blur-sm"
+    class="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-app-bg/60 backdrop-blur-sm"
     onclick={handleBackdropClick}
   >
-    <div class="w-full max-w-[560px] mx-4 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl">
-      <div class="p-3 border-b border-zinc-800">
+    <div class="w-full max-w-[560px] mx-4 bg-app-panel border border-app-border-2 rounded-lg shadow-xl">
+      <div class="p-3 border-b border-app-border">
         <input
           bind:this={searchEl}
-          class="w-full bg-zinc-800 rounded px-3 py-2.5 text-base text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+          class="w-full bg-app-card rounded px-3 py-2.5 text-base text-app-text placeholder:text-app-text-3 focus:outline-none"
           placeholder="Search requests…"
           bind:value={search}
           oninput={() => (activeIndex = 0)}
           onkeydown={handleKeydown}
         />
-        <div class="flex gap-3 mt-2 px-1 text-xs text-zinc-600">
+        <div class="flex gap-3 mt-2 px-1 text-xs text-app-text-4">
           <span>↑↓ Navigate</span>
           <span>↵ Select</span>
           <span>Esc Close</span>
@@ -122,22 +122,22 @@
 
       <ul class="max-h-80 overflow-y-auto py-1">
         {#if filtered.length === 0}
-          <li class="px-4 py-3 text-sm text-zinc-500 italic">No requests found</li>
+          <li class="px-4 py-3 text-sm text-app-text-3 italic">No requests found</li>
         {:else}
           {#each filtered as req, idx}
             <li>
               <button
                 type="button"
                 class="w-full text-left px-4 py-2 flex items-center gap-3 {idx === activeIndex
-                  ? 'bg-zinc-800'
-                  : 'hover:bg-zinc-800'}"
+                  ? 'bg-app-card'
+                  : 'hover:bg-app-card'}"
                 onclick={() => select(req.id)}
                 onmouseenter={() => (activeIndex = idx)}
               >
                 <span class="font-mono text-xs {getMethodColor(req.method)} w-16 shrink-0">{req.method}</span>
-                <span class="text-sm text-zinc-100 truncate flex-1">{req.name}</span>
+                <span class="text-sm text-app-text truncate flex-1">{req.name}</span>
                 {#if req.collectionPath}
-                  <span class="text-xs text-zinc-500 shrink-0 truncate max-w-[160px]"
+                  <span class="text-xs text-app-text-3 shrink-0 truncate max-w-[160px]"
                     >{req.collectionPath}</span
                   >
                 {/if}

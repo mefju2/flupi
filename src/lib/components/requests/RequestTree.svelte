@@ -106,8 +106,8 @@
   );
 </script>
 
-<div class="flex flex-col h-full bg-zinc-900">
-  <div class="px-3 py-2 text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+<div class="flex flex-col h-full bg-app-panel">
+  <div class="px-3 py-2 text-xs text-app-text-3 uppercase tracking-wider border-b border-app-border">
     Requests
   </div>
 
@@ -116,7 +116,7 @@
       {@const key = collection.folder_name}
       {@const items = dndItems[key] ?? []}
       <TreeNode node={{ ...collection, children: [] }} activeRequestId={$activeRequestId} onSelect={selectRequest} onContextMenu={openContextMenu} />
-      <div class="ml-3 border-l border-zinc-800 pl-1 min-h-1"
+      <div class="ml-3 border-l border-app-border pl-1 min-h-1"
         use:dndzone={{ items, type: 'request', flipDurationMs: 150 }}
         onconsider={(e: CustomEvent<{ items: DndItem[] }>) => handleConsider(e, key)}
         onfinalize={(e: CustomEvent<{ items: DndItem[]; info: { trigger: string; id: string } }>) => handleFinalize(e, key)}
@@ -124,7 +124,7 @@
         {#each items as item (item.id)}
           <TreeNode node={item.node} activeRequestId={$activeRequestId} onSelect={selectRequest} onContextMenu={openContextMenu} showDragHandle={true} />
         {/each}
-        {#if items.length === 0}<p class="px-2 py-1 text-xs text-zinc-600 italic">Empty</p>{/if}
+        {#if items.length === 0}<p class="px-2 py-1 text-xs text-app-text-4 italic">Empty</p>{/if}
       </div>
     {/each}
 
@@ -142,27 +142,27 @@
     {/if}
 
     {#if $requestTree.length === 0}
-      <p class="px-3 py-4 text-xs text-zinc-600">No requests yet. Create a request or import from OpenAPI.</p>
+      <p class="px-3 py-4 text-xs text-app-text-4">No requests yet. Create a request or import from OpenAPI.</p>
     {/if}
   </div>
 
   {#if toast}
-    <div class="px-3 py-2 text-xs text-cyan-400 bg-zinc-800 border-t border-zinc-700" transition:fade={{ duration: 150 }}>{toast}</div>
+    <div class="px-3 py-2 text-xs text-cyan-400 bg-app-card border-t border-app-border-2" transition:fade={{ duration: 150 }}>{toast}</div>
   {/if}
 
   {#if pendingInput}
-    <div class="px-3 py-2 border-t border-zinc-800">
-      <p class="text-xs text-zinc-500 mb-1">{pendingInput.type.startsWith('new') ? 'Create:' : 'Rename to:'}</p>
-      <input class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono focus:outline-none focus:border-cyan-600"
+    <div class="px-3 py-2 border-t border-app-border">
+      <p class="text-xs text-app-text-3 mb-1">{pendingInput.type.startsWith('new') ? 'Create:' : 'Rename to:'}</p>
+      <input class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono focus:outline-none focus:border-cyan-600"
         bind:value={pendingInput.value} onkeydown={handlePendingInputKey} use:focusOnMount />
       <div class="flex gap-2 mt-1">
         <button class="text-xs text-cyan-500" onclick={confirmPendingInput}>OK</button>
-        <button class="text-xs text-zinc-500" onclick={() => pendingInput = null}>Cancel</button>
+        <button class="text-xs text-app-text-3" onclick={() => pendingInput = null}>Cancel</button>
       </div>
     </div>
   {/if}
 
-  <div class="border-t border-zinc-800 px-3 py-2">
+  <div class="border-t border-app-border px-3 py-2">
     <button class="text-xs text-cyan-500 hover:text-cyan-400 transition-colors"
       onclick={() => { pendingInput = { type: 'new-collection', id: '', value: 'New Collection' }; }}>+ New Collection</button>
   </div>

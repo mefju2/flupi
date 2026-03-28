@@ -64,12 +64,12 @@
   });
 </script>
 
-<div class="flex flex-col h-full bg-zinc-950">
-  <div class="flex items-center gap-3 px-4 py-2 border-b border-zinc-800 shrink-0">
-    <button class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors" onclick={onBack}>
+<div class="flex flex-col h-full bg-app-bg">
+  <div class="flex items-center gap-3 px-4 py-2 border-b border-app-border shrink-0">
+    <button class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors" onclick={onBack}>
       ← Back
     </button>
-    <span class="text-sm text-zinc-300 font-medium">{scenario.name}</span>
+    <span class="text-sm text-app-text-2 font-medium">{scenario.name}</span>
     {#if runComplete}
       <span class="text-xs text-green-400 ml-auto">Complete</span>
     {:else}
@@ -86,7 +86,7 @@
           <!-- Step indicator -->
           <div class="flex flex-col items-center shrink-0 pt-2">
             <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium
-              {status.state === 'waiting' ? 'bg-zinc-700 text-zinc-400'
+              {status.state === 'waiting' ? 'bg-app-hover text-app-text-3'
                 : status.state === 'running' ? 'bg-cyan-900 text-cyan-300'
                 : status.state === 'success' ? 'bg-green-900 text-green-300'
                 : 'bg-red-900 text-red-300'}">
@@ -101,7 +101,7 @@
               {/if}
             </div>
             {#if i < scenario.steps.length - 1}
-              <div class="w-px flex-1 mt-1 bg-zinc-800 min-h-4"></div>
+              <div class="w-px flex-1 mt-1 bg-app-border min-h-4"></div>
             {/if}
           </div>
 
@@ -110,8 +110,8 @@
             {#if status.result}
               <StepResultCard {step} result={status.result} />
             {:else}
-              <div class="border border-zinc-800 rounded bg-zinc-900 px-3 py-2 {status.state === 'running' ? 'ring-1 ring-cyan-500/30' : ''}">
-                <span class="text-sm {status.state === 'running' ? 'text-cyan-300' : 'text-zinc-500'}">{step.name}</span>
+              <div class="border border-app-border rounded bg-app-panel px-3 py-2 {status.state === 'running' ? 'ring-1 ring-cyan-500/30' : ''}">
+                <span class="text-sm {status.state === 'running' ? 'text-cyan-300' : 'text-app-text-3'}">{step.name}</span>
               </div>
             {/if}
           </div>
@@ -120,8 +120,8 @@
     </div>
 
     <!-- Variable state panel -->
-    <div class="w-56 border-l border-zinc-800 px-3 py-4 overflow-y-auto shrink-0">
-      <p class="text-xs text-zinc-500 uppercase tracking-wider mb-3">Variables</p>
+    <div class="w-56 border-l border-app-border px-3 py-4 overflow-y-auto shrink-0">
+      <p class="text-xs text-app-text-3 uppercase tracking-wider mb-3">Variables</p>
       <VariableStatePanel variables={currentVariables} />
     </div>
   </div>

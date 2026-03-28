@@ -90,29 +90,29 @@
 <div class="relative">
   <button
     type="button"
-    class="w-full text-left bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm focus:outline-none focus:border-zinc-500 flex items-center gap-2 min-w-0"
+    class="w-full text-left bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm focus:outline-none focus:border-app-border-2 flex items-center gap-2 min-w-0"
     onclick={openPicker}
   >
     {#if selected}
-      <span class="font-mono text-xs {METHOD_COLORS[selected.method] ?? 'text-zinc-400'} shrink-0">{selected.method}</span>
-      <span class="text-zinc-100 truncate">{selected.name}</span>
+      <span class="font-mono text-xs {METHOD_COLORS[selected.method] ?? 'text-app-text-3'} shrink-0">{selected.method}</span>
+      <span class="text-app-text truncate">{selected.name}</span>
       {#if selected.collectionPath}
-        <span class="text-zinc-600 text-xs shrink-0 truncate max-w-[100px]">{selected.collectionPath}</span>
+        <span class="text-app-text-4 text-xs shrink-0 truncate max-w-[100px]">{selected.collectionPath}</span>
       {/if}
     {:else if value}
-      <span class="font-mono text-xs text-zinc-500 truncate">{value}</span>
+      <span class="font-mono text-xs text-app-text-3 truncate">{value}</span>
     {:else}
-      <span class="text-zinc-500">Select a request…</span>
+      <span class="text-app-text-3">Select a request…</span>
     {/if}
-    <span class="ml-auto text-zinc-600 text-xs shrink-0">▾</span>
+    <span class="ml-auto text-app-text-4 text-xs shrink-0">▾</span>
   </button>
 
   {#if open}
-    <div class="absolute top-full left-0 mt-0.5 z-50 w-full min-w-[280px] bg-zinc-900 border border-zinc-700 rounded shadow-lg">
-      <div class="p-1.5 border-b border-zinc-800">
+    <div class="absolute top-full left-0 mt-0.5 z-50 w-full min-w-[280px] bg-app-panel border border-app-border-2 rounded shadow-lg">
+      <div class="p-1.5 border-b border-app-border">
         <input
           bind:this={searchEl}
-          class="w-full bg-zinc-800 rounded px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none"
+          class="w-full bg-app-card rounded px-2 py-1 text-sm text-app-text placeholder:text-app-text-4 focus:outline-none"
           placeholder="Search requests…"
           bind:value={search}
           oninput={() => (activeIndex = 0)}
@@ -122,19 +122,19 @@
       </div>
       <ul class="max-h-52 overflow-y-auto py-1">
         {#if filtered.length === 0}
-          <li class="px-3 py-2 text-sm text-zinc-500 italic">No requests found</li>
+          <li class="px-3 py-2 text-sm text-app-text-3 italic">No requests found</li>
         {:else}
           {#each filtered as req, idx}
             <li>
               <button
                 type="button"
-                class="w-full text-left px-3 py-1.5 flex items-center gap-2 {idx === activeIndex ? 'bg-zinc-800' : 'hover:bg-zinc-800'}"
+                class="w-full text-left px-3 py-1.5 flex items-center gap-2 {idx === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
                 onmousedown={() => select(req.id)}
               >
-                <span class="font-mono text-xs {METHOD_COLORS[req.method] ?? 'text-zinc-400'} w-14 shrink-0">{req.method}</span>
-                <span class="text-sm text-zinc-100 truncate flex-1">{req.name}</span>
+                <span class="font-mono text-xs {METHOD_COLORS[req.method] ?? 'text-app-text-3'} w-14 shrink-0">{req.method}</span>
+                <span class="text-sm text-app-text truncate flex-1">{req.name}</span>
                 {#if req.collectionPath}
-                  <span class="text-xs text-zinc-600 shrink-0 truncate max-w-[120px]">{req.collectionPath}</span>
+                  <span class="text-xs text-app-text-4 shrink-0 truncate max-w-[120px]">{req.collectionPath}</span>
                 {/if}
               </button>
             </li>

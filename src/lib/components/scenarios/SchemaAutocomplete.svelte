@@ -79,7 +79,7 @@
 
   {#if open && filtered.length > 0}
     <ul
-      class="absolute left-0 top-full mt-0.5 z-50 bg-zinc-900 border border-zinc-700 rounded shadow-lg max-h-52 overflow-y-auto min-w-full"
+      class="absolute left-0 top-full mt-0.5 z-50 bg-app-panel border border-app-border-2 rounded shadow-lg max-h-52 overflow-y-auto min-w-full"
       role="listbox"
     >
       {#each filtered as suggestion, idx}
@@ -87,12 +87,12 @@
           role="option"
           aria-selected={idx === activeIndex}
           class="flex items-baseline gap-1 px-2 py-1 cursor-pointer text-sm font-mono
-            {idx === activeIndex ? 'bg-zinc-800 text-cyan-400' : 'text-zinc-300 hover:bg-zinc-800'}"
+            {idx === activeIndex ? 'bg-app-card text-cyan-400' : 'text-app-text-2 hover:bg-app-card'}"
           onmousedown={() => { onSelect(suggestion.path); open = false; }}
         >
           <span>{suggestion.path}</span>
           {#if suggestion.type}
-            <span class="text-xs text-zinc-500 ml-1">{suggestion.type}</span>
+            <span class="text-xs text-app-text-3 ml-1">{suggestion.type}</span>
           {/if}
         </li>
       {/each}

@@ -85,8 +85,8 @@
   );
 </script>
 
-<div class="flex flex-col h-full bg-zinc-900">
-  <div class="px-3 py-2 text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+<div class="flex flex-col h-full bg-app-panel">
+  <div class="px-3 py-2 text-xs text-app-text-3 uppercase tracking-wider border-b border-app-border">
     Scenarios
   </div>
 
@@ -94,35 +94,35 @@
     {#each groups as group (group.name)}
       <div>
         <div
-          class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100 rounded"
+          class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none text-app-text-2 hover:bg-app-card/50 hover:text-app-text rounded"
           role="button" tabindex="0"
           onclick={() => toggleGroup(group.name)}
           onkeydown={(e) => e.key === 'Enter' && toggleGroup(group.name)}
           oncontextmenu={(e) => { e.preventDefault(); openContextMenu(e, group); }}
         >
-          <span class="text-zinc-500 text-xs">{expandedGroups.has(group.name) ? '▾' : '▸'}</span>
-          <span class="text-zinc-400 text-xs">📁</span>
+          <span class="text-app-text-3 text-xs">{expandedGroups.has(group.name) ? '▾' : '▸'}</span>
+          <span class="text-app-text-3 text-xs">📁</span>
           <span class="truncate">{group.name}</span>
         </div>
         {#if expandedGroups.has(group.name)}
-          <div class="ml-3 border-l border-zinc-800 pl-1">
+          <div class="ml-3 border-l border-app-border pl-1">
             {#each group.children as child}
               {#if child.type === 'Scenario'}
                 <div
                   class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none rounded
-                    {$activeScenarioId === child.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100'}"
+                    {$activeScenarioId === child.id ? 'bg-app-card text-app-text' : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
                   role="button" tabindex="0"
                   onclick={() => selectScenario(child.id)}
                   onkeydown={(e) => e.key === 'Enter' && selectScenario(child.id)}
                   oncontextmenu={(e) => { e.preventDefault(); openContextMenu(e, child); }}
                 >
-                  <span class="text-zinc-500 text-xs">⚡</span>
+                  <span class="text-app-text-3 text-xs">⚡</span>
                   <span class="truncate">{child.name}</span>
                 </div>
               {/if}
             {/each}
             {#if group.children.length === 0}
-              <p class="px-2 py-1 text-xs text-zinc-600 italic">Empty</p>
+              <p class="px-2 py-1 text-xs text-app-text-4 italic">Empty</p>
             {/if}
           </div>
         {/if}
@@ -132,41 +132,41 @@
     {#each rootScenarios as scenario (scenario.id)}
       <div
         class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none rounded
-          {$activeScenarioId === scenario.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100'}"
+          {$activeScenarioId === scenario.id ? 'bg-app-card text-app-text' : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
         role="button" tabindex="0"
         onclick={() => selectScenario(scenario.id)}
         onkeydown={(e) => e.key === 'Enter' && selectScenario(scenario.id)}
         oncontextmenu={(e) => { e.preventDefault(); openContextMenu(e, scenario); }}
       >
-        <span class="text-zinc-500 text-xs">⚡</span>
+        <span class="text-app-text-3 text-xs">⚡</span>
         <span class="truncate">{scenario.name}</span>
       </div>
     {/each}
 
     {#if $scenarioTree.length === 0}
-      <p class="px-3 py-4 text-xs text-zinc-600">No scenarios yet. Create one to chain requests together.</p>
+      <p class="px-3 py-4 text-xs text-app-text-4">No scenarios yet. Create one to chain requests together.</p>
     {/if}
   </div>
 
   {#if toast}
-    <div class="px-3 py-2 text-xs text-cyan-400 bg-zinc-800 border-t border-zinc-700 animate-pulse">{toast}</div>
+    <div class="px-3 py-2 text-xs text-cyan-400 bg-app-card border-t border-app-border-2 animate-pulse">{toast}</div>
   {/if}
 
   {#if pendingInput}
-    <div class="px-3 py-2 border-t border-zinc-800">
-      <p class="text-xs text-zinc-500 mb-1">{pendingInput.type === 'new' ? 'Create:' : 'Rename to:'}</p>
+    <div class="px-3 py-2 border-t border-app-border">
+      <p class="text-xs text-app-text-3 mb-1">{pendingInput.type === 'new' ? 'Create:' : 'Rename to:'}</p>
       <input
-        class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono focus:outline-none focus:border-cyan-600"
+        class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono focus:outline-none focus:border-cyan-600"
         bind:value={pendingInput.value} onkeydown={handleKey} use:focusOnMount
       />
       <div class="flex gap-2 mt-1">
         <button class="text-xs text-cyan-500" onclick={confirmPendingInput}>OK</button>
-        <button class="text-xs text-zinc-500" onclick={() => pendingInput = null}>Cancel</button>
+        <button class="text-xs text-app-text-3" onclick={() => pendingInput = null}>Cancel</button>
       </div>
     </div>
   {/if}
 
-  <div class="border-t border-zinc-800 px-3 py-2">
+  <div class="border-t border-app-border px-3 py-2">
     <button
       class="text-xs text-cyan-500 hover:text-cyan-400 transition-colors"
       onclick={() => { pendingInput = { type: 'new', id: '', value: 'New Scenario' }; }}

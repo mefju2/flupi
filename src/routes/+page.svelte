@@ -69,10 +69,10 @@
   }
 </script>
 
-<div class="flex flex-col items-center justify-center h-screen bg-zinc-950 text-zinc-100">
+<div class="flex flex-col items-center justify-center h-screen bg-app-bg text-app-text">
   <div class="mb-8 text-center">
     <h1 class="text-2xl font-semibold tracking-tight mb-1">Flupi</h1>
-    <p class="text-sm text-zinc-500">API test scenarios, powered by Git</p>
+    <p class="text-sm text-app-text-3">API test scenarios, powered by Git</p>
   </div>
 
   {#if error}
@@ -83,13 +83,13 @@
 
   <div class="flex gap-3 mb-10">
     <button
-      class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium text-sm rounded transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+      class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium text-sm rounded transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-app-bg"
       onclick={handleNewProject}
     >
       New Project
     </button>
     <button
-      class="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-100 font-medium text-sm rounded transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+      class="px-4 py-2 bg-app-hover hover:bg-app-hover text-app-text font-medium text-sm rounded transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-app-bg"
       onclick={handleOpenFolder}
     >
       Open Folder
@@ -97,11 +97,11 @@
   </div>
 
   {#if !loaded}
-    <p class="text-xs text-zinc-500">Loading…</p>
+    <p class="text-xs text-app-text-3">Loading…</p>
   {:else if recentProjects.length > 0}
     <RecentProjectList projects={recentProjects} onSelect={handleSelectRecent} />
   {:else}
-    <p class="text-zinc-600 text-sm">No recent projects yet</p>
-    <p class="text-xs text-zinc-500 mt-1">Create a project or open an existing folder to get started</p>
+    <p class="text-app-text-4 text-sm">No recent projects yet</p>
+    <p class="text-xs text-app-text-3 mt-1">Create a project or open an existing folder to get started</p>
   {/if}
 </div>

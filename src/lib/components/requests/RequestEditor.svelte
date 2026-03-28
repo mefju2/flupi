@@ -64,16 +64,16 @@
   }
 </script>
 
-<div class="flex flex-col h-full bg-zinc-950">
+<div class="flex flex-col h-full bg-app-bg">
   {#if !$activeRequest}
-    <div class="flex-1 flex items-center justify-center text-zinc-600 text-sm">
+    <div class="flex-1 flex items-center justify-center text-app-text-4 text-sm">
       Select a request to edit.
     </div>
   {:else}
     <!-- URL Bar -->
-    <div class="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
+    <div class="flex items-center gap-2 px-4 py-3 border-b border-app-border">
       <select
-        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm font-semibold {getMethodColor($activeRequest.method)} focus:outline-none focus:border-zinc-500 shrink-0"
+        class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-semibold {getMethodColor($activeRequest.method)} focus:outline-none focus:border-app-hover shrink-0"
         value={$activeRequest.method}
         onchange={(e) => updateRequest({ method: e.currentTarget.value })}
       >
@@ -90,7 +90,7 @@
       />
 
       <button
-        class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm rounded transition-colors shrink-0"
+        class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-app-hover disabled:text-app-text-3 disabled:cursor-not-allowed text-white text-sm rounded transition-colors shrink-0"
         onclick={handleSend}
         disabled={$isExecuting}
         title="Send (Ctrl+Enter)"
@@ -98,10 +98,10 @@
     </div>
 
     <!-- Tab Bar -->
-    <div class="flex border-b border-zinc-800 px-4">
+    <div class="flex border-b border-app-border px-4">
       {#each TABS as tab}
         <button
-          class="text-sm px-3 py-2 transition-all duration-150 border-b-2 -mb-px {activeTab === tab ? 'text-cyan-300 border-cyan-500' : 'text-zinc-500 border-transparent hover:text-zinc-300'}"
+          class="text-sm px-3 py-2 transition-all duration-150 border-b-2 -mb-px {activeTab === tab ? 'text-cyan-300 border-cyan-500' : 'text-app-text-3 border-transparent hover:text-app-text-2'}"
           onclick={() => (activeTab = tab)}
         >{tab}</button>
       {/each}

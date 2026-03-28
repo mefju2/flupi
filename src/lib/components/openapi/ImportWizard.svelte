@@ -44,7 +44,7 @@
     if (m === 'PUT') return 'bg-yellow-900 text-yellow-300';
     if (m === 'DELETE') return 'bg-red-900 text-red-300';
     if (m === 'PATCH') return 'bg-orange-900 text-orange-300';
-    return 'bg-zinc-800 text-zinc-400';
+    return 'bg-app-card text-app-text-3';
   }
 
   async function goToStep2() {
@@ -100,18 +100,18 @@
 
 <!-- Modal -->
 <div class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-  <div class="pointer-events-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+  <div class="pointer-events-auto bg-app-panel border border-app-border-2 rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-      <span class="text-sm font-semibold text-zinc-100">Import from OpenAPI</span>
-      <button class="text-zinc-500 hover:text-zinc-300 text-xs" onclick={onClose}>✕</button>
+    <div class="flex items-center justify-between px-4 py-3 border-b border-app-border">
+      <span class="text-sm font-semibold text-app-text">Import from OpenAPI</span>
+      <button class="text-app-text-3 hover:text-app-text-2 text-xs" onclick={onClose}>✕</button>
     </div>
 
     <!-- Step indicator -->
-    <div class="flex items-center gap-2 px-6 py-3 border-b border-zinc-800 text-xs">
+    <div class="flex items-center gap-2 px-6 py-3 border-b border-app-border text-xs">
       {#each ['Select Source', 'Choose Operations', 'Collection Folder'] as label, i}
-        <span class="{step === i + 1 ? 'text-cyan-400 font-medium' : 'text-zinc-600'}">{label}</span>
-        {#if i < 2}<span class="text-zinc-700">→</span>{/if}
+        <span class="{step === i + 1 ? 'text-cyan-400 font-medium' : 'text-app-text-4'}">{label}</span>
+        {#if i < 2}<span class="text-app-text-4">→</span>{/if}
       {/each}
     </div>
 
@@ -119,14 +119,14 @@
       {#if importedCount !== null}
         <div class="text-center py-8">
           <p class="text-2xl text-cyan-400 font-mono">{importedCount}</p>
-          <p class="text-sm text-zinc-400 mt-1">requests imported successfully</p>
+          <p class="text-sm text-app-text-3 mt-1">requests imported successfully</p>
           <button class="mt-4 px-4 py-2 text-sm bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors" onclick={onClose}>Done</button>
         </div>
       {:else if step === 1}
         <!-- Step 1: Select source -->
         <div class="flex flex-col gap-2">
-          <label class="text-xs text-zinc-400">Select a source</label>
-          <select class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-cyan-600" bind:value={selectedSourceId}>
+          <label class="text-xs text-app-text-3">Select a source</label>
+          <select class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text focus:outline-none focus:border-cyan-600" bind:value={selectedSourceId}>
             <option value="">-- Choose a source --</option>
             {#each $openApiSources as src}
               <option value={src.id}>{src.name}</option>
@@ -143,30 +143,30 @@
       {:else if step === 2}
         <!-- Step 2: Select operations -->
         <div class="flex items-center justify-between">
-          <span class="text-xs text-zinc-400">{selectedIds.size} selected</span>
-          <button class="text-xs text-zinc-500 hover:text-zinc-300" onclick={() => (step = 1)}>← Back</button>
+          <span class="text-xs text-app-text-3">{selectedIds.size} selected</span>
+          <button class="text-xs text-app-text-3 hover:text-app-text-2" onclick={() => (step = 1)}>← Back</button>
         </div>
         {#each [...groupedOps().entries()] as [tag, ops]}
           <div class="flex flex-col gap-1">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-zinc-300 uppercase tracking-wide">{tag}</span>
+              <span class="text-xs font-semibold text-app-text-2 uppercase tracking-wide">{tag}</span>
               <button class="text-xs text-cyan-500 hover:text-cyan-400" onclick={() => selectAllInTag(tag)}>All</button>
-              <button class="text-xs text-zinc-500 hover:text-zinc-400" onclick={() => deselectAllInTag(tag)}>None</button>
+              <button class="text-xs text-app-text-3 hover:text-app-text-3" onclick={() => deselectAllInTag(tag)}>None</button>
             </div>
             {#each ops as op}
-              <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-800 cursor-pointer">
+              <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-app-card cursor-pointer">
                 <input type="checkbox" class="accent-cyan-500" checked={selectedIds.has(op.operationId)} onchange={() => toggleOp(op.operationId)} />
                 <span class="font-mono text-xs px-1.5 py-0.5 rounded {methodClass(op.method)}">{op.method}</span>
-                <span class="font-mono text-xs text-zinc-300 truncate">{op.path}</span>
+                <span class="font-mono text-xs text-app-text-2 truncate">{op.path}</span>
                 {#if op.summary}
-                  <span class="text-xs text-zinc-500 truncate">{op.summary}</span>
+                  <span class="text-xs text-app-text-3 truncate">{op.summary}</span>
                 {/if}
               </label>
             {/each}
           </div>
         {/each}
         {#if operations.length === 0}
-          <p class="text-sm text-zinc-600">No operations found.</p>
+          <p class="text-sm text-app-text-4">No operations found.</p>
         {/if}
         <button
           class="self-end px-3 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors disabled:opacity-50"
@@ -177,15 +177,15 @@
       {:else if step === 3}
         <!-- Step 3: Collection folder -->
         <div class="flex flex-col gap-2">
-          <button class="self-start text-xs text-zinc-500 hover:text-zinc-300" onclick={() => (step = 2)}>← Back</button>
-          <label class="text-xs text-zinc-400">Collection folder name</label>
+          <button class="self-start text-xs text-app-text-3 hover:text-app-text-2" onclick={() => (step = 2)}>← Back</button>
+          <label class="text-xs text-app-text-3">Collection folder name</label>
           <input
-            class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm font-mono text-zinc-100 focus:outline-none focus:border-cyan-600"
+            class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
             bind:value={collectionFolder}
             placeholder="my-api"
           />
-          <p class="text-xs text-zinc-500 mt-1">Lowercase letters, numbers, and hyphens (e.g. users-service)</p>
-          <p class="text-xs text-zinc-600">{selectedIds.size} operations will be imported</p>
+          <p class="text-xs text-app-text-3 mt-1">Lowercase letters, numbers, and hyphens (e.g. users-service)</p>
+          <p class="text-xs text-app-text-4">{selectedIds.size} operations will be imported</p>
         </div>
         {#if error}<p class="text-xs text-red-400">{error}</p>{/if}
         <button

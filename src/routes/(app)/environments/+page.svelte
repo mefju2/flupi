@@ -4,7 +4,7 @@
 </script>
 
 <div class="flex h-full">
-  <div class="w-56 shrink-0 border-r border-zinc-800 overflow-y-auto">
+  <div class="w-56 shrink-0 border-r border-app-border overflow-y-auto">
     <EnvironmentList />
   </div>
   <div class="flex-1 overflow-auto">

@@ -27,10 +27,10 @@
   function handleCloseWizard() { wizardSourceId = null; }
 </script>
 
-<div class="flex flex-col h-full bg-zinc-950 overflow-y-auto">
-  <div class="px-6 py-4 border-b border-zinc-800">
-    <h1 class="text-base font-semibold text-zinc-100">OpenAPI Sources</h1>
-    <p class="text-xs text-zinc-500 mt-0.5">Import API operations from OpenAPI 3.0 specifications.</p>
+<div class="flex flex-col h-full bg-app-bg overflow-y-auto">
+  <div class="px-6 py-4 border-b border-app-border">
+    <h1 class="text-base font-semibold text-app-text">OpenAPI Sources</h1>
+    <p class="text-xs text-app-text-3 mt-0.5">Import API operations from OpenAPI 3.0 specifications.</p>
   </div>
 
   <div class="p-6 flex flex-col gap-4 max-w-2xl">

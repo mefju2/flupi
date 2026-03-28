@@ -7,7 +7,7 @@
     if (status >= 200 && status < 300) return 'bg-emerald-900 text-emerald-300 border-emerald-700';
     if (status >= 400 && status < 500) return 'bg-yellow-900 text-yellow-300 border-yellow-700';
     if (status >= 500) return 'bg-red-900 text-red-300 border-red-700';
-    return 'bg-zinc-800 text-zinc-300 border-zinc-700';
+    return 'bg-app-card text-app-text-2 border-app-border-2';
   }
 
   const MAX_BODY_BYTES = 1_048_576; // 1MB
@@ -24,23 +24,23 @@
   }
 </script>
 
-<div class="border-t border-zinc-800 bg-zinc-950 min-h-[160px]">
+<div class="border-t border-app-border bg-app-bg min-h-[160px]">
   {#if $isExecuting}
-    <div class="p-6 text-sm text-zinc-500">Sending...</div>
+    <div class="p-6 text-sm text-app-text-3">Sending...</div>
   {:else if !$lastResponse}
-    <div class="p-6 text-sm text-zinc-600">Ready to send — press Ctrl+Enter or click Send</div>
+    <div class="p-6 text-sm text-app-text-4">Ready to send — press Ctrl+Enter or click Send</div>
   {:else}
     <div class="p-4 space-y-3">
       <div class="flex items-center gap-3">
         <span class="text-xs font-mono px-2 py-0.5 rounded border {statusClass($lastResponse.status)}">
           {$lastResponse.status} {$lastResponse.statusText}
         </span>
-        <span class="text-xs text-zinc-500">{$lastResponse.durationMs}ms</span>
+        <span class="text-xs text-app-text-3">{$lastResponse.durationMs}ms</span>
       </div>
 
       <div>
         <button
-          class="text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded px-2 transition-colors flex items-center gap-1 mb-1 -mx-2"
+          class="text-xs text-app-text-3 hover:text-app-text hover:bg-app-card rounded px-2 transition-colors flex items-center gap-1 mb-1 -mx-2"
           onclick={() => (headersOpen = !headersOpen)}
         >
           <span>{headersOpen ? '▾' : '▸'}</span>
@@ -50,8 +50,8 @@
           <div class="space-y-0.5">
             {#each Object.entries($lastResponse.headers) as [k, v]}
               <div class="flex gap-2 text-xs font-mono">
-                <span class="text-zinc-400 shrink-0">{k}:</span>
-                <span class="text-zinc-300 break-all">{v}</span>
+                <span class="text-app-text-3 shrink-0">{k}:</span>
+                <span class="text-app-text-2 break-all">{v}</span>
               </div>
             {/each}
           </div>
@@ -59,8 +59,8 @@
       </div>
 
       <div>
-        <p class="text-xs text-zinc-500 mb-1">Body</p>
-        <pre class="text-xs font-mono text-zinc-200 bg-zinc-900 border border-zinc-800 p-3 overflow-auto max-h-[300px] whitespace-pre-wrap break-all">{formatBody($lastResponse.body)}</pre>
+        <p class="text-xs text-app-text-3 mb-1">Body</p>
+        <pre class="text-xs font-mono text-app-text bg-app-panel border border-app-border p-3 overflow-auto max-h-[300px] whitespace-pre-wrap break-all">{formatBody($lastResponse.body)}</pre>
       </div>
     </div>
   {/if}

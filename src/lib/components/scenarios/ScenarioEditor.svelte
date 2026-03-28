@@ -35,17 +35,17 @@
   }
 </script>
 
-<div class="flex flex-col h-full bg-zinc-950">
+<div class="flex flex-col h-full bg-app-bg">
   <!-- Top bar -->
-  <div class="flex items-center gap-3 px-4 py-2 border-b border-zinc-800 shrink-0">
+  <div class="flex items-center gap-3 px-4 py-2 border-b border-app-border shrink-0">
     <input
-      class="flex-1 bg-transparent text-zinc-100 text-base font-medium focus:outline-none placeholder:text-zinc-600"
+      class="flex-1 bg-transparent text-app-text text-base font-medium focus:outline-none placeholder:text-app-text-4"
       value={scenario.name}
       oninput={(e) => onUpdate({ ...scenario, name: e.currentTarget.value })}
       placeholder="Scenario name"
     />
     <button
-      class="px-3 py-1 text-xs bg-transparent border border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-200 rounded transition-colors"
+      class="px-3 py-1 text-xs bg-transparent border border-app-border-2 hover:border-app-border-2 text-app-text-3 hover:text-app-text rounded transition-colors"
       onclick={onSave}
     >Save</button>
     <button
@@ -59,7 +59,7 @@
   <div class="flex-1 overflow-y-auto px-4 py-4 space-y-6">
     <!-- Inputs section -->
     <section>
-      <h2 class="text-xs text-zinc-500 uppercase tracking-wider mb-3">Inputs</h2>
+      <h2 class="text-xs text-app-text-3 uppercase tracking-wider mb-3">Inputs</h2>
       <InputsList
         inputs={scenario.inputs}
         onUpdate={(inputs) => onUpdate({ ...scenario, inputs })}
@@ -68,7 +68,7 @@
 
     <!-- Steps section -->
     <section>
-      <h2 class="text-xs text-zinc-500 uppercase tracking-wider mb-3">Steps</h2>
+      <h2 class="text-xs text-app-text-3 uppercase tracking-wider mb-3">Steps</h2>
       {#each scenario.steps as step, i (step.id)}
         <StepCard
           {step}
@@ -79,7 +79,7 @@
         />
       {/each}
       {#if scenario.steps.length === 0}
-        <p class="text-xs text-zinc-600 italic">No steps yet.</p>
+        <p class="text-xs text-app-text-4 italic">No steps yet.</p>
       {/if}
       <button
         class="mt-2 text-xs text-cyan-500 hover:text-cyan-400 transition-colors"

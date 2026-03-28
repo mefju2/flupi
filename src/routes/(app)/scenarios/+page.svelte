@@ -61,20 +61,20 @@
 
 <div class="flex h-full">
   <!-- Sidebar -->
-  <div class="w-56 shrink-0 border-r border-zinc-800">
+  <div class="w-56 shrink-0 border-r border-app-border">
     <ScenarioTree />
   </div>
 
   <!-- Main area -->
   <div class="flex-1 flex flex-col min-w-0 relative">
     {#if saveToast}
-      <div transition:fade={{ duration: 150 }} class="absolute top-2 right-4 z-10 text-xs text-cyan-400 bg-zinc-800 border border-zinc-700 rounded px-2 py-1">
+      <div transition:fade={{ duration: 150 }} class="absolute top-2 right-4 z-10 text-xs text-cyan-400 bg-app-card border border-app-border-2 rounded px-2 py-1">
         {saveToast}
       </div>
     {/if}
 
     {#if !$activeScenario}
-      <div class="flex-1 flex items-center justify-center text-zinc-600 text-sm">
+      <div class="flex-1 flex items-center justify-center text-app-text-4 text-sm">
         Select a scenario to edit.
       </div>
     {:else if view === 'editor'}

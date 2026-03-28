@@ -43,6 +43,6 @@
 </script>
 
 <div class="p-4">
-  <p class="text-xs text-zinc-500 mb-3">Query parameters are appended to the URL path.</p>
+  <p class="text-xs text-app-text-3 mb-3">Query parameters are appended to the URL path.</p>
   <KeyValueTable rows={rows} onUpdate={handleUpdate} />
 </div>

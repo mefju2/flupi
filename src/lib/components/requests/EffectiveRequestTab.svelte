@@ -63,15 +63,15 @@
 
 <div class="p-4 space-y-5 text-sm">
   {#if !req}
-    <p class="text-zinc-600">Select a request to preview.</p>
+    <p class="text-app-text-4">Select a request to preview.</p>
   {:else}
     <!-- Resolved URL -->
     <section>
-      <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Resolved URL</p>
-      <div class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded px-3 py-2">
+      <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Resolved URL</p>
+      <div class="flex items-center gap-2 bg-app-panel border border-app-border rounded px-3 py-2">
         <span class="font-semibold shrink-0 {getMethodColor(req.method)}">{req.method}</span>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        <span class="font-mono text-zinc-100 break-all">{@html highlightVars(urlTemplate)}</span>
+        <span class="font-mono text-app-text break-all">{@html highlightVars(urlTemplate)}</span>
       </div>
       {#if unresolvedInUrl.length > 0}
         <p class="text-xs text-amber-400 mt-1">Unresolved: {unresolvedInUrl.join(', ')}</p>
@@ -80,20 +80,20 @@
 
     <!-- Effective Headers -->
     <section>
-      <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Effective Headers</p>
+      <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Effective Headers</p>
       {#if Object.keys(effectiveHeaders).length === 0}
-        <p class="text-zinc-600 text-xs italic">No headers.</p>
+        <p class="text-app-text-4 text-xs italic">No headers.</p>
       {:else}
         <div class="space-y-1">
           {#each Object.entries(effectiveHeaders) as [key, value]}
             {@const isCollection = !!(collection?.headers[key]) && !req.headers[key]}
-            <div class="flex gap-2 items-baseline bg-zinc-900 border border-zinc-800 rounded px-2 py-1">
-              <span class="font-mono text-zinc-300 shrink-0">{key}</span>
-              <span class="text-zinc-600 shrink-0">:</span>
+            <div class="flex gap-2 items-baseline bg-app-panel border border-app-border rounded px-2 py-1">
+              <span class="font-mono text-app-text-2 shrink-0">{key}</span>
+              <span class="text-app-text-4 shrink-0">:</span>
               <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-              <span class="font-mono text-zinc-100 break-all">{@html highlightVars(value)}</span>
+              <span class="font-mono text-app-text break-all">{@html highlightVars(value)}</span>
               {#if isCollection}
-                <span class="text-xs text-zinc-600 ml-auto shrink-0">collection</span>
+                <span class="text-xs text-app-text-4 ml-auto shrink-0">collection</span>
               {/if}
             </div>
           {/each}
@@ -103,8 +103,8 @@
 
     <!-- Auth -->
     <section>
-      <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Auth</p>
-      <div class="bg-zinc-900 border border-zinc-800 rounded px-3 py-2 font-mono text-zinc-100">
+      <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Auth</p>
+      <div class="bg-app-panel border border-app-border rounded px-3 py-2 font-mono text-app-text">
         {authLabel(effectiveAuth)}
       </div>
     </section>
@@ -112,8 +112,8 @@
     <!-- Body -->
     {#if req.body && req.body.type !== 'none'}
       <section>
-        <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Body ({req.body.type})</p>
-        <div class="bg-zinc-900 border border-zinc-800 rounded px-3 py-2 font-mono text-zinc-100 text-xs whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
+        <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Body ({req.body.type})</p>
+        <div class="bg-app-panel border border-app-border rounded px-3 py-2 font-mono text-app-text text-xs whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
           {#if req.body.type === 'json'}
             {typeof req.body.content === 'string' ? req.body.content : JSON.stringify(req.body.content, null, 2)}
           {:else if req.body.type === 'raw'}
@@ -126,7 +126,7 @@
     {/if}
 
     <!-- Variable legend -->
-    <p class="text-xs text-zinc-600">
+    <p class="text-xs text-app-text-4">
       <span class="text-cyan-400 font-mono">{'{{var}}'}</span> = resolved &nbsp;
       <span class="text-amber-400 font-mono">{'{{var}}'}</span> = unresolved
     </p>

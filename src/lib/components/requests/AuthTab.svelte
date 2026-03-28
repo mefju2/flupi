@@ -29,10 +29,10 @@
 
 <div class="p-4 space-y-4">
   <div>
-    <label for="auth-type" class="text-xs text-zinc-400 block mb-1">Auth Type</label>
+    <label for="auth-type" class="text-xs text-app-text-3 block mb-1">Auth Type</label>
     <select
       id="auth-type"
-      class="bg-zinc-800 border border-zinc-700 text-zinc-100 text-sm px-2 py-1.5 rounded focus:outline-none focus:border-zinc-500"
+      class="bg-app-card border border-app-border-2 text-app-text text-sm px-2 py-1.5 rounded focus:outline-none focus:border-app-border-2"
       value={authType}
       onchange={(e) => setType(e.currentTarget.value as AuthConfig['type'])}
     >
@@ -46,12 +46,12 @@
   </div>
 
   {#if auth?.type === 'none'}
-    <p class="text-sm text-zinc-500">No authentication.</p>
+    <p class="text-sm text-app-text-3">No authentication.</p>
   {:else if auth?.type === 'inherit'}
-    <p class="text-sm text-zinc-500">Authentication is inherited from the parent collection.</p>
+    <p class="text-sm text-app-text-3">Authentication is inherited from the parent collection.</p>
   {:else if auth?.type === 'bearer'}
     <div>
-      <label for="auth-bearer-token" class="text-xs text-zinc-400 block mb-1">Token</label>
+      <label for="auth-bearer-token" class="text-xs text-app-text-3 block mb-1">Token</label>
       <VariableAutocomplete
         value={auth.token}
         placeholder="Bearer token..."
@@ -62,7 +62,7 @@
   {:else if auth?.type === 'basic'}
     <div class="space-y-2">
       <div>
-        <label for="auth-basic-username" class="text-xs text-zinc-400 block mb-1">Username</label>
+        <label for="auth-basic-username" class="text-xs text-app-text-3 block mb-1">Username</label>
         <VariableAutocomplete
           value={auth.username}
           placeholder="username"
@@ -70,7 +70,7 @@
         />
       </div>
       <div>
-        <label for="auth-basic-password" class="text-xs text-zinc-400 block mb-1">Password</label>
+        <label for="auth-basic-password" class="text-xs text-app-text-3 block mb-1">Password</label>
         <VariableAutocomplete
           value={auth.password}
           placeholder="password"
@@ -81,17 +81,17 @@
   {:else if auth?.type === 'apiKey'}
     <div class="space-y-2">
       <div>
-        <label for="auth-apikey-header" class="text-xs text-zinc-400 block mb-1">Header Name</label>
+        <label for="auth-apikey-header" class="text-xs text-app-text-3 block mb-1">Header Name</label>
         <input
           id="auth-apikey-header"
-          class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+          class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
           value={auth.header}
           placeholder="X-API-Key"
           oninput={(e) => onUpdate({ type: 'apiKey', header: e.currentTarget.value, value: (auth as Extract<AuthConfig, {type:'apiKey'}>).value })}
         />
       </div>
       <div>
-        <label for="auth-apikey-value" class="text-xs text-zinc-400 block mb-1">Value</label>
+        <label for="auth-apikey-value" class="text-xs text-app-text-3 block mb-1">Value</label>
         <VariableAutocomplete
           value={auth.value}
           placeholder="api key value"
@@ -101,7 +101,7 @@
     </div>
   {:else if auth?.type === 'custom'}
     <div>
-      <span class="text-xs text-zinc-400 block mb-2">Custom Headers</span>
+      <span class="text-xs text-app-text-3 block mb-2">Custom Headers</span>
       <KeyValueTable
         rows={customRows(auth)}
         onUpdate={(rows) => {

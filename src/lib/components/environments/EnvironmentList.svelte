@@ -74,8 +74,8 @@
   }
 </script>
 
-<div class="flex flex-col h-full bg-zinc-900">
-  <div class="px-3 py-2 text-xs font-medium text-zinc-600 border-b border-zinc-800">
+<div class="flex flex-col h-full bg-app-panel">
+  <div class="px-3 py-2 text-xs font-medium text-app-text-4 border-b border-app-border">
     Environments
   </div>
 
@@ -84,8 +84,8 @@
       <div
         class="group flex items-center justify-between px-3 py-2 text-sm cursor-pointer select-none
           {$activeEnvironment === entry.fileName
-          ? 'border-l-2 border-cyan-500 bg-zinc-800 text-zinc-100'
-          : 'border-l-2 border-transparent text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100'}"
+          ? 'border-l-2 border-cyan-500 bg-app-card text-app-text'
+          : 'border-l-2 border-transparent text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
         role="button"
         tabindex="0"
         onclick={() => activeEnvironment.set(entry.fileName)}
@@ -93,7 +93,7 @@
       >
         <span class="truncate">{entry.environment.name}</span>
         <button
-          class="opacity-30 hover:opacity-100 text-zinc-600 hover:text-red-400 transition-opacity text-base leading-none ml-2 shrink-0"
+          class="opacity-30 hover:opacity-100 text-app-text-4 hover:text-red-400 transition-opacity text-base leading-none ml-2 shrink-0"
           onclick={(e) => { e.stopPropagation(); removeEnvironment(entry.fileName); }}
           aria-label="Delete environment"
         >×</button>
@@ -101,23 +101,23 @@
     {/each}
 
     {#if $environments.length === 0}
-      <p class="px-3 py-4 text-xs text-zinc-600">No environments yet. Create one to manage variables like API keys and base URLs.</p>
+      <p class="px-3 py-4 text-xs text-app-text-4">No environments yet. Create one to manage variables like API keys and base URLs.</p>
     {/if}
   </div>
 
-  <div class="border-t border-zinc-800 px-3 py-2">
+  <div class="border-t border-app-border px-3 py-2">
     {#if creatingNew}
       <input
         bind:this={inputEl}
         bind:value={newName}
-        class="w-full bg-zinc-800 text-zinc-100 text-xs px-2 py-1 rounded outline-none border border-zinc-600 focus:border-cyan-500 font-mono"
+        class="w-full bg-app-card text-app-text text-xs px-2 py-1 rounded outline-none border border-app-border-2 focus:border-cyan-500 font-mono"
         placeholder="Environment name"
         onkeydown={(e) => { if (e.key === 'Enter') confirmCreate(); else if (e.key === 'Escape') cancelCreate(); }}
         onblur={confirmCreate}
       />
     {:else}
       <button
-        class="text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
+        class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors"
         onclick={startCreating}
       >+ New Environment</button>
     {/if}

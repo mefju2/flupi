@@ -52,10 +52,10 @@
 <div class="p-4 space-y-5 text-sm">
   <!-- Collection Name -->
   <div>
-    <label for="collection-name" class="text-xs text-zinc-400 block mb-1">Collection Name</label>
+    <label for="collection-name" class="text-xs text-app-text-3 block mb-1">Collection Name</label>
     <input
       id="collection-name"
-      class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+      class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
       value={local.name}
       placeholder="My Collection"
       oninput={(e) => patch({ name: e.currentTarget.value })}
@@ -64,21 +64,21 @@
 
   <!-- Base URL -->
   <div>
-    <label for="collection-base-url" class="text-xs text-zinc-400 block mb-1">Base URL</label>
+    <label for="collection-base-url" class="text-xs text-app-text-3 block mb-1">Base URL</label>
     <input
       id="collection-base-url"
-      class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+      class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
       value={local.baseUrl ?? ''}
       placeholder="https://api.example.com"
       oninput={(e) => patch({ baseUrl: e.currentTarget.value })}
     />
-    <p class="text-xs text-zinc-600 mt-1">Prepended to all request paths in this collection.</p>
+    <p class="text-xs text-app-text-4 mt-1">Prepended to all request paths in this collection.</p>
   </div>
 
   <!-- Default Auth -->
   <div>
-    <span class="text-xs text-zinc-400 block mb-1">Default Auth</span>
-    <div class="bg-zinc-900 border border-zinc-800 rounded">
+    <span class="text-xs text-app-text-3 block mb-1">Default Auth</span>
+    <div class="bg-app-panel border border-app-border rounded">
       <AuthTab
         auth={local.auth}
         onUpdate={handleAuthUpdate}
@@ -88,8 +88,8 @@
 
   <!-- Default Headers -->
   <div>
-    <span class="text-xs text-zinc-400 block mb-2">Default Headers</span>
-    <p class="text-xs text-zinc-600 mb-2">Applied to all requests — request-level headers override these.</p>
+    <span class="text-xs text-app-text-3 block mb-2">Default Headers</span>
+    <p class="text-xs text-app-text-4 mb-2">Applied to all requests — request-level headers override these.</p>
     <KeyValueTable rows={headerRows} onUpdate={handleHeadersUpdate} />
   </div>
 </div>

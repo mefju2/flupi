@@ -30,11 +30,11 @@
 
 <div class="p-4 space-y-3">
   <div class="flex items-center gap-2">
-    <span class="text-xs text-zinc-400">Body</span>
-    <div class="flex border border-zinc-700 rounded overflow-hidden">
+    <span class="text-xs text-app-text-3">Body</span>
+    <div class="flex border border-app-border-2 rounded overflow-hidden">
       {#each ['none', 'json', 'form', 'raw'] as t}
         <button
-          class="text-xs px-2 py-0.5 transition-colors {bodyType === t ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}"
+          class="text-xs px-2 py-0.5 transition-colors {bodyType === t ? 'bg-app-hover text-app-text' : 'text-app-text-3 hover:text-app-text-2 hover:bg-app-card'}"
           onclick={() => setType(t as BodyConfig['type'])}
         >{t.charAt(0).toUpperCase() + t.slice(1)}</button>
       {/each}
@@ -42,7 +42,7 @@
   </div>
 
   {#if body?.type === 'none' || !body}
-    <p class="text-sm text-zinc-500">No request body.</p>
+    <p class="text-sm text-app-text-3">No request body.</p>
   {:else if body.type === 'json'}
     <JsonEditor
       value={typeof body.content === 'string' ? body.content : JSON.stringify(body.content, null, 2)}

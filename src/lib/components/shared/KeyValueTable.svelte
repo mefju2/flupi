@@ -35,7 +35,7 @@
   {#each rows as row, i}
     <div class="flex gap-2 items-center">
       <input
-        class="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
         value={row.key}
         readonly={readOnlyKeys.includes(row.key)}
         oninput={(e) => updateRow(i, 'key', e.currentTarget.value)}
@@ -44,13 +44,13 @@
       {#if row.isSecret}
         <div class="flex-1 flex items-center gap-1">
           <input
-            class="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 opacity-60"
+            class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover opacity-60"
             type="password"
             value={row.value}
             oninput={(e) => updateRow(i, 'value', e.currentTarget.value)}
             placeholder="Value"
           />
-          <span class="text-zinc-500 text-xs shrink-0" title="Secret">🔒</span>
+          <span class="text-app-text-3 text-xs shrink-0" title="Secret">🔒</span>
         </div>
       {:else}
         <VariableAutocomplete
@@ -61,7 +61,7 @@
         />
       {/if}
       {#if showSecretToggle}
-        <label class="flex items-center gap-1 text-xs text-zinc-500 whitespace-nowrap cursor-pointer">
+        <label class="flex items-center gap-1 text-xs text-app-text-3 whitespace-nowrap cursor-pointer">
           <input
             type="checkbox"
             checked={row.isSecret}
@@ -72,7 +72,7 @@
         </label>
       {/if}
       <button
-        class="opacity-30 hover:opacity-100 text-zinc-600 hover:text-red-400 transition-opacity text-lg leading-none"
+        class="opacity-30 hover:opacity-100 text-app-text-4 hover:text-red-400 transition-opacity text-lg leading-none"
         onclick={() => removeRow(i)}
         aria-label="Remove row"
       >×</button>

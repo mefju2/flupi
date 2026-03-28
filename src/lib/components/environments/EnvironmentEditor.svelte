@@ -92,10 +92,10 @@
   }
 </script>
 
-<div class="bg-zinc-950 p-6 h-full">
+<div class="bg-app-bg p-6 h-full">
   {#if currentEntry}
     <div class="flex items-center gap-3 mb-4">
-      <h2 class="text-zinc-100 text-base font-semibold">{currentEntry.environment.name}</h2>
+      <h2 class="text-app-text text-base font-semibold">{currentEntry.environment.name}</h2>
       {#if savedRecently}
         <span class="text-xs text-green-400" transition:fade={{ duration: 150 }}>Saved</span>
       {/if}
@@ -106,6 +106,6 @@
       onUpdate={handleUpdate}
     />
   {:else}
-    <p class="text-zinc-600 text-sm">No environment selected.</p>
+    <p class="text-app-text-4 text-sm">No environment selected.</p>
   {/if}
 </div>

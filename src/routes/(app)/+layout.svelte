@@ -22,7 +22,7 @@
   });
 </script>
 
-<div class="flex flex-col h-screen bg-zinc-950 text-zinc-100">
+<div class="flex flex-col h-screen bg-app-bg text-app-text">
   <TopBar />
   <div class="flex flex-1 overflow-hidden">
     <Sidebar />

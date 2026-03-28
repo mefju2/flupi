@@ -22,20 +22,20 @@
 {#if node.type === 'Collection' || node.type === 'Folder'}
   <div>
     <div
-      class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100 rounded"
+      class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none text-app-text-2 hover:bg-app-card/50 hover:text-app-text rounded"
       role="button"
       tabindex="0"
       onclick={() => (expanded = !expanded)}
       onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)}
       oncontextmenu={(e) => { e.preventDefault(); onContextMenu(e, node); }}
     >
-      <span class="text-zinc-500 text-xs">{expanded ? '▾' : '▸'}</span>
-      <span class="text-zinc-400 text-xs">📁</span>
+      <span class="text-app-text-3 text-xs">{expanded ? '▾' : '▸'}</span>
+      <span class="text-app-text-3 text-xs">📁</span>
       <span class="truncate">{node.name}</span>
     </div>
 
     {#if expanded}
-      <div class="ml-3 border-l border-zinc-800 pl-1">
+      <div class="ml-3 border-l border-app-border pl-1">
         {#each node.children as child}
           <TreeNode
             node={child}
@@ -45,7 +45,7 @@
           />
         {/each}
         {#if node.children.length === 0}
-          <p class="px-2 py-1 text-xs text-zinc-600 italic">Empty</p>
+          <p class="px-2 py-1 text-xs text-app-text-4 italic">Empty</p>
         {/if}
       </div>
     {/if}
@@ -54,7 +54,7 @@
   {@const isActive = activeRequestId === node.id}
   <div
     class="group flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none rounded
-      {isActive ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:bg-zinc-800/50 hover:text-zinc-100'}"
+      {isActive ? 'bg-app-card text-app-text' : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
     role="button"
     tabindex="0"
     onclick={() => onSelect(node.id)}
@@ -63,7 +63,7 @@
   >
     {#if showDragHandle}
       <span
-        class="drag-handle text-zinc-600 group-hover:text-zinc-400 cursor-grab active:cursor-grabbing text-xs shrink-0 select-none"
+        class="drag-handle text-app-text-4 group-hover:text-app-text-3 cursor-grab active:cursor-grabbing text-xs shrink-0 select-none"
         title="Drag to reorder"
       >⠿</span>
     {/if}

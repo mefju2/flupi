@@ -11,12 +11,12 @@
 
 <div class="space-y-0.5">
   {#if entries.length === 0}
-    <p class="text-xs text-zinc-600 italic">No variables in context.</p>
+    <p class="text-xs text-app-text-4 italic">No variables in context.</p>
   {:else}
     {#each entries as [key, value]}
       <div class="flex items-center gap-2 py-0.5">
-        <span class="font-mono text-xs text-zinc-400 shrink-0 min-w-32">{key}</span>
-        <span class="font-mono text-xs text-zinc-200 truncate">
+        <span class="font-mono text-xs text-app-text-3 shrink-0 min-w-32">{key}</span>
+        <span class="font-mono text-xs text-app-text truncate">
           {secretKeys.includes(key) ? '••••••' : value}
         </span>
       </div>

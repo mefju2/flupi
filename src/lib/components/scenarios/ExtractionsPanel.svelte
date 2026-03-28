@@ -29,14 +29,14 @@
 </script>
 
 <div class="space-y-1">
-  <p class="text-xs text-zinc-500 mb-1">Extract values from the response into variables.</p>
-  <p class="text-xs text-zinc-500 mt-1">JSONPath: $.field, $.array[0].value</p>
+  <p class="text-xs text-app-text-3 mb-1">Extract values from the response into variables.</p>
+  <p class="text-xs text-app-text-3 mt-1">JSONPath: $.field, $.array[0].value</p>
 
   {#if extractions.length > 0}
     <div class="grid grid-cols-[1fr_auto_1fr_auto] gap-2 mb-1">
-      <span class="text-xs text-zinc-500 px-1">Variable</span>
-      <span class="text-xs text-zinc-500 px-1">Source</span>
-      <span class="text-xs text-zinc-500 px-1">Path (JSONPath)</span>
+      <span class="text-xs text-app-text-3 px-1">Variable</span>
+      <span class="text-xs text-app-text-3 px-1">Source</span>
+      <span class="text-xs text-app-text-3 px-1">Path (JSONPath)</span>
       <span></span>
     </div>
   {/if}
@@ -44,13 +44,13 @@
   {#each extractions as extraction, i}
     <div class="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
       <input
-        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
         value={extraction.variable}
         oninput={(e) => updateRow(i, 'variable', e.currentTarget.value)}
         placeholder="variableName"
       />
       <select
-        class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-300 focus:outline-none focus:border-zinc-500"
+        class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text-2 focus:outline-none focus:border-app-border-2"
         value={extraction.from}
         onchange={(e) => updateRow(i, 'from', e.currentTarget.value)}
       >
@@ -61,12 +61,12 @@
         {suggestions}
         value={extraction.path}
         placeholder="$.data.id"
-        inputClass="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        inputClass="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
         onSelect={(path) => updateRow(i, 'path', path)}
         onInput={(v) => updateRow(i, 'path', v)}
       />
       <button
-        class="text-zinc-600 hover:text-red-400 transition-colors text-lg leading-none"
+        class="text-app-text-4 hover:text-red-400 transition-colors text-lg leading-none"
         onclick={() => removeRow(i)}
         aria-label="Remove extraction"
       >×</button>
