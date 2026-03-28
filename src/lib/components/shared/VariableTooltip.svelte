@@ -40,38 +40,38 @@
   let debounceId: ReturnType<typeof setTimeout> | null = null;
   let inputEl = $state<HTMLInputElement | null>(null);
 
-  onMount(async () => {
-    currentValue = initialValue;
-    await tick();
-
-    const rect = anchorEl.getBoundingClientRect();
-    const tipHeight = tooltipEl?.offsetHeight ?? 100;
-    const tipWidth = tooltipEl?.offsetWidth ?? 256;
-
-    let top: number;
-    if (rect.top - tipHeight - 6 > 0) {
-      top = rect.top - tipHeight - 6;
-    } else {
-      top = rect.bottom + 6;
+  function handleClickOutside(e: MouseEvent) {
+    if (tooltipEl && !tooltipEl.contains(e.target as Node)) {
+      onclose();
     }
+  }
 
-    let left = Math.min(rect.left, window.innerWidth - tipWidth - 8);
-    left = Math.max(8, left);
+  onMount(() => {
+    currentValue = initialValue;
 
-    style = `position: fixed; top: ${top}px; left: ${left}px;`;
-    inputEl?.focus();
+    // Positioning after paint — done in a .then() so onMount stays synchronous
+    tick().then(() => {
+      const rect = anchorEl.getBoundingClientRect();
+      const tipHeight = tooltipEl?.offsetHeight ?? 100;
+      const tipWidth = tooltipEl?.offsetWidth ?? 256;
 
-    // Click outside closes the tooltip
-    const handleClickOutside = (e: MouseEvent) => {
-      if (tooltipEl && !tooltipEl.contains(e.target as Node)) {
-        onclose();
+      let top: number;
+      if (rect.top - tipHeight - 6 > 0) {
+        top = rect.top - tipHeight - 6;
+      } else {
+        top = rect.bottom + 6;
       }
-    };
-    // Use setTimeout to avoid immediately closing on the same click that opened it
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - tipWidth - 8));
+      style = `position: fixed; top: ${top}px; left: ${left}px;`;
+      inputEl?.focus();
+    });
+
+    // Click-outside handler registered after current event loop tick
     const timerId = setTimeout(() => {
       document.addEventListener('pointerdown', handleClickOutside);
     }, 0);
 
+    // Synchronous cleanup — Svelte CAN use this
     return () => {
       clearTimeout(timerId);
       document.removeEventListener('pointerdown', handleClickOutside);
