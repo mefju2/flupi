@@ -1,5 +1,9 @@
 <script lang="ts">
   import { environments, activeEnvironment } from '$lib/stores/environment';
+  import type { EnvironmentEntry } from '$lib/stores/environment';
+  import { project } from '$lib/stores/project';
+  import VariableTokenDisplay from './VariableTokenDisplay.svelte';
+  import VariableTooltip from './VariableTooltip.svelte';
 
   interface VarItem {
     name: string;
@@ -22,6 +26,9 @@
   let showDropdown = $state(false);
   let activeIndex = $state(0);
   let triggerStart = $state(-1);
+  let focused = $state(false);
+  let hoveredVar = $state<string | null>(null);
+  let tooltipAnchor = $state<HTMLElement | null>(null);
 
   const allVars: VarItem[] = $derived.by(() => {
     const activeEnvName = $activeEnvironment;
@@ -41,8 +48,10 @@
     return result;
   });
 
+  const varMap: Record<string, string> = $derived(Object.fromEntries(allVars.map(v => [v.name, v.value])));
+  const secretsList: string[] = $derived($environments.find(e => e.fileName === $activeEnvironment)?.environment.secrets ?? []);
+  const activeEnvEntry: EnvironmentEntry | null = $derived($environments.find(e => e.fileName === $activeEnvironment) ?? null);
   const fragment: string = $derived(triggerStart < 0 ? '' : value.slice(triggerStart + 2));
-
   const filtered: VarItem[] = $derived(allVars.filter((v) => v.name.toLowerCase().startsWith(fragment.toLowerCase())));
 
   function findTriggerStart(text: string, cursor: number): number {
@@ -100,16 +109,57 @@
     }
   }
 
+  function handleFocus() {
+    focused = true;
+    hoveredVar = null;
+    tooltipAnchor = null;
+  }
+
   function handleBlur() {
     // Delay to allow click on dropdown item to register
-    setTimeout(() => { showDropdown = false; }, 150);
+    setTimeout(() => {
+      showDropdown = false;
+      focused = false;
+    }, 150);
+  }
+
+  function onTokenHover(varName: string, anchorEl: HTMLElement) {
+    hoveredVar = varName;
+    tooltipAnchor = anchorEl;
+  }
+
+  function closeTooltip() {
+    hoveredVar = null;
+    tooltipAnchor = null;
   }
 
   const baseClass = 'bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2';
 </script>
 
 <div class="relative {className}">
-  {#if multiline}
+  {#if !multiline}
+    {#if !focused}
+      <VariableTokenDisplay
+        {value}
+        vars={varMap}
+        secrets={secretsList}
+        {placeholder}
+        onTokenHover={onTokenHover}
+        onTokenLeave={() => {}}
+        onclick={() => (inputEl as HTMLInputElement | null)?.focus()}
+      />
+    {/if}
+    <input
+      bind:this={inputEl as HTMLInputElement}
+      class="w-full {baseClass} {!focused ? 'sr-only' : ''}"
+      {value}
+      {placeholder}
+      oninput={handleInput}
+      onkeydown={handleKeydown}
+      onblur={handleBlur}
+      onfocus={handleFocus}
+    />
+  {:else}
     <textarea
       bind:this={inputEl as HTMLTextAreaElement}
       class="w-full {baseClass} min-h-[60px] resize-y"
@@ -119,15 +169,15 @@
       onkeydown={handleKeydown}
       onblur={handleBlur}
     ></textarea>
-  {:else}
-    <input
-      bind:this={inputEl as HTMLInputElement}
-      class="w-full {baseClass}"
-      {value}
-      {placeholder}
-      oninput={handleInput}
-      onkeydown={handleKeydown}
-      onblur={handleBlur}
+  {/if}
+
+  {#if hoveredVar && tooltipAnchor && $project.path}
+    <VariableTooltip
+      varName={hoveredVar}
+      anchorEl={tooltipAnchor}
+      envEntry={activeEnvEntry}
+      projectPath={$project.path}
+      onclose={closeTooltip}
     />
   {/if}
 

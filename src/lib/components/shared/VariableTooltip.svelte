@@ -61,7 +61,20 @@
     style = `position: fixed; top: ${top}px; left: ${left}px;`;
     inputEl?.focus();
 
+    // Click outside closes the tooltip
+    const handleClickOutside = (e: MouseEvent) => {
+      if (tooltipEl && !tooltipEl.contains(e.target as Node)) {
+        onclose();
+      }
+    };
+    // Use setTimeout to avoid immediately closing on the same click that opened it
+    const timerId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+
     return () => {
+      clearTimeout(timerId);
+      document.removeEventListener('click', handleClickOutside);
       if (debounceId) clearTimeout(debounceId);
     };
   });
