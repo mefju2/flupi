@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { environments, activeEnvironment } from '$lib/stores/environment';
+  import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
   import { listEnvironments, saveEnvironment, deleteEnvironment } from '$lib/services/tauri-commands';
   import { project } from '$lib/stores/project';
 
@@ -21,6 +21,9 @@
         );
         if (entries.length > 0 && $activeEnvironment === null) {
           activeEnvironment.set(entries[0][0]);
+          selectedEnvironmentFile.set(entries[0][0]);
+        } else if (entries.length > 0 && $selectedEnvironmentFile === null) {
+          selectedEnvironmentFile.set($activeEnvironment ?? entries[0][0]);
         }
       } catch (e) {
         console.error('Failed to load environments:', e);
@@ -47,7 +50,7 @@
     try {
       await saveEnvironment($project.path, fileName, env);
       environments.update((list) => [...list, { fileName, environment: env, secrets: {} }]);
-      activeEnvironment.set(fileName);
+      selectedEnvironmentFile.set(fileName);
     } catch (e) {
       console.error('Failed to create environment:', e);
     }
@@ -68,6 +71,9 @@
       if ($activeEnvironment === fileName) {
         activeEnvironment.set($environments[0]?.fileName ?? null);
       }
+      if ($selectedEnvironmentFile === fileName) {
+        selectedEnvironmentFile.set($environments[0]?.fileName ?? null);
+      }
     } catch (e) {
       console.error('Failed to delete environment:', e);
     }
@@ -83,20 +89,30 @@
     {#each $environments as entry}
       <div
         class="group flex items-center justify-between px-3 py-2 text-sm cursor-pointer select-none
-          {$activeEnvironment === entry.fileName
+          {$selectedEnvironmentFile === entry.fileName
           ? 'border-l-2 border-cyan-500 bg-app-card text-app-text'
           : 'border-l-2 border-transparent text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
         role="button"
         tabindex="0"
-        onclick={() => activeEnvironment.set(entry.fileName)}
-        onkeydown={(e) => e.key === 'Enter' && activeEnvironment.set(entry.fileName)}
+        onclick={() => selectedEnvironmentFile.set(entry.fileName)}
+        onkeydown={(e) => e.key === 'Enter' && selectedEnvironmentFile.set(entry.fileName)}
       >
         <span class="truncate">{entry.environment.name}</span>
-        <button
-          class="opacity-30 hover:opacity-100 text-app-text-4 hover:text-red-400 transition-opacity text-base leading-none ml-2 shrink-0"
-          onclick={(e) => { e.stopPropagation(); removeEnvironment(entry.fileName); }}
-          aria-label="Delete environment"
-        >×</button>
+        <div class="flex items-center gap-1 shrink-0 ml-2">
+          <button
+            class="text-xs px-1 rounded transition-colors {$activeEnvironment === entry.fileName
+              ? 'text-cyan-400'
+              : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-app-text-4 hover:text-cyan-400'}"
+            onclick={(e) => { e.stopPropagation(); activeEnvironment.set(entry.fileName); }}
+            title={$activeEnvironment === entry.fileName ? 'Active environment' : 'Set as active'}
+            aria-label="Set as active environment"
+          >✓</button>
+          <button
+            class="opacity-0 group-hover:opacity-30 hover:!opacity-100 text-app-text-4 hover:text-red-400 transition-opacity text-base leading-none"
+            onclick={(e) => { e.stopPropagation(); removeEnvironment(entry.fileName); }}
+            aria-label="Delete environment"
+          >×</button>
+        </div>
       </div>
     {/each}
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { environments, activeEnvironment, type EnvironmentEntry } from '$lib/stores/environment';
+  import { environments, selectedEnvironmentFile, type EnvironmentEntry } from '$lib/stores/environment';
   import { saveEnvironment, saveSecrets } from '$lib/services/tauri-commands';
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import { project } from '$lib/stores/project';
@@ -13,7 +13,7 @@
   }
 
   let currentEntry = $derived<EnvironmentEntry | undefined>(
-    $environments.find((e) => e.fileName === $activeEnvironment)
+    $environments.find((e) => e.fileName === $selectedEnvironmentFile)
   );
 
   let rows = $state<Row[]>([]);

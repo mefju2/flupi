@@ -9,3 +9,4 @@ export interface EnvironmentEntry {
 
 export const environments = writable<EnvironmentEntry[]>([]);
 export const activeEnvironment = writable<string | null>(null);
+export const selectedEnvironmentFile = writable<string | null>(null);

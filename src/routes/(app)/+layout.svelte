@@ -5,11 +5,27 @@
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import SearchModal from '$lib/components/shared/SearchModal.svelte';
   import { registerShortcuts } from '$lib/services/keyboard-shortcuts';
-  import { searchOpen } from '$lib/stores/ui';
+  import { searchOpen, theme, type Theme } from '$lib/stores/ui';
   import { project } from '$lib/stores/project';
+  import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
+  import { listEnvironments, getPreferences } from '$lib/services/tauri-commands';
 
-  onMount(() => {
-    if (!$project.isOpen) goto('/');
+  onMount(async () => {
+    if (!$project.isOpen) { goto('/'); return; }
+
+    const [prefs, entries] = await Promise.all([
+      getPreferences(),
+      listEnvironments($project.path!),
+    ]);
+
+    theme.set(prefs.theme as Theme);
+
+    const envList = entries.map(([fileName, environment]) => ({ fileName, environment, secrets: {} }));
+    environments.set(envList);
+    if (envList.length > 0 && $activeEnvironment === null) {
+      activeEnvironment.set(envList[0].fileName);
+      selectedEnvironmentFile.set(envList[0].fileName);
+    }
 
     return registerShortcuts([
       { key: 'Enter', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:send-request')) },

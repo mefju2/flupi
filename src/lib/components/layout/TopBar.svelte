@@ -2,6 +2,17 @@
   import { goto } from '$app/navigation';
   import { project } from '$lib/stores/project';
   import { environments, activeEnvironment } from '$lib/stores/environment';
+
+  let showShortcuts = $state(false);
+
+  const shortcuts = [
+    { keys: 'Ctrl+P', action: 'Search requests' },
+    { keys: 'Ctrl+N', action: 'New request' },
+    { keys: 'Ctrl+S', action: 'Save request' },
+    { keys: 'Ctrl+Enter', action: 'Send request' },
+    { keys: 'Ctrl+E', action: 'Switch environment' },
+    { keys: 'Ctrl+Shift+Enter', action: 'Run scenario' },
+  ];
 </script>
 
 <header class="flex items-center h-12 px-4 border-b border-app-border bg-app-panel shrink-0">
@@ -34,12 +45,32 @@
       Switch Project
     </button>
 
-    <button
-      class="text-xs text-app-text-4 hover:text-app-text-3 px-1.5 py-1 rounded transition-colors"
-      title="Keyboard shortcuts: Ctrl+P Search, Ctrl+N New request, Ctrl+S Save, Ctrl+Enter Send, Ctrl+E Switch env, Ctrl+Shift+Enter Run scenario"
-      aria-label="Keyboard shortcuts"
-    >
-      ?
-    </button>
+    <div class="relative">
+      <button
+        class="text-xs text-app-text-4 hover:text-app-text-3 px-1.5 py-1 rounded transition-colors {showShortcuts ? 'bg-app-card text-app-text-3' : ''}"
+        aria-label="Keyboard shortcuts"
+        onclick={() => (showShortcuts = !showShortcuts)}
+      >
+        ?
+      </button>
+
+      {#if showShortcuts}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="fixed inset-0 z-40"
+          onclick={() => (showShortcuts = false)}
+          onkeydown={(e) => e.key === 'Escape' && (showShortcuts = false)}
+        ></div>
+        <div class="absolute right-0 top-full mt-1 z-50 bg-app-card border border-app-border rounded shadow-lg py-2 min-w-56">
+          <p class="px-3 pb-2 text-xs font-medium text-app-text-3 border-b border-app-border mb-1">Keyboard Shortcuts</p>
+          {#each shortcuts as s}
+            <div class="flex items-center justify-between px-3 py-1 gap-6">
+              <span class="font-mono text-xs text-cyan-400 shrink-0">{s.keys}</span>
+              <span class="text-xs text-app-text-2">{s.action}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </div>
 </header>
