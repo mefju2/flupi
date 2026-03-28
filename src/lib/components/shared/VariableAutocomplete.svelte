@@ -30,9 +30,16 @@
   let hoveredVar = $state<string | null>(null);
   let tooltipAnchor = $state<HTMLElement | null>(null);
 
+  const activeEnvEntry: EnvironmentEntry | null = $derived(
+    $environments.find(e => e.fileName === $activeEnvironment) ?? null
+  );
+
+  const secretsList: string[] = $derived(
+    activeEnvEntry?.environment.secrets ?? []
+  );
+
   const allVars: VarItem[] = $derived.by(() => {
-    const activeEnvName = $activeEnvironment;
-    const entry = $environments.find((e) => e.fileName === activeEnvName);
+    const entry = activeEnvEntry;
     const result: VarItem[] = [];
     if (entry) {
       for (const [name, val] of Object.entries(entry.environment.variables)) {
@@ -48,9 +55,9 @@
     return result;
   });
 
-  const varMap: Record<string, string> = $derived(Object.fromEntries(allVars.map(v => [v.name, v.value])));
-  const secretsList: string[] = $derived($environments.find(e => e.fileName === $activeEnvironment)?.environment.secrets ?? []);
-  const activeEnvEntry: EnvironmentEntry | null = $derived($environments.find(e => e.fileName === $activeEnvironment) ?? null);
+  const varMap: Record<string, string> = $derived(
+    Object.fromEntries(allVars.map(v => [v.name, '']))
+  );
   const fragment: string = $derived(triggerStart < 0 ? '' : value.slice(triggerStart + 2));
   const filtered: VarItem[] = $derived(allVars.filter((v) => v.name.toLowerCase().startsWith(fragment.toLowerCase())));
 
@@ -111,8 +118,7 @@
 
   function handleFocus() {
     focused = true;
-    hoveredVar = null;
-    tooltipAnchor = null;
+    closeTooltip();
   }
 
   function handleBlur() {
@@ -145,7 +151,6 @@
         secrets={secretsList}
         {placeholder}
         onTokenHover={onTokenHover}
-        onTokenLeave={() => {}}
         onclick={() => (inputEl as HTMLInputElement | null)?.focus()}
       />
     {/if}

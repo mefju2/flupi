@@ -9,7 +9,7 @@
     secrets: string[];
     placeholder?: string;
     onTokenHover: (varName: string, anchorEl: HTMLElement) => void;
-    onTokenLeave: () => void;
+    onTokenLeave?: () => void;
     onclick: () => void;
   }
 
@@ -51,7 +51,7 @@
         <span
           class="{part.found ? 'text-green-400' : 'text-red-400'}"
           onmouseenter={(e) => onTokenHover(part.name, e.currentTarget as HTMLElement)}
-          onmouseleave={onTokenLeave}
+          onmouseleave={() => onTokenLeave?.()}
         >{part.raw}</span>
       {:else}
         <span class="text-app-text">{part.text}</span>

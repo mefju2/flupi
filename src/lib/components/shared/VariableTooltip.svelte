@@ -69,12 +69,12 @@
     };
     // Use setTimeout to avoid immediately closing on the same click that opened it
     const timerId = setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('pointerdown', handleClickOutside);
     }, 0);
 
     return () => {
       clearTimeout(timerId);
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
       if (debounceId) clearTimeout(debounceId);
     };
   });
