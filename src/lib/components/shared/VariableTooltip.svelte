@@ -2,7 +2,7 @@
   import { environments } from '$lib/stores/environment';
   import type { EnvironmentEntry } from '$lib/stores/environment';
   import { saveEnvironment, saveSecrets } from '$lib/services/tauri-commands';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
 
   interface Props {
     varName: string;
@@ -15,7 +15,7 @@
   let { varName, anchorEl, envEntry, projectPath, onclose }: Props = $props();
 
   let tooltipEl = $state<HTMLElement | null>(null);
-  let style = $state('position: fixed; opacity: 0');
+  let style = $state('position: fixed; opacity: 0; top: 0; left: 0;');
 
   const isSecret = $derived(
     envEntry ? envEntry.environment.secrets.includes(varName) : false
@@ -38,9 +38,11 @@
 
   let currentValue = $state('');
   let debounceId: ReturnType<typeof setTimeout> | null = null;
+  let inputEl = $state<HTMLInputElement | null>(null);
 
-  onMount(() => {
+  onMount(async () => {
     currentValue = initialValue;
+    await tick();
 
     const rect = anchorEl.getBoundingClientRect();
     const tipHeight = tooltipEl?.offsetHeight ?? 100;
@@ -56,7 +58,12 @@
     let left = Math.min(rect.left, window.innerWidth - tipWidth - 8);
     left = Math.max(8, left);
 
-    style = `position: fixed; top: ${top}px; left: ${left}px; z-index: 50;`;
+    style = `position: fixed; top: ${top}px; left: ${left}px;`;
+    inputEl?.focus();
+
+    return () => {
+      if (debounceId) clearTimeout(debounceId);
+    };
   });
 
   function handleInput(e: Event) {
@@ -101,7 +108,7 @@
 <div
   bind:this={tooltipEl}
   {style}
-  class="w-64 bg-app-panel border border-app-border-2 rounded shadow-lg p-3 text-sm"
+  class="w-64 bg-app-panel border border-app-border-2 rounded shadow-lg p-3 text-sm z-50"
   onkeydown={handleKeydown}
 >
   <div class="flex items-center justify-between mb-2">
@@ -120,6 +127,7 @@
 
   {#if envEntry}
     <input
+      bind:this={inputEl}
       type="text"
       value={currentValue}
       oninput={handleInput}
@@ -127,7 +135,7 @@
       placeholder="(empty)"
     />
     {#if isNewVar}
-      <p class="text-app-text-3 text-xs mt-1 italic">New variable — will be added to environment</p>
+      <p class="text-app-text-3 text-xs mt-1 italic">Will be added as a variable to the environment.</p>
     {/if}
   {:else}
     <p class="text-app-text-4 text-xs italic">No active environment</p>
