@@ -3,7 +3,7 @@
   import { activeRequest, activeRequestId } from '$lib/stores/requests';
   import { project } from '$lib/stores/project';
   import { activeEnvironment } from '$lib/stores/environment';
-  import { isExecuting, lastResponse } from '$lib/stores/execution';
+  import { isExecuting, lastResponse, lastError } from '$lib/stores/execution';
   import { saveRequest, sendRequest, type AuthConfig, type BodyConfig } from '$lib/services/tauri-commands';
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import { getMethodColor } from '$lib/utils/format';
@@ -53,11 +53,12 @@
 
     isExecuting.set(true);
     lastResponse.set(null);
+    lastError.set(null);
     try {
       const response = await sendRequest(path, id, env);
       lastResponse.set(response);
     } catch (e) {
-      console.error('Request failed:', e);
+      lastError.set(e?.toString() ?? 'Request failed');
     } finally {
       isExecuting.set(false);
     }

@@ -10,3 +10,4 @@ export interface ExecutionResponse {
 
 export const lastResponse = writable<ExecutionResponse | null>(null);
 export const isExecuting = writable<boolean>(false);
+export const lastError = writable<string | null>(null);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { lastResponse, isExecuting } from '$lib/stores/execution';
+  import { lastResponse, isExecuting, lastError } from '$lib/stores/execution';
 
   let headersOpen = $state(false);
 
@@ -27,6 +27,8 @@
 <div class="border-t border-app-border bg-app-bg min-h-[160px]">
   {#if $isExecuting}
     <div class="p-6 text-sm text-app-text-3">Sending...</div>
+  {:else if !$lastResponse && $lastError}
+    <div class="p-6 text-sm text-red-400">{$lastError}</div>
   {:else if !$lastResponse}
     <div class="p-6 text-sm text-app-text-4">Ready to send — press Ctrl+Enter or click Send</div>
   {:else}
