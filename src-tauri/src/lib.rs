@@ -37,6 +37,7 @@ pub fn run() {
             commands::request::move_request,
             commands::request::duplicate_request,
             commands::request::get_request_references,
+            commands::collection::get_collection,
             commands::collection::create_collection,
             commands::collection::save_collection,
             commands::collection::delete_collection,

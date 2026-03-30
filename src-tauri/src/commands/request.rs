@@ -80,6 +80,7 @@ pub fn create_request(
         path: "/".to_string(),
         auth: None,
         headers: indexmap::IndexMap::new(),
+        path_params: indexmap::IndexMap::new(),
         body: None,
         template_ref: None,
     };

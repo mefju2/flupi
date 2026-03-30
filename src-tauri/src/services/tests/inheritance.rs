@@ -14,6 +14,7 @@ fn make_request(
         path: path.to_string(),
         auth,
         headers,
+        path_params: IndexMap::new(),
         body: None,
         template_ref: None,
     }
@@ -80,4 +81,14 @@ fn test_absolute_url_not_prepended() {
 
     let effective = resolve_inheritance(&request, Some(&collection));
     assert_eq!(effective.path, "https://other.api/resource");
+}
+
+#[test]
+fn test_template_base_url_not_prepended() {
+    // {{BaseUrl}} likely resolves to a full URL; collection base_url must not be prepended
+    let collection = make_collection(Some("https://api.dev"), None, IndexMap::new());
+    let request = make_request("{{BaseUrl}}/resource", None, IndexMap::new());
+
+    let effective = resolve_inheritance(&request, Some(&collection));
+    assert_eq!(effective.path, "{{BaseUrl}}/resource");
 }

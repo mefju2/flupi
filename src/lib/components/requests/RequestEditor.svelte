@@ -8,6 +8,7 @@
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import { getMethodColor } from '$lib/utils/format';
   import ParamsTab from './ParamsTab.svelte';
+  import PathParamsTab from './PathParamsTab.svelte';
   import HeadersTab from './HeadersTab.svelte';
   import AuthTab from './AuthTab.svelte';
   import BodyTab from './BodyTab.svelte';
@@ -15,7 +16,7 @@
   import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
 
   const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
-  const TABS = ['Params', 'Headers', 'Auth', 'Body'] as const;
+  const TABS = ['Params', 'Path', 'Headers', 'Auth', 'Body'] as const;
   type Tab = (typeof TABS)[number];
 
   let activeTab = $state<Tab>('Params');
@@ -26,6 +27,23 @@
     const path = $project.path;
     if (!req || !id || !path) return;
     await saveRequest(path, id, req);
+  });
+
+  $effect(() => {
+    const req = $activeRequest;
+    if (!req) return;
+    const matches = [...req.path.matchAll(/\{([a-zA-Z0-9_-]+)\}/g)];
+    const detected = [...new Set(matches.map((m) => m[1]))];
+    const current = req.pathParams ?? {};
+    const hasNew = detected.some((p) => !(p in current));
+    const hasRemoved = Object.keys(current).some((p) => !detected.includes(p));
+    if (!hasNew && !hasRemoved) return;
+    const next: Record<string, string> = {};
+    for (const param of detected) {
+      next[param] = current[param] ?? `{{${param}}}`;
+    }
+    activeRequest.set({ ...req, pathParams: next });
+    debouncedSave.trigger();
   });
 
   onMount(() => {
@@ -114,6 +132,12 @@
         <ParamsTab
           path={$activeRequest.path}
           onPathChange={(p) => updateRequest({ path: p })}
+        />
+      {:else if activeTab === 'Path'}
+        <PathParamsTab
+          path={$activeRequest.path}
+          pathParams={$activeRequest.pathParams ?? {}}
+          onPathParamsChange={(params) => updateRequest({ pathParams: params })}
         />
       {:else if activeTab === 'Headers'}
         <HeadersTab

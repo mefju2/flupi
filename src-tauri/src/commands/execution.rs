@@ -58,6 +58,7 @@ pub async fn execute_single_request(
     env_file_name: &str,
     timeout_ms: u64,
     extra_vars: &HashMap<String, String>,
+    path_param_overrides: &HashMap<String, String>,
 ) -> Result<http_client::HttpResponse, FlupiError> {
     use base64::Engine as _;
     use base64::engine::general_purpose::STANDARD;
@@ -74,7 +75,12 @@ pub async fn execute_single_request(
         });
 
     // 3. Apply inheritance
-    let effective = inheritance::resolve_inheritance(&request, collection.as_ref());
+    let mut effective = inheritance::resolve_inheritance(&request, collection.as_ref());
+
+    // 3b. Apply path param overrides from scenario step
+    for (k, v) in path_param_overrides {
+        effective.path_params.insert(k.clone(), v.clone());
+    }
 
     // 4. Load env variables
     let env_path = project_path.join("environments").join(format!("{}.json", env_file_name));
@@ -89,7 +95,12 @@ pub async fn execute_single_request(
 
     // 6. Resolve variables in method and path
     let method = variable_resolver::resolve_string(&effective.method, &ctx);
-    let url = variable_resolver::resolve_string(&effective.path, &ctx);
+    let path_resolved = variable_resolver::resolve_path_params(
+        &effective.path,
+        &effective.path_params,
+        &ctx,
+    );
+    let url = variable_resolver::resolve_string(&path_resolved, &ctx);
 
     // 7. Resolve headers
     let mut headers: HashMap<String, String> = effective.headers
@@ -165,7 +176,7 @@ pub async fn send_request(
     timeout_ms: u64,
 ) -> Result<http_client::HttpResponse, FlupiError> {
     acquire_lock()?;
-    let result = execute_single_request(&project_path, &request_id, &env_file_name, timeout_ms, &HashMap::new()).await;
+    let result = execute_single_request(&project_path, &request_id, &env_file_name, timeout_ms, &HashMap::new(), &HashMap::new()).await;
     release_lock();
     result
 }

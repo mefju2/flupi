@@ -10,9 +10,13 @@
     envEntry: EnvironmentEntry | null;
     projectPath: string;
     onclose: () => void;
+    onmouseenter?: () => void;
+    onmouseleave?: () => void;
   }
 
-  let { varName, anchorEl, envEntry, projectPath, onclose }: Props = $props();
+  let { varName, anchorEl, envEntry, projectPath, onclose, onmouseenter, onmouseleave }: Props = $props();
+
+  let inputFocused = $state(false);
 
   let tooltipEl = $state<HTMLElement | null>(null);
   let style = $state('position: fixed; opacity: 0; top: 0; left: 0;');
@@ -122,6 +126,8 @@
   {style}
   class="w-64 bg-app-panel border border-app-border-2 rounded shadow-lg p-3 text-sm z-50"
   onkeydown={handleKeydown}
+  {onmouseenter}
+  onmouseleave={() => { if (!inputFocused) onmouseleave?.(); }}
 >
   <div class="flex items-center justify-between mb-2">
     <span class="font-mono text-app-text-3 text-xs">{`{{${varName}}}`}</span>
@@ -143,6 +149,7 @@
       type="text"
       value={currentValue}
       oninput={handleInput}
+      onfocus={() => (inputFocused = true)}
       class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-500 mt-1"
       placeholder="(empty)"
     />

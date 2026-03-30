@@ -1,4 +1,5 @@
 use super::*;
+use indexmap::IndexMap;
 
 #[test]
 fn test_resolve_simple_variable() {
@@ -39,4 +40,41 @@ fn test_priority_order() {
     ctx.set("key", "input-value");
     let result = resolve_string("{{key}}", &ctx);
     assert_eq!(result, "input-value");
+}
+
+#[test]
+fn test_resolve_path_params_literal() {
+    let mut params = IndexMap::new();
+    params.insert("id".to_string(), "42".to_string());
+    let ctx = VariableContext::new();
+    assert_eq!(resolve_path_params("/users/{id}", &params, &ctx), "/users/42");
+}
+
+#[test]
+fn test_resolve_path_params_variable_reference() {
+    let mut params = IndexMap::new();
+    params.insert("id".to_string(), "{{userId}}".to_string());
+    let mut ctx = VariableContext::new();
+    ctx.set("userId", "99");
+    assert_eq!(resolve_path_params("/users/{id}", &params, &ctx), "/users/99");
+}
+
+#[test]
+fn test_resolve_path_params_missing_preserved() {
+    let params = IndexMap::new();
+    let ctx = VariableContext::new();
+    assert_eq!(resolve_path_params("/users/{id}", &params, &ctx), "/users/{id}");
+}
+
+#[test]
+fn test_resolve_path_params_multiple() {
+    let mut params = IndexMap::new();
+    params.insert("org".to_string(), "acme".to_string());
+    params.insert("userId".to_string(), "{{uid}}".to_string());
+    let mut ctx = VariableContext::new();
+    ctx.set("uid", "123");
+    assert_eq!(
+        resolve_path_params("/orgs/{org}/users/{userId}", &params, &ctx),
+        "/orgs/acme/users/123"
+    );
 }

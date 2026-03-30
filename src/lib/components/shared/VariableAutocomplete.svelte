@@ -120,6 +120,7 @@
   }
 
   let blurTimer: ReturnType<typeof setTimeout> | null = null;
+  let tooltipCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   function handleBlur() {
     // Delay to allow click on dropdown item to register
@@ -134,15 +135,31 @@
   $effect(() => {
     return () => {
       if (blurTimer) clearTimeout(blurTimer);
+      if (tooltipCloseTimer) clearTimeout(tooltipCloseTimer);
     };
   });
 
   function onTokenHover(varName: string, anchorEl: HTMLElement) {
+    if (tooltipCloseTimer) { clearTimeout(tooltipCloseTimer); tooltipCloseTimer = null; }
     hoveredVar = varName;
     tooltipAnchor = anchorEl;
   }
 
+  function scheduleTooltipClose() {
+    if (tooltipCloseTimer) clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = setTimeout(() => {
+      hoveredVar = null;
+      tooltipAnchor = null;
+      tooltipCloseTimer = null;
+    }, 300);
+  }
+
+  function cancelTooltipClose() {
+    if (tooltipCloseTimer) { clearTimeout(tooltipCloseTimer); tooltipCloseTimer = null; }
+  }
+
   function closeTooltip() {
+    if (tooltipCloseTimer) { clearTimeout(tooltipCloseTimer); tooltipCloseTimer = null; }
     hoveredVar = null;
     tooltipAnchor = null;
   }
@@ -159,6 +176,7 @@
         secrets={secretsList}
         {placeholder}
         onTokenHover={onTokenHover}
+        onTokenLeave={scheduleTooltipClose}
         onclick={() => (inputEl as HTMLInputElement | null)?.focus()}
       />
     {/if}
@@ -191,6 +209,8 @@
       envEntry={activeEnvEntry}
       projectPath={$project.path}
       onclose={closeTooltip}
+      onmouseenter={cancelTooltipClose}
+      onmouseleave={scheduleTooltipClose}
     />
   {/if}
 

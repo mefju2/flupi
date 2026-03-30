@@ -91,8 +91,17 @@ async fn run_scenario_inner(
     let mut extracted: HashMap<String, String> = inputs.clone();
 
     for step in &scenario.steps {
+        let mut path_param_overrides: HashMap<String, String> = HashMap::new();
+        let mut regular_overrides: HashMap<String, String> = HashMap::new();
+        for (k, v) in &step.overrides {
+            if let Some(param_name) = k.strip_prefix("path.") {
+                path_param_overrides.insert(param_name.to_string(), v.clone());
+            } else {
+                regular_overrides.insert(k.clone(), v.clone());
+            }
+        }
         let mut extra_vars = extracted.clone();
-        apply_overrides(&mut extra_vars, &step.overrides);
+        apply_overrides(&mut extra_vars, &regular_overrides);
 
         let response = execute_single_request(
             project_path,
@@ -100,6 +109,7 @@ async fn run_scenario_inner(
             env_file_name,
             timeout_ms,
             &extra_vars,
+            &path_param_overrides,
         )
         .await;
 

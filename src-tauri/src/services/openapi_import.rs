@@ -152,6 +152,7 @@ pub fn import_operations(
             path: op.path.clone(),
             auth: None,
             headers: indexmap::IndexMap::new(),
+            path_params: indexmap::IndexMap::new(),
             body: None,
             template_ref: Some(TemplateRef {
                 source_id: source_id.to_string(),

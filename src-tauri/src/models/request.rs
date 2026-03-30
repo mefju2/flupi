@@ -11,6 +11,8 @@ pub struct Request {
     pub auth: Option<AuthConfig>,
     #[serde(default)]
     pub headers: IndexMap<String, String>,
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty", rename = "pathParams")]
+    pub path_params: IndexMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body: Option<BodyConfig>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "templateRef")]

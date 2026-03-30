@@ -7,12 +7,16 @@
     overrides: Record<string, string>;
     onUpdate: (overrides: Record<string, string>) => void;
     requestSchema?: unknown;
+    requestPath?: string;
+    extractedVars?: string[];
   }
 
-  let { overrides, onUpdate, requestSchema = null }: Props = $props();
+  let { overrides, onUpdate, requestSchema = null, requestPath, extractedVars = [] }: Props = $props();
+
+  let extraVarItems = $derived(extractedVars.map((name) => ({ name, value: '(extracted)' })));
 
   let rows = $derived(Object.entries(overrides));
-  let suggestions = $derived(buildOverrideSuggestions(requestSchema));
+  let suggestions = $derived(buildOverrideSuggestions(requestSchema, requestPath));
 
   function addRow() {
     onUpdate({ ...overrides, '': '' });
@@ -65,6 +69,7 @@
         value={value}
         onChange={(v) => updateValue(key, v)}
         placeholder={"{{variable}} or literal"}
+        extraVars={extraVarItems}
       />
       <button
         class="text-app-text-4 hover:text-red-400 transition-colors text-lg leading-none"

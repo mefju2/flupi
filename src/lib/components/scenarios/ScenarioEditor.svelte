@@ -49,6 +49,17 @@
   function deleteStep(index: number) {
     onUpdate({ ...scenario, steps: scenario.steps.filter((_, i) => i !== index) });
   }
+
+  // Variables available to step N: scenario inputs + variables extracted by steps 0..N-1
+  function extractedVarsBefore(index: number): string[] {
+    const names: string[] = scenario.inputs.map((inp) => inp.name);
+    for (let i = 0; i < index; i++) {
+      for (const ext of scenario.steps[i].extract) {
+        if (ext.variable && !names.includes(ext.variable)) names.push(ext.variable);
+      }
+    }
+    return names;
+  }
 </script>
 
 <div class="flex flex-col h-full bg-app-bg">
@@ -90,6 +101,7 @@
           {step}
           requestTree={$requestTree}
           index={i}
+          extractedVars={extractedVarsBefore(i)}
           onUpdate={(s) => updateStep(i, s)}
           onDelete={() => deleteStep(i)}
         />

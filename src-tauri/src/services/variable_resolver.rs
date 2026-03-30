@@ -1,5 +1,6 @@
 use regex::Regex;
 use std::collections::HashMap;
+use indexmap::IndexMap;
 pub use crate::models::variable::VariableContext;
 
 pub fn resolve_string(template: &str, ctx: &VariableContext) -> String {
@@ -23,6 +24,19 @@ pub fn find_unresolved(template: &str, ctx: &VariableContext) -> Vec<String> {
             }
         })
         .collect()
+}
+
+pub fn resolve_path_params(
+    path: &str,
+    path_params: &IndexMap<String, String>,
+    ctx: &VariableContext,
+) -> String {
+    let mut result = path.to_string();
+    for (param, template) in path_params {
+        let value = resolve_string(template, ctx);
+        result = result.replace(&format!("{{{}}}", param), &value);
+    }
+    result
 }
 
 pub fn build_context(

@@ -50,20 +50,41 @@ export function extractSchemaPaths(
   return results;
 }
 
-export function buildOverrideSuggestions(requestSchema: unknown): SchemaSuggestion[] {
-  if (!requestSchema || typeof requestSchema !== 'object') return [];
-  const s = requestSchema as Record<string, unknown>;
+export function buildOverrideSuggestions(
+  requestSchema: unknown,
+  requestPath?: string,
+): SchemaSuggestion[] {
   const results: SchemaSuggestion[] = [];
 
-  // Body properties
-  const body = s.body ?? s.requestBody ?? s.content ?? s;
-  extractSchemaPaths(body, 'body', 0, results);
+  if (requestSchema && typeof requestSchema === 'object') {
+    const s = requestSchema as Record<string, unknown>;
 
-  // Header parameters
-  if (Array.isArray(s.parameters)) {
-    for (const param of s.parameters as Record<string, unknown>[]) {
-      if (param.in === 'header' && typeof param.name === 'string') {
-        results.push({ path: `headers.${param.name}`, type: 'string' });
+    // Body properties
+    const body = s.body ?? s.requestBody ?? s.content ?? s;
+    extractSchemaPaths(body, 'body', 0, results);
+
+    // Header and path parameters from OpenAPI parameters array
+    if (Array.isArray(s.parameters)) {
+      for (const param of s.parameters as Record<string, unknown>[]) {
+        if (param.in === 'header' && typeof param.name === 'string') {
+          results.push({ path: `headers.${param.name}`, type: 'string' });
+        }
+        if (param.in === 'path' && typeof param.name === 'string') {
+          results.push({ path: `path.${param.name}`, type: 'string' });
+        }
+      }
+    }
+  }
+
+  // Path params from URL pattern
+  if (requestPath) {
+    const matches = [...requestPath.matchAll(/\{([a-zA-Z0-9_-]+)\}/g)];
+    const alreadySuggested = new Set(
+      results.filter((r) => r.path.startsWith('path.')).map((r) => r.path.slice(5)),
+    );
+    for (const m of matches) {
+      if (!alreadySuggested.has(m[1])) {
+        results.push({ path: `path.${m[1]}`, type: 'string' });
       }
     }
   }

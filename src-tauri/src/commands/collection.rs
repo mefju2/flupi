@@ -6,6 +6,15 @@ use crate::services::file_io;
 use crate::utils::name_to_slug;
 
 #[command]
+pub fn get_collection(project_path: PathBuf, folder_name: String) -> Result<Collection, FlupiError> {
+    let path = project_path
+        .join("collections")
+        .join(&folder_name)
+        .join("collection.json");
+    file_io::read_json(&path)
+}
+
+#[command]
 pub fn create_collection(project_path: PathBuf, name: String) -> Result<String, FlupiError> {
     let slug = name_to_slug(&name);
     let collection_dir = project_path.join("collections").join(&slug);

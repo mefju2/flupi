@@ -107,6 +107,7 @@ export interface RequestData {
   headers: Record<string, string>;
   body?: BodyConfig;
   templateRef?: TemplateRef;
+  pathParams?: Record<string, string>;
 }
 
 export interface CollectionData {
@@ -151,6 +152,10 @@ export async function duplicateRequest(projectPath: string, requestId: string): 
 }
 
 // === Collection CRUD Commands ===
+export async function getCollection(projectPath: string, folderName: string): Promise<CollectionData> {
+  return invoke('get_collection', { projectPath, folderName });
+}
+
 export async function createCollection(projectPath: string, name: string): Promise<string> {
   return invoke('create_collection', { projectPath, name });
 }

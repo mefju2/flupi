@@ -1,7 +1,8 @@
 <script lang="ts">
   import RequestTree from '$lib/components/requests/RequestTree.svelte';
   import RequestEditor from '$lib/components/requests/RequestEditor.svelte';
-  import { activeRequest } from '$lib/stores/requests';
+  import CollectionEditor from '$lib/components/requests/CollectionEditor.svelte';
+  import { activeRequest, activeCollectionFolder, activeCollection } from '$lib/stores/requests';
 </script>
 
 <div class="flex h-full">
@@ -9,10 +10,18 @@
     <RequestTree />
   </div>
   <div class="flex-1 overflow-hidden">
-    {#if $activeRequest}
+    {#if $activeCollectionFolder && $activeCollection}
+      <div class="h-full overflow-y-auto">
+        <CollectionEditor
+          folderName={$activeCollectionFolder}
+          collection={$activeCollection}
+          onUpdate={(updated) => activeCollection.set(updated)}
+        />
+      </div>
+    {:else if $activeRequest}
       <RequestEditor />
     {:else}
-      <p class="p-6 text-app-text-3 text-sm">Pick a request from the sidebar to get started</p>
+      <p class="p-6 text-app-text-3 text-sm">Pick a request or collection from the sidebar.</p>
     {/if}
   </div>
 </div>

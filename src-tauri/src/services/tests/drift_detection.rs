@@ -33,6 +33,7 @@ fn write_request_with_template_ref(
         path: format!("/{}", operation_id),
         auth: None,
         headers: IndexMap::new(),
+        path_params: IndexMap::new(),
         body: None,
         template_ref: Some(TemplateRef {
             source_id: source_id.to_string(),

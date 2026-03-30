@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  const schemaCache = new Map<string, { requestSchema: unknown; responseSchema: unknown }>();
+  const schemaCache = new Map<string, { requestSchema: unknown; responseSchema: unknown; requestPath: string | null }>();
 </script>
 
 <script lang="ts">
@@ -14,15 +14,17 @@
     step: ScenarioStep;
     requestTree: RequestTreeNode[];
     index: number;
+    extractedVars?: string[];
     onUpdate: (step: ScenarioStep) => void;
     onDelete: () => void;
   }
 
-  let { step, requestTree, index, onUpdate, onDelete }: Props = $props();
+  let { step, requestTree, index, extractedVars = [], onUpdate, onDelete }: Props = $props();
 
   let expanded = $state(false);
   let requestSchema = $state<unknown>(null);
   let responseSchema = $state<unknown>(null);
+  let requestPath = $state<string | null>(null);
 
   $effect(() => {
     const id = step.requestId;
@@ -34,6 +36,7 @@
       const cached = schemaCache.get(cacheKey)!;
       requestSchema = cached.requestSchema;
       responseSchema = cached.responseSchema;
+      requestPath = cached.requestPath;
       return;
     }
 
@@ -41,13 +44,16 @@
       const schemas = {
         requestSchema: r.templateRef?.requestSchema ?? null,
         responseSchema: r.templateRef?.responseSchema ?? null,
+        requestPath: r.path,
       };
       schemaCache.set(cacheKey, schemas);
       requestSchema = schemas.requestSchema;
       responseSchema = schemas.responseSchema;
+      requestPath = schemas.requestPath;
     }).catch(() => {
       requestSchema = null;
       responseSchema = null;
+      requestPath = null;
     });
   });
 
@@ -130,6 +136,8 @@
         <OverridesPanel
           overrides={step.overrides}
           {requestSchema}
+          requestPath={requestPath ?? undefined}
+          {extractedVars}
           onUpdate={(overrides) => onUpdate({ ...step, overrides })}
         />
       </div>

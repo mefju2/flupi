@@ -18,10 +18,12 @@ pub fn resolve_inheritance(request: &Request, collection: Option<&Collection>) -
         merged.extend(effective.headers.clone());
         effective.headers = merged;
 
-        // BaseUrl: prepend if path is relative
+        // BaseUrl: prepend if path is relative (not an absolute URL or a template variable
+        // that will resolve to one, e.g. {{BaseUrl}}/path)
         if let Some(base_url) = &col.base_url {
             if !effective.path.starts_with("http://")
                 && !effective.path.starts_with("https://")
+                && !effective.path.starts_with("{{")
             {
                 effective.path =
                     format!("{}{}", base_url.trim_end_matches('/'), effective.path);

@@ -2,9 +2,9 @@
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import { project } from '$lib/stores/project';
-  import { requestTree, activeRequestId, activeRequest } from '$lib/stores/requests';
+  import { requestTree, activeRequestId, activeRequest, activeCollectionFolder, activeCollection } from '$lib/stores/requests';
   import {
-    loadRequestTree, getRequest, createRequest, deleteRequest, renameRequest,
+    loadRequestTree, getRequest, getCollection, createRequest, deleteRequest, renameRequest,
     duplicateRequest, createCollection, deleteCollection, renameCollection,
     moveRequest, type RequestTreeNode,
   } from '$lib/services/tauri-commands';
@@ -67,9 +67,20 @@
     if (!$project.path) return;
     lastResponse.set(null);
     lastError.set(null);
+    activeCollectionFolder.set(null);
+    activeCollection.set(null);
     activeRequestId.set(id);
     try { activeRequest.set(await getRequest($project.path, id)); }
     catch (e) { console.error('Failed to load request:', e); }
+  }
+
+  async function selectCollection(folderName: string) {
+    if (!$project.path) return;
+    activeRequestId.set(null);
+    activeRequest.set(null);
+    activeCollectionFolder.set(folderName);
+    try { activeCollection.set(await getCollection($project.path, folderName)); }
+    catch (e) { console.error('Failed to load collection:', e); }
   }
 
   function openContextMenu(e: MouseEvent, node: RequestTreeNode) {
@@ -143,7 +154,7 @@
     {#each collections as collection (collection.folder_name)}
       {@const key = collection.folder_name}
       {@const items = dndItems[key] ?? []}
-      <TreeNode node={{ ...collection, children: [] }} activeRequestId={$activeRequestId} onSelect={selectRequest} onContextMenu={openContextMenu} expanded={collectionExpanded[key] ?? true} onToggleExpanded={() => { collectionExpanded[key] = !(collectionExpanded[key] ?? true); }} />
+      <TreeNode node={{ ...collection, children: [] }} activeRequestId={$activeRequestId} activeCollectionFolder={$activeCollectionFolder} onSelect={selectRequest} onSelectCollection={selectCollection} onContextMenu={openContextMenu} expanded={collectionExpanded[key] ?? true} onToggleExpanded={() => { collectionExpanded[key] = !(collectionExpanded[key] ?? true); }} />
       {#if collectionExpanded[key] ?? true}
       <div class="ml-3 border-l border-app-border pl-1 min-h-1"
         use:dndzone={{ items, type: 'request', flipDurationMs: 150 }}

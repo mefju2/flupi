@@ -5,6 +5,7 @@
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import KeyValueTable from '$lib/components/shared/KeyValueTable.svelte';
   import AuthTab from './AuthTab.svelte';
+  import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
 
   interface Props {
     folderName: string;
@@ -64,13 +65,11 @@
 
   <!-- Base URL -->
   <div>
-    <label for="collection-base-url" class="text-xs text-app-text-3 block mb-1">Base URL</label>
-    <input
-      id="collection-base-url"
-      class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
+    <span class="text-xs text-app-text-3 block mb-1">Base URL</span>
+    <VariableAutocomplete
       value={local.baseUrl ?? ''}
+      onChange={(v) => patch({ baseUrl: v })}
       placeholder="https://api.example.com"
-      oninput={(e) => patch({ baseUrl: e.currentTarget.value })}
     />
     <p class="text-xs text-app-text-4 mt-1">Prepended to all request paths in this collection.</p>
   </div>

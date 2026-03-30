@@ -14,7 +14,9 @@
   interface Props {
     node: RequestTreeNode;
     activeRequestId: string | null;
+    activeCollectionFolder?: string | null;
     onSelect: (id: string) => void;
+    onSelectCollection?: (folderName: string) => void;
     onContextMenu: (e: MouseEvent, node: RequestTreeNode) => void;
     showDragHandle?: boolean;
     inlineEdit?: InlineEdit | null;
@@ -22,7 +24,7 @@
     onToggleExpanded?: () => void;
   }
 
-  let { node, activeRequestId, onSelect, onContextMenu, showDragHandle = false, inlineEdit = null, expanded = node.type === 'Collection', onToggleExpanded }: Props = $props();
+  let { node, activeRequestId, activeCollectionFolder = null, onSelect, onSelectCollection, onContextMenu, showDragHandle = false, inlineEdit = null, expanded = node.type === 'Collection', onToggleExpanded }: Props = $props();
 
   function focusAndSelect(el: HTMLElement) {
     el.focus();
@@ -31,18 +33,30 @@
 </script>
 
 {#if node.type === 'Collection' || node.type === 'Folder'}
+  {@const isActiveCollection = node.type === 'Collection' && activeCollectionFolder === node.folder_name}
   <div>
     <div
-      class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none text-app-text-2 hover:bg-app-card/50 hover:text-app-text rounded"
-      role="button"
-      tabindex="0"
-      onclick={() => onToggleExpanded ? onToggleExpanded() : null}
-      onkeydown={(e) => e.key === 'Enter' && (onToggleExpanded ? onToggleExpanded() : null)}
+      class="flex items-center gap-1.5 px-2 py-1 text-sm select-none rounded
+        {isActiveCollection ? 'bg-app-card text-app-text' : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
       oncontextmenu={(e) => { e.preventDefault(); onContextMenu(e, node); }}
     >
-      <span class="text-app-text-3 text-xs">{expanded ? '▾' : '▸'}</span>
-      <span class="text-app-text-3 text-xs">📁</span>
-      <span class="truncate">{node.name}</span>
+      <button
+        class="text-app-text-3 text-xs shrink-0 focus:outline-none cursor-pointer hover:text-app-text-2 w-3"
+        tabindex="0"
+        onclick={(e) => { e.stopPropagation(); onToggleExpanded?.(); }}
+        onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onToggleExpanded?.(); } }}
+        aria-label={expanded ? 'Collapse' : 'Expand'}
+      >{expanded ? '▾' : '▸'}</button>
+      <span
+        class="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer"
+        role="button"
+        tabindex="0"
+        onclick={() => node.type === 'Collection' ? onSelectCollection?.(node.folder_name) : onToggleExpanded?.()}
+        onkeydown={(e) => { if (e.key === 'Enter') node.type === 'Collection' ? onSelectCollection?.(node.folder_name) : onToggleExpanded?.(); }}
+      >
+        <span class="text-app-text-3 text-xs">📁</span>
+        <span class="truncate">{node.name}</span>
+      </span>
     </div>
 
     {#if expanded}
@@ -51,7 +65,9 @@
           <TreeNode
             node={child}
             {activeRequestId}
+            {activeCollectionFolder}
             {onSelect}
+            {onSelectCollection}
             {onContextMenu}
           />
         {/each}
