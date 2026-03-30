@@ -34,7 +34,7 @@
     debouncedSave.trigger();
   }
 
-  let headerRows = $derived(Object.entries(local.headers).map(([key, value]) => ({ key, value })));
+  let headerRows = $derived(Object.entries(local.headers).map(([key, value]) => ({ id: key, key, value })));
 
   function handleHeadersUpdate(rows: { key: string; value: string }[]) {
     const result: Record<string, string> = {};

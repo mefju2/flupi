@@ -13,6 +13,22 @@
 
   let { scenario, onUpdate, onSave, onRun }: Props = $props();
 
+  let nameDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function handleNameInput(value: string) {
+    if (nameDebounceTimer) clearTimeout(nameDebounceTimer);
+    nameDebounceTimer = setTimeout(() => {
+      onUpdate({ ...scenario, name: value });
+      nameDebounceTimer = null;
+    }, 300);
+  }
+
+  $effect(() => {
+    return () => {
+      if (nameDebounceTimer) clearTimeout(nameDebounceTimer);
+    };
+  });
+
   function addStep() {
     const newStep: ScenarioStep = {
       id: crypto.randomUUID(),
@@ -41,7 +57,7 @@
     <input
       class="flex-1 bg-transparent text-app-text text-base font-medium focus:outline-none placeholder:text-app-text-4"
       value={scenario.name}
-      oninput={(e) => onUpdate({ ...scenario, name: e.currentTarget.value })}
+      oninput={(e) => handleNameInput(e.currentTarget.value)}
       placeholder="Scenario name"
     />
     <button

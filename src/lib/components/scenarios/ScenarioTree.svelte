@@ -77,12 +77,15 @@
     expandedGroups = next;
   }
 
-  let groups = $derived(
-    $scenarioTree.filter((n): n is ScenarioTreeNode & { type: 'Group' } => n.type === 'Group')
-  );
-  let rootScenarios = $derived(
-    $scenarioTree.filter((n): n is ScenarioTreeNode & { type: 'Scenario' } => n.type === 'Scenario')
-  );
+  const { groups, rootScenarios } = $derived.by(() => {
+    const groups: (ScenarioTreeNode & { type: 'Group' })[] = [];
+    const rootScenarios: (ScenarioTreeNode & { type: 'Scenario' })[] = [];
+    for (const n of $scenarioTree) {
+      if (n.type === 'Group') groups.push(n as ScenarioTreeNode & { type: 'Group' });
+      else if (n.type === 'Scenario') rootScenarios.push(n as ScenarioTreeNode & { type: 'Scenario' });
+    }
+    return { groups, rootScenarios };
+  });
 </script>
 
 <div class="flex flex-col h-full bg-app-panel">

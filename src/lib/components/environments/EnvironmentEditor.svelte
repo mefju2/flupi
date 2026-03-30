@@ -7,6 +7,7 @@
   import { fade } from 'svelte/transition';
 
   interface Row {
+    id: string;
     key: string;
     value: string;
     isSecret?: boolean;
@@ -26,8 +27,8 @@
     syncedFileName = fileName;
     if (!currentEntry) { rows = []; return; }
     rows = [
-      ...Object.entries(currentEntry.environment.variables).map(([key, value]) => ({ key, value, isSecret: false as const })),
-      ...currentEntry.environment.secrets.map((key) => ({ key, value: currentEntry!.secrets[key] ?? '', isSecret: true as const })),
+      ...Object.entries(currentEntry.environment.variables).map(([key, value], i) => ({ id: key || String(i), key, value, isSecret: false as const })),
+      ...currentEntry.environment.secrets.map((key, i) => ({ id: `secret:${key || String(i)}`, key, value: currentEntry!.secrets[key] ?? '', isSecret: true as const })),
     ];
   });
 
@@ -76,17 +77,17 @@
       }
     }
 
-    environments.update((list) =>
-      list.map((e) =>
-        e.fileName === currentEntry!.fileName
-          ? {
-              ...e,
-              environment: { ...e.environment, variables, secrets: secretKeys },
-              secrets: secretValues,
-            }
-          : e
-      )
-    );
+    environments.update((list) => {
+      const idx = list.findIndex((e) => e.fileName === currentEntry!.fileName);
+      if (idx === -1) return list;
+      const next = [...list];
+      next[idx] = {
+        ...list[idx],
+        environment: { ...list[idx].environment, variables, secrets: secretKeys },
+        secrets: secretValues,
+      };
+      return next;
+    });
 
     debouncedSave.trigger();
   }

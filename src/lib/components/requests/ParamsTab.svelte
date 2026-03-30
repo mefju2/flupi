@@ -2,6 +2,7 @@
   import KeyValueTable from '$lib/components/shared/KeyValueTable.svelte';
 
   interface Row {
+    id: string;
     key: string;
     value: string;
   }
@@ -22,7 +23,8 @@
       .filter(Boolean)
       .map((pair) => {
         const [k, ...rest] = pair.split('=');
-        return { key: decodeURIComponent(k ?? ''), value: decodeURIComponent(rest.join('=') ?? '') };
+        const key = decodeURIComponent(k ?? '');
+        return { id: key, key, value: decodeURIComponent(rest.join('=') ?? '') };
       });
   }
 

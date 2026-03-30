@@ -2,6 +2,7 @@
   import VariableAutocomplete from './VariableAutocomplete.svelte';
 
   interface Row {
+    id: string;
     key: string;
     value: string;
     isSecret?: boolean;
@@ -17,7 +18,7 @@
   let { rows, showSecretToggle = false, readOnlyKeys = [], onUpdate }: Props = $props();
 
   function addRow() {
-    onUpdate([...rows, { key: '', value: '', isSecret: false }]);
+    onUpdate([...rows, { id: crypto.randomUUID(), key: '', value: '', isSecret: false }]);
   }
 
   function removeRow(index: number) {
@@ -32,7 +33,7 @@
 </script>
 
 <div class="space-y-1">
-  {#each rows as row, i}
+  {#each rows as row, i (row.id)}
     <div class="flex gap-2 items-center">
       <input
         class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"

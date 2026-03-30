@@ -10,6 +10,7 @@
   let showAddForm = $state(false);
   let wizardSourceId = $state<string | null>(null);
   let newlyAddedSourceId = $state<string | null>(null);
+  let newlyAddedTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(async () => {
     if (!$project.path) return;
@@ -21,7 +22,11 @@
   function handleCloseAddForm() { showAddForm = false; }
   function handleSourceAdded(sourceId: string) {
     newlyAddedSourceId = sourceId;
-    setTimeout(() => { newlyAddedSourceId = null; }, 2000);
+    if (newlyAddedTimer) clearTimeout(newlyAddedTimer);
+    newlyAddedTimer = setTimeout(() => {
+      newlyAddedSourceId = null;
+      newlyAddedTimer = null;
+    }, 2000);
   }
   function handleOpenImport(sourceId: string) { wizardSourceId = sourceId; }
   function handleCloseWizard() { wizardSourceId = null; }

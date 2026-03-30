@@ -14,17 +14,21 @@
   let loadingIds = $state<Set<string>>(new Set());
   let syncedSources = $state<Set<string>>(new Set());
 
-  function driftCount(sourceId: string): number {
-    let count = 0;
-    $driftedRequestIds.forEach((id) => {
-      if (id.startsWith(sourceId + '/') || id.includes(sourceId)) count++;
-    });
-    return count;
-  }
+  const driftCountBySource = $derived.by(() => {
+    const counts = new Map<string, number>();
+    for (const id of $driftedRequestIds) {
+      const slashIndex = id.indexOf('/');
+      const key = slashIndex !== -1 ? id.slice(0, slashIndex) : id;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return counts;
+  });
 
   async function handleRefresh(sourceId: string) {
     if (!$project.path) return;
-    loadingIds = new Set([...loadingIds, sourceId]);
+    const addLoading = new Set(loadingIds);
+    addLoading.add(sourceId);
+    loadingIds = addLoading;
     try {
       const drifted = await refreshSource($project.path, sourceId);
       driftedRequestIds.update((prev) => {
@@ -33,22 +37,26 @@
         return next;
       });
       openApiSources.set(await listOpenApiSources($project.path));
-      syncedSources = new Set([...syncedSources, sourceId]);
+      const addSynced = new Set(syncedSources);
+      addSynced.add(sourceId);
+      syncedSources = addSynced;
       setTimeout(() => {
-        syncedSources = new Set([...syncedSources].filter((id) => id !== sourceId));
+        const removeSynced = new Set(syncedSources);
+        removeSynced.delete(sourceId);
+        syncedSources = removeSynced;
       }, 2000);
     } catch (e) {
       console.error('Failed to refresh source:', e);
     } finally {
-      loadingIds = new Set([...loadingIds].filter((id) => id !== sourceId));
+      const removeLoading = new Set(loadingIds);
+      removeLoading.delete(sourceId);
+      loadingIds = removeLoading;
     }
   }
 
   async function handleSyncAll() {
     if (!$project.path) return;
-    for (const source of $openApiSources) {
-      await handleRefresh(source.id);
-    }
+    await Promise.all($openApiSources.map((s) => handleRefresh(s.id)));
   }
 
   async function handleDelete(sourceId: string) {
@@ -95,7 +103,7 @@
 
   {#each $openApiSources as source (source.id)}
     {@const loading = loadingIds.has(source.id)}
-    {@const drift = driftCount(source.id)}
+    {@const drift = driftCountBySource.get(source.id) ?? 0}
     {@const synced = syncedSources.has(source.id)}
     <div class="bg-app-panel border {source.id === addedSourceId ? 'border-cyan-700' : 'border-app-border'} rounded-lg p-3 flex flex-col gap-2 transition-colors">
       <div class="flex items-start justify-between gap-2">

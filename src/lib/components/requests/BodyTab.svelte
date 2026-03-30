@@ -22,7 +22,7 @@
 
   function formRows(b: BodyConfig | undefined) {
     if (b?.type !== 'form') return [];
-    return Object.entries(b.content).map(([key, value]) => ({ key, value }));
+    return Object.entries(b.content).map(([key, value]) => ({ id: key, key, value }));
   }
 
   const jsonPlaceholder = '{ "key": "value" }';

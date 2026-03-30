@@ -55,9 +55,7 @@
     return result;
   });
 
-  const varMap: Record<string, string> = $derived(
-    Object.fromEntries(allVars.map(v => [v.name, '']))
-  );
+  const varNames: Set<string> = $derived(new Set(allVars.map(v => v.name)));
   const fragment: string = $derived(triggerStart < 0 ? '' : value.slice(triggerStart + 2));
   const filtered: VarItem[] = $derived(allVars.filter((v) => v.name.toLowerCase().startsWith(fragment.toLowerCase())));
 
@@ -121,13 +119,23 @@
     closeTooltip();
   }
 
+  let blurTimer: ReturnType<typeof setTimeout> | null = null;
+
   function handleBlur() {
     // Delay to allow click on dropdown item to register
-    setTimeout(() => {
+    if (blurTimer) clearTimeout(blurTimer);
+    blurTimer = setTimeout(() => {
       showDropdown = false;
       focused = false;
+      blurTimer = null;
     }, 150);
   }
+
+  $effect(() => {
+    return () => {
+      if (blurTimer) clearTimeout(blurTimer);
+    };
+  });
 
   function onTokenHover(varName: string, anchorEl: HTMLElement) {
     hoveredVar = varName;
@@ -147,7 +155,7 @@
     {#if !focused}
       <VariableTokenDisplay
         {value}
-        vars={varMap}
+        vars={varNames}
         secrets={secretsList}
         {placeholder}
         onTokenHover={onTokenHover}

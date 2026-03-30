@@ -22,6 +22,8 @@
       return raw;
     }
   }
+
+  const formattedBody = $derived($lastResponse ? formatBody($lastResponse.body) : '');
 </script>
 
 <div class="border-t border-app-border bg-app-bg min-h-[160px]">
@@ -62,7 +64,7 @@
 
       <div>
         <p class="text-xs text-app-text-3 mb-1">Body</p>
-        <pre class="text-xs font-mono text-app-text bg-app-panel border border-app-border p-3 overflow-auto max-h-[300px] whitespace-pre-wrap break-all">{formatBody($lastResponse.body)}</pre>
+        <pre class="text-xs font-mono text-app-text bg-app-panel border border-app-border p-3 overflow-auto max-h-[300px] whitespace-pre-wrap break-all">{formattedBody}</pre>
       </div>
     </div>
   {/if}

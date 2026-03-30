@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import TopBar from '$lib/components/layout/TopBar.svelte';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
@@ -27,7 +27,7 @@
       selectedEnvironmentFile.set(envList[0].fileName);
     }
 
-    return registerShortcuts([
+    cleanupShortcuts = registerShortcuts([
       { key: 'Enter', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:send-request')) },
       { key: 's', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:save')) },
       { key: 'n', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:new-request')) },
@@ -36,6 +36,9 @@
       { key: 'Enter', ctrl: true, shift: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:run-scenario')) },
     ]);
   });
+
+  let cleanupShortcuts: (() => void) | undefined;
+  onDestroy(() => cleanupShortcuts?.());
 </script>
 
 <div class="flex flex-col h-screen bg-app-bg text-app-text">

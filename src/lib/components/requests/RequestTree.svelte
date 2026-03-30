@@ -28,7 +28,12 @@
   } | null>(null);
   let pendingDelete = $state<{ type: 'request' | 'collection'; id: string; label: string } | null>(null);
 
-  function showToast(msg: string) { toast = msg; setTimeout(() => (toast = null), 3000); }
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  function showToast(msg: string) {
+    if (toastTimer) clearTimeout(toastTimer);
+    toast = msg;
+    toastTimer = setTimeout(() => { toast = null; toastTimer = null; }, 3000);
+  }
   function focusOnMount(el: HTMLElement) { el.focus(); if (el instanceof HTMLInputElement) el.select(); }
 
   async function reload() {

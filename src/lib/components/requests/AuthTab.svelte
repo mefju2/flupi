@@ -23,7 +23,7 @@
 
   function customRows(a: AuthConfig | undefined) {
     if (a?.type !== 'custom') return [];
-    return Object.entries(a.headers).map(([key, value]) => ({ key, value }));
+    return Object.entries(a.headers).map(([key, value]) => ({ id: key, key, value }));
   }
 </script>
 

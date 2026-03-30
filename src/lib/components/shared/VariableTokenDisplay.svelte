@@ -1,11 +1,13 @@
 <script lang="ts">
+  const TOKEN_REGEX = /\{\{(\w+)\}\}/g;
+
   interface TokenPart { type: 'token'; name: string; raw: string; found: boolean; }
   interface TextPart { type: 'text'; text: string; }
   type Part = TokenPart | TextPart;
 
   interface Props {
     value: string;
-    vars: Record<string, string>;
+    vars: Set<string>;
     secrets: string[];
     placeholder?: string;
     onTokenHover: (varName: string, anchorEl: HTMLElement) => void;
@@ -18,13 +20,13 @@
   const parsedParts: Part[] = $derived.by(() => {
     const parts: Part[] = [];
     let lastIndex = 0;
-    const regex = /\{\{(\w+)\}\}/g;
+    TOKEN_REGEX.lastIndex = 0;
     let match;
-    while ((match = regex.exec(value)) !== null) {
+    while ((match = TOKEN_REGEX.exec(value)) !== null) {
       if (match.index > lastIndex) {
         parts.push({ type: 'text', text: value.slice(lastIndex, match.index) });
       }
-      parts.push({ type: 'token', name: match[1], raw: match[0], found: match[1] in vars || secrets.includes(match[1]) });
+      parts.push({ type: 'token', name: match[1], raw: match[0], found: vars.has(match[1]) || secrets.includes(match[1]) });
       lastIndex = match.index + match[0].length;
     }
     if (lastIndex < value.length) {

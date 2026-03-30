@@ -40,12 +40,6 @@
   let debounceId: ReturnType<typeof setTimeout> | null = null;
   let inputEl = $state<HTMLInputElement | null>(null);
 
-  function handleClickOutside(e: MouseEvent) {
-    if (tooltipEl && !tooltipEl.contains(e.target as Node)) {
-      onclose();
-    }
-  }
-
   onMount(() => {
     currentValue = initialValue;
 
@@ -66,14 +60,19 @@
       inputEl?.focus();
     });
 
-    // Click-outside handler registered after current event loop tick
-    const timerId = setTimeout(() => {
-      document.addEventListener('pointerdown', handleClickOutside);
-    }, 0);
+    // Register click-outside listener synchronously; skip the first event to avoid
+    // the same pointerdown that opened the tooltip immediately closing it.
+    let skipFirst = true;
+    function handleClickOutside(e: PointerEvent) {
+      if (skipFirst) { skipFirst = false; return; }
+      if (tooltipEl && !tooltipEl.contains(e.target as Node)) {
+        onclose();
+      }
+    }
 
-    // Synchronous cleanup — Svelte CAN use this
+    document.addEventListener('pointerdown', handleClickOutside);
+
     return () => {
-      clearTimeout(timerId);
       document.removeEventListener('pointerdown', handleClickOutside);
       if (debounceId) clearTimeout(debounceId);
     };

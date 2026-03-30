@@ -2,6 +2,7 @@
   import KeyValueTable from '$lib/components/shared/KeyValueTable.svelte';
 
   interface Row {
+    id: string;
     key: string;
     value: string;
   }
@@ -13,7 +14,7 @@
 
   let { headers, onUpdate }: Props = $props();
 
-  let rows = $derived(Object.entries(headers).map(([key, value]) => ({ key, value })));
+  let rows = $derived(Object.entries(headers).map(([key, value]) => ({ id: key, key, value })));
 
   function handleUpdate(updated: Row[]) {
     const result: Record<string, string> = {};

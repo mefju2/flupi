@@ -1,3 +1,7 @@
+<script lang="ts" module>
+  const schemaCache = new Map<string, { requestSchema: unknown; responseSchema: unknown }>();
+</script>
+
 <script lang="ts">
   import type { ScenarioStep, RequestTreeNode } from '$lib/services/tauri-commands';
   import { getRequest } from '$lib/services/tauri-commands';
@@ -24,9 +28,23 @@
     const id = step.requestId;
     const path = $project?.path;
     if (!id || !path) return;
+
+    const cacheKey = `${path}:${id}`;
+    if (schemaCache.has(cacheKey)) {
+      const cached = schemaCache.get(cacheKey)!;
+      requestSchema = cached.requestSchema;
+      responseSchema = cached.responseSchema;
+      return;
+    }
+
     getRequest(path, id).then((r) => {
-      requestSchema = r.templateRef?.requestSchema ?? null;
-      responseSchema = r.templateRef?.responseSchema ?? null;
+      const schemas = {
+        requestSchema: r.templateRef?.requestSchema ?? null,
+        responseSchema: r.templateRef?.responseSchema ?? null,
+      };
+      schemaCache.set(cacheKey, schemas);
+      requestSchema = schemas.requestSchema;
+      responseSchema = schemas.responseSchema;
     }).catch(() => {
       requestSchema = null;
       responseSchema = null;
