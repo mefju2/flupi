@@ -88,7 +88,7 @@ export type AuthConfig =
 export type BodyConfig =
   | { type: 'none' }
   | { type: 'json'; content: unknown }
-  | { type: 'form'; content: Record<string, string> }
+  | { type: 'form'; content: Record<string, string>; disabledFields?: string[] }
   | { type: 'raw'; content: string };
 
 export interface TemplateRef {
@@ -105,6 +105,8 @@ export interface RequestData {
   path: string;
   auth?: AuthConfig;
   headers: Record<string, string>;
+  disabledHeaders?: string[];
+  disabledCollectionHeaders?: string[];
   body?: BodyConfig;
   templateRef?: TemplateRef;
   pathParams?: Record<string, string>;
