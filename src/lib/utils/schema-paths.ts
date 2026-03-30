@@ -78,7 +78,7 @@ export function buildOverrideSuggestions(
 
   // Path params from URL pattern
   if (requestPath) {
-    const matches = [...requestPath.matchAll(/\{([a-zA-Z0-9_-]+)\}/g)];
+    const matches = [...requestPath.matchAll(/(?<!\{)\{([a-zA-Z0-9_-]+)\}(?!\})/g)];
     const alreadySuggested = new Set(
       results.filter((r) => r.path.startsWith('path.')).map((r) => r.path.slice(5)),
     );

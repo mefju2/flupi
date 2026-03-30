@@ -10,7 +10,7 @@
   let { path, pathParams, onPathParamsChange }: Props = $props();
 
   function parsePathParams(p: string): string[] {
-    const matches = [...p.matchAll(/\{([a-zA-Z0-9_-]+)\}/g)];
+    const matches = [...p.matchAll(/(?<!\{)\{([a-zA-Z0-9_-]+)\}(?!\})/g)];
     const seen = new Set<string>();
     const result: string[] = [];
     for (const m of matches) {

@@ -32,7 +32,7 @@
   $effect(() => {
     const req = $activeRequest;
     if (!req) return;
-    const matches = [...req.path.matchAll(/\{([a-zA-Z0-9_-]+)\}/g)];
+    const matches = [...req.path.matchAll(/(?<!\{)\{([a-zA-Z0-9_-]+)\}(?!\})/g)];
     const detected = [...new Set(matches.map((m) => m[1]))];
     const current = req.pathParams ?? {};
     const hasNew = detected.some((p) => !(p in current));
