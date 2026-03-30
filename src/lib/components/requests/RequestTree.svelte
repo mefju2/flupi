@@ -65,22 +65,26 @@
 
   async function selectRequest(id: string) {
     if (!$project.path) return;
-    lastResponse.set(null);
-    lastError.set(null);
-    activeCollectionFolder.set(null);
-    activeCollection.set(null);
-    activeRequestId.set(id);
-    try { activeRequest.set(await getRequest($project.path, id)); }
-    catch (e) { console.error('Failed to load request:', e); }
+    try {
+        const req = await getRequest($project.path, id);
+        lastResponse.set(null);
+        lastError.set(null);
+        activeCollectionFolder.set(null);
+        activeCollection.set(null);
+        activeRequestId.set(id);
+        activeRequest.set(req);
+    } catch (e) { console.error('Failed to load request:', e); }
   }
 
   async function selectCollection(folderName: string) {
     if (!$project.path) return;
-    activeRequestId.set(null);
-    activeRequest.set(null);
-    activeCollectionFolder.set(folderName);
-    try { activeCollection.set(await getCollection($project.path, folderName)); }
-    catch (e) { console.error('Failed to load collection:', e); }
+    try {
+        const data = await getCollection($project.path, folderName);
+        activeRequestId.set(null);
+        activeRequest.set(null);
+        activeCollectionFolder.set(folderName);
+        activeCollection.set(data);
+    } catch (e) { console.error('Failed to load collection:', e); }
   }
 
   function openContextMenu(e: MouseEvent, node: RequestTreeNode) {
