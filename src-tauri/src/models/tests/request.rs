@@ -51,3 +51,51 @@ fn test_derive_request_id_root_nested() {
     let path = Path::new("/project/requests/monitoring/status.json");
     assert_eq!(derive_request_id(project, path).unwrap(), "monitoring/status");
 }
+
+#[test]
+fn test_disabled_headers_default_empty() {
+    let json = r#"{"name":"r","method":"GET","path":"/","headers":{}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    assert!(req.disabled_headers.is_empty());
+    assert!(req.disabled_collection_headers.is_empty());
+}
+
+#[test]
+fn test_disabled_headers_round_trip() {
+    let json = r#"{"name":"r","method":"GET","path":"/","headers":{},"disabledHeaders":["X-Foo"],"disabledCollectionHeaders":["Authorization"]}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    assert_eq!(req.disabled_headers, vec!["X-Foo"]);
+    assert_eq!(req.disabled_collection_headers, vec!["Authorization"]);
+    let out = serde_json::to_string(&req).unwrap();
+    assert!(out.contains("\"disabledHeaders\""));
+    assert!(out.contains("\"disabledCollectionHeaders\""));
+}
+
+#[test]
+fn test_disabled_headers_omitted_when_empty() {
+    let json = r#"{"name":"r","method":"GET","path":"/","headers":{}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    let out = serde_json::to_string(&req).unwrap();
+    assert!(!out.contains("disabledHeaders"));
+    assert!(!out.contains("disabledCollectionHeaders"));
+}
+
+#[test]
+fn test_body_form_disabled_fields_round_trip() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"form","content":{"key":"val"},"disabledFields":["key"]}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    match req.body.unwrap() {
+        BodyConfig::Form { content: _, disabled_fields } => {
+            assert_eq!(disabled_fields, vec!["key"]);
+        }
+        _ => panic!("expected form body"),
+    }
+}
+
+#[test]
+fn test_body_form_disabled_fields_omitted_when_empty() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"form","content":{"key":"val"}}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    let out = serde_json::to_string(&req).unwrap();
+    assert!(!out.contains("disabledFields"));
+}

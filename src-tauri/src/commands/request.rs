@@ -83,6 +83,8 @@ pub fn create_request(
         path_params: indexmap::IndexMap::new(),
         body: None,
         template_ref: None,
+        disabled_headers: vec![],
+        disabled_collection_headers: vec![],
     };
     file_io::write_json(&path, &request)?;
     Ok(id)

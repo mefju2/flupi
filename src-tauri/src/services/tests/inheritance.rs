@@ -17,6 +17,8 @@ fn make_request(
         path_params: IndexMap::new(),
         body: None,
         template_ref: None,
+        disabled_headers: vec![],
+        disabled_collection_headers: vec![],
     }
 }
 

@@ -161,6 +161,8 @@ pub fn import_operations(
                 request_schema,
                 response_schema,
             }),
+            disabled_headers: vec![],
+            disabled_collection_headers: vec![],
         };
 
         let file_path = project_path

@@ -42,6 +42,8 @@ fn write_request_with_template_ref(
             request_schema: serde_json::Value::Null,
             response_schema: serde_json::Value::Null,
         }),
+        disabled_headers: vec![],
+        disabled_collection_headers: vec![],
     };
     let path = project_path
         .join("collections")

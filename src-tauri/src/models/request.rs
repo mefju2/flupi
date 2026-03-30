@@ -17,6 +17,10 @@ pub struct Request {
     pub body: Option<BodyConfig>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "templateRef")]
     pub template_ref: Option<TemplateRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "disabledHeaders")]
+    pub disabled_headers: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "disabledCollectionHeaders")]
+    pub disabled_collection_headers: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -42,7 +46,11 @@ pub enum BodyConfig {
     #[serde(rename = "json")]
     Json { content: serde_json::Value },
     #[serde(rename = "form")]
-    Form { content: IndexMap<String, String> },
+    Form {
+        content: IndexMap<String, String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "disabledFields")]
+        disabled_fields: Vec<String>,
+    },
     #[serde(rename = "raw")]
     Raw { content: String },
     #[serde(rename = "none")]
