@@ -1,8 +1,12 @@
 use crate::models::request::{Request, AuthConfig};
 use crate::models::collection::Collection;
+use indexmap::IndexMap;
 
 pub fn resolve_inheritance(request: &Request, collection: Option<&Collection>) -> Request {
     let mut effective = request.clone();
+
+    // Filter disabled request-level headers before merging
+    effective.headers.retain(|k, _| !effective.disabled_headers.contains(k));
 
     if let Some(col) = collection {
         // Auth: inherit if absent or explicit Inherit
@@ -13,8 +17,14 @@ pub fn resolve_inheritance(request: &Request, collection: Option<&Collection>) -
             _ => {}
         }
 
-        // Headers: merge, request wins on conflict
-        let mut merged = col.headers.clone();
+        // Headers: collection first, then request (request wins on conflict).
+        // Disabled collection headers are excluded from the merge.
+        let col_headers: IndexMap<String, String> = col.headers
+            .iter()
+            .filter(|(k, _)| !effective.disabled_collection_headers.contains(*k))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        let mut merged = col_headers;
         merged.extend(effective.headers.clone());
         effective.headers = merged;
 

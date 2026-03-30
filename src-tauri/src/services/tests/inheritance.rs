@@ -94,3 +94,33 @@ fn test_template_base_url_not_prepended() {
     let effective = resolve_inheritance(&request, Some(&collection));
     assert_eq!(effective.path, "{{BaseUrl}}/resource");
 }
+
+#[test]
+fn test_disabled_collection_header_excluded() {
+    let mut col_headers = IndexMap::new();
+    col_headers.insert("X-Tenant".to_string(), "acme".to_string());
+    col_headers.insert("X-Version".to_string(), "2".to_string());
+    let collection = make_collection(None, None, col_headers);
+
+    let mut req = make_request("/resource", None, IndexMap::new());
+    req.disabled_collection_headers = vec!["X-Tenant".to_string()];
+
+    let effective = resolve_inheritance(&req, Some(&collection));
+    assert!(!effective.headers.contains_key("X-Tenant"), "disabled collection header must be excluded");
+    assert_eq!(effective.headers["X-Version"], "2");
+}
+
+#[test]
+fn test_disabled_request_header_excluded() {
+    let collection = make_collection(None, None, IndexMap::new());
+
+    let mut req_headers = IndexMap::new();
+    req_headers.insert("X-Debug".to_string(), "true".to_string());
+    req_headers.insert("Accept".to_string(), "application/json".to_string());
+    let mut req = make_request("/resource", None, req_headers);
+    req.disabled_headers = vec!["X-Debug".to_string()];
+
+    let effective = resolve_inheritance(&req, Some(&collection));
+    assert!(!effective.headers.contains_key("X-Debug"), "disabled request header must be excluded");
+    assert_eq!(effective.headers["Accept"], "application/json");
+}
