@@ -107,7 +107,13 @@
             class="text-xs px-1 rounded transition-colors {$activeEnvironment === entry.fileName
               ? 'text-cyan-400'
               : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-app-text-4 hover:text-cyan-400'}"
-            onclick={(e) => { e.stopPropagation(); activeEnvironment.set(entry.fileName); }}
+            onclick={(e) => {
+                e.stopPropagation();
+                activeEnvironment.set(entry.fileName);
+                if ($project.path) {
+                  setProjectActiveEnvironment($project.path, entry.fileName);
+                }
+              }}
             title={$activeEnvironment === entry.fileName ? 'Active environment' : 'Set as active'}
             aria-label="Set as active environment"
           >✓</button>
