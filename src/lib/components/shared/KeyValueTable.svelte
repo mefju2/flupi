@@ -152,6 +152,6 @@
     {#if showSecretToggle}
       <div class="w-16"></div>
     {/if}
-    <div class="w-6"></div>
+    <button disabled aria-hidden="true" class="opacity-0 text-lg leading-none pointer-events-none">×</button>
   </div>
 </div>
