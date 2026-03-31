@@ -128,13 +128,23 @@
 
   async function handleOpenCollection() {
     if (!$project.path || !importedFolderSlug) return;
-    onClose();
-    await goto('/requests');
-    activeRequest.set(null);
-    activeCollectionFolder.set(importedFolderSlug);
-    const data = await getCollection($project.path, importedFolderSlug);
-    activeCollection.set(data);
-    requestTree.set(await loadRequestTree($project.path));
+    loading = true; error = null;
+    try {
+      const [data, tree] = await Promise.all([
+        getCollection($project.path, importedFolderSlug),
+        loadRequestTree($project.path),
+      ]);
+      onClose();
+      await goto('/requests');
+      activeRequest.set(null);
+      activeCollection.set(data);
+      requestTree.set(tree);
+      activeCollectionFolder.set(importedFolderSlug);
+    } catch (e) {
+      error = String(e);
+    } finally {
+      loading = false;
+    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -171,10 +181,12 @@
           <p class="text-sm text-app-text-3">
             requests imported into <span class="font-mono text-app-text">{importedFolderSlug}</span>
           </p>
+          {#if error}<p class="text-xs text-red-400">{error}</p>{/if}
           <button
-            class="mt-3 px-4 py-2 text-sm bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors"
+            class="mt-3 px-4 py-2 text-sm bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors disabled:opacity-50"
+            disabled={loading}
             onclick={handleOpenCollection}
-          >Open collection →</button>
+          >{loading ? 'Opening…' : 'Open collection →'}</button>
           <button class="text-xs text-app-text-4 hover:text-app-text-3 transition-colors" onclick={onClose}>
             close to stay here
           </button>
