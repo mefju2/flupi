@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tryParseJson } from '$lib/utils/format';
   import type { ScenarioStep, StepResult } from '$lib/services/tauri-commands';
+  import StatusBadge from '$lib/components/shared/StatusBadge.svelte';
 
   interface Props {
     step: ScenarioStep;
@@ -51,17 +52,16 @@
 
     <div class="flex items-center gap-2 shrink-0">
       {#if statusCode !== undefined}
-        <span class="font-mono text-xs px-1.5 py-0.5 rounded
-          {statusCode >= 200 && statusCode < 300 ? 'text-green-400 bg-green-950/40' : 'text-red-400 bg-red-950/40'}">
+        <StatusBadge variant={statusCode >= 200 && statusCode < 300 ? 'success' : 'error'}>
           {statusCode}
-        </span>
+        </StatusBadge>
       {/if}
       {#if duration !== undefined}
         <span class="text-xs text-app-text-3">{duration}ms</span>
       {/if}
       {#if extractedEntries.length > 0}
         {#each extractedEntries.slice(0, 3) as [key]}
-          <span class="text-xs text-cyan-400 bg-cyan-950/40 border border-cyan-800/60 rounded px-1.5 py-0.5">{key}</span>
+          <StatusBadge variant="info" mono={false}>{key}</StatusBadge>
         {/each}
         {#if extractedEntries.length > 3}
           <span class="text-xs text-app-text-3">+{extractedEntries.length - 3} more</span>
