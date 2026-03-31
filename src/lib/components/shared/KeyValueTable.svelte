@@ -33,7 +33,15 @@
   let draftKey = $state('');
   let draftValue = $state('');
   let draftId = $state(crypto.randomUUID());
-  let draftContainer: HTMLDivElement | undefined = $state();
+  let draftContainer: HTMLDivElement | undefined;
+
+  // Reset draft when the rows source changes (e.g. switching to a different request)
+  $effect(() => {
+    void rows;
+    draftKey = '';
+    draftValue = '';
+    draftId = crypto.randomUUID();
+  });
 
   function commitDraft() {
     if (!draftKey) return;
@@ -46,7 +54,13 @@
   function onDraftFocusOut(e: FocusEvent) {
     const related = e.relatedTarget as HTMLElement | null;
     if (!related || !draftContainer?.contains(related)) {
-      commitDraft();
+      // Delay slightly past VariableAutocomplete's 150ms blur timer so dropdown
+      // item clicks are processed before we commit
+      setTimeout(() => {
+        if (!draftContainer?.contains(document.activeElement)) {
+          commitDraft();
+        }
+      }, 160);
     }
   }
 
