@@ -53,6 +53,9 @@
         existingCollections = nodes
           .filter((n): n is Extract<RequestTreeNode, { type: 'Collection' }> => n.type === 'Collection')
           .map((n) => ({ name: n.name, folder_name: n.folder_name }));
+        if (existingCollections.length > 0) {
+          selectedCollectionValue = existingCollections[0].folder_name;
+        }
       });
     }
   });
