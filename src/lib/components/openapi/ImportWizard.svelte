@@ -144,7 +144,6 @@
         <!-- Step 2: Select operations -->
         <div class="flex items-center justify-between">
           <span class="text-xs text-app-text-3">{selectedIds.size} selected</span>
-          <button class="text-xs text-app-text-3 hover:text-app-text-2" onclick={() => (step = 1)}>← Back</button>
         </div>
         {#each [...groupedOps().entries()] as [tag, ops]}
           <div class="flex flex-col gap-1">
@@ -168,16 +167,21 @@
         {#if operations.length === 0}
           <p class="text-sm text-app-text-4">No operations found.</p>
         {/if}
-        <button
-          class="self-end px-3 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors disabled:opacity-50"
-          disabled={selectedIds.size === 0}
-          onclick={() => (step = 3)}
-        >Next →</button>
+        <div class="flex items-center justify-between mt-2">
+          <button
+            class="px-3 py-1.5 text-xs border border-app-border-2 text-app-text-3 rounded transition-colors hover:text-app-text-2"
+            onclick={() => (step = 1)}
+          >← Back</button>
+          <button
+            class="px-3 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors disabled:opacity-50"
+            disabled={selectedIds.size === 0}
+            onclick={() => (step = 3)}
+          >Next →</button>
+        </div>
 
       {:else if step === 3}
         <!-- Step 3: Collection folder -->
         <div class="flex flex-col gap-2">
-          <button class="self-start text-xs text-app-text-3 hover:text-app-text-2" onclick={() => (step = 2)}>← Back</button>
           <label class="text-xs text-app-text-3">Collection folder name</label>
           <input
             class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
@@ -188,11 +192,17 @@
           <p class="text-xs text-app-text-4">{selectedIds.size} operations will be imported</p>
         </div>
         {#if error}<p class="text-xs text-red-400">{error}</p>{/if}
-        <button
-          class="self-end px-3 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors disabled:opacity-50"
-          disabled={!collectionFolder.trim() || loading}
-          onclick={handleImport}
-        >{loading ? 'Importing…' : 'Import'}</button>
+        <div class="flex items-center justify-between mt-2">
+          <button
+            class="px-3 py-1.5 text-xs border border-app-border-2 text-app-text-3 rounded transition-colors hover:text-app-text-2"
+            onclick={() => (step = 2)}
+          >← Back</button>
+          <button
+            class="px-3 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors disabled:opacity-50"
+            disabled={!collectionFolder.trim() || loading}
+            onclick={handleImport}
+          >{loading ? 'Importing…' : 'Import'}</button>
+        </div>
       {/if}
     </div>
   </div>
