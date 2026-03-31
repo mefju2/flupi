@@ -5,6 +5,7 @@ export interface RecentProject {
   name: string;
   path: string;
   lastOpenedAt: string;
+  activeEnvironment?: string | null;
 }
 
 export interface RecentProjects {
@@ -22,6 +23,10 @@ export async function getRecentProjects(): Promise<RecentProjects> {
 
 export async function addRecentProject(name: string, path: string): Promise<void> {
   return invoke('add_recent_project', { name, path });
+}
+
+export async function setProjectActiveEnvironment(path: string, envFileName: string | null): Promise<void> {
+  return invoke('set_project_active_environment', { path, envFileName });
 }
 
 export async function createProject(path: string): Promise<void> {
