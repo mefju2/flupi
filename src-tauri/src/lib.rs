@@ -23,6 +23,7 @@ pub fn run() {
             commands::app_data::add_recent_project,
             commands::app_data::get_preferences,
             commands::app_data::save_preferences,
+            commands::app_data::set_project_active_environment,
             commands::environment::list_environments,
             commands::environment::save_environment,
             commands::environment::save_secrets,

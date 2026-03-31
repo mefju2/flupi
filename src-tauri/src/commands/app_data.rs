@@ -45,3 +45,19 @@ pub fn save_preferences(app: AppHandle, preferences: Preferences) -> Result<(), 
     let path = app_data_dir(&app).join("preferences.json");
     file_io::write_json(&path, &preferences)
 }
+
+#[command]
+pub fn set_project_active_environment(
+    app: AppHandle,
+    path: String,
+    env_file_name: Option<String>,
+) -> Result<(), FlupiError> {
+    let file_path = app_data_dir(&app).join("recent-projects.json");
+    let mut projects: RecentProjects = if file_path.exists() {
+        file_io::read_json(&file_path)?
+    } else {
+        RecentProjects::default()
+    };
+    projects.update_active_environment(&path, env_file_name.as_deref());
+    file_io::write_json(&file_path, &projects)
+}
