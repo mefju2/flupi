@@ -7,6 +7,8 @@ pub struct RecentProject {
     pub path: String,
     #[serde(rename = "lastOpenedAt")]
     pub last_opened_at: String,
+    #[serde(rename = "activeEnvironment", default)]
+    pub active_environment: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -21,11 +23,18 @@ impl RecentProjects {
             name: name.to_string(),
             path: path.to_string(),
             last_opened_at: Utc::now().to_rfc3339(),
+            active_environment: None,
         });
     }
 
     pub fn remove(&mut self, path: &str) {
         self.projects.retain(|p| p.path != path);
+    }
+
+    pub fn update_active_environment(&mut self, path: &str, env_file_name: Option<&str>) {
+        if let Some(project) = self.projects.iter_mut().find(|p| p.path == path) {
+            project.active_environment = env_file_name.map(|s| s.to_string());
+        }
     }
 }
 
