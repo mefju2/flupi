@@ -6,6 +6,7 @@
   import type { ScenarioStep, RequestTreeNode } from '$lib/services/tauri-commands';
   import { getRequest } from '$lib/services/tauri-commands';
   import { project } from '$lib/stores/project';
+  import { getMethodColor } from '$lib/utils/format';
   import OverridesPanel from './OverridesPanel.svelte';
   import ExtractionsPanel from './ExtractionsPanel.svelte';
   import RequestPicker from './RequestPicker.svelte';
@@ -72,11 +73,7 @@
   }
 
   let requestInfo = $derived(findRequest(requestTree, step.requestId));
-  let methodColors: Record<string, string> = {
-    GET: 'text-green-400', POST: 'text-cyan-400', PUT: 'text-yellow-400',
-    PATCH: 'text-orange-400', DELETE: 'text-red-400',
-  };
-  let methodColor = $derived(requestInfo ? (methodColors[requestInfo.method] ?? 'text-app-text-3') : 'text-app-text-4');
+  let methodColor = $derived(requestInfo ? getMethodColor(requestInfo.method) : 'text-app-text-4');
 </script>
 
 <div class="border border-app-border rounded bg-app-panel mb-2 {expanded ? 'border-l-2 border-l-cyan-500' : 'border-l-2 border-l-transparent'}">

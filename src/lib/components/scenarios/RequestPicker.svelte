@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { RequestTreeNode } from '$lib/services/tauri-commands';
+  import { getMethodColor } from '$lib/utils/format';
 
   interface RequestOption {
     id: string;
@@ -20,11 +21,6 @@
   let search = $state('');
   let activeIndex = $state(0);
   let searchEl = $state<HTMLInputElement | null>(null);
-
-  const METHOD_COLORS: Record<string, string> = {
-    GET: 'text-green-400', POST: 'text-cyan-400', PUT: 'text-yellow-400',
-    PATCH: 'text-orange-400', DELETE: 'text-red-400',
-  };
 
   function flattenTree(nodes: RequestTreeNode[], path: string): RequestOption[] {
     const result: RequestOption[] = [];
@@ -94,7 +90,7 @@
     onclick={openPicker}
   >
     {#if selected}
-      <span class="font-mono text-xs {METHOD_COLORS[selected.method] ?? 'text-app-text-3'} shrink-0">{selected.method}</span>
+      <span class="font-mono text-xs {getMethodColor(selected.method)} shrink-0">{selected.method}</span>
       <span class="text-app-text truncate">{selected.name}</span>
       {#if selected.collectionPath}
         <span class="text-app-text-4 text-xs shrink-0 truncate max-w-[100px]">{selected.collectionPath}</span>
@@ -131,7 +127,7 @@
                 class="w-full text-left px-3 py-1.5 flex items-center gap-2 {idx === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
                 onmousedown={() => select(req.id)}
               >
-                <span class="font-mono text-xs {METHOD_COLORS[req.method] ?? 'text-app-text-3'} w-14 shrink-0">{req.method}</span>
+                <span class="font-mono text-xs {getMethodColor(req.method)} w-14 shrink-0">{req.method}</span>
                 <span class="text-sm text-app-text truncate flex-1">{req.name}</span>
                 {#if req.collectionPath}
                   <span class="text-xs text-app-text-4 shrink-0 truncate max-w-[120px]">{req.collectionPath}</span>
