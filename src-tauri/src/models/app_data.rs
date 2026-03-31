@@ -18,12 +18,15 @@ pub struct RecentProjects {
 
 impl RecentProjects {
     pub fn add(&mut self, name: &str, path: &str) {
+        let existing_active_env = self.projects.iter()
+            .find(|p| p.path == path)
+            .and_then(|p| p.active_environment.clone());
         self.projects.retain(|p| p.path != path);
         self.projects.insert(0, RecentProject {
             name: name.to_string(),
             path: path.to_string(),
             last_opened_at: Utc::now().to_rfc3339(),
-            active_environment: None,
+            active_environment: existing_active_env,
         });
     }
 
