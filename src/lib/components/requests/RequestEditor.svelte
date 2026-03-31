@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { activeRequest, activeRequestId } from '$lib/stores/requests';
+  import { activeRequest, activeRequestId, activeCollection } from '$lib/stores/requests';
   import { project } from '$lib/stores/project';
   import { activeEnvironment } from '$lib/stores/environment';
   import { isExecuting, lastResponse, lastError } from '$lib/stores/execution';
@@ -142,7 +142,11 @@
       {:else if activeTab === 'Headers'}
         <HeadersTab
           headers={$activeRequest.headers}
-          onUpdate={(h) => updateRequest({ headers: h })}
+          disabledHeaders={$activeRequest.disabledHeaders ?? []}
+          collectionHeaders={$activeCollection?.headers}
+          disabledCollectionHeaders={$activeRequest.disabledCollectionHeaders ?? []}
+          onUpdate={(h, disabled) => updateRequest({ headers: h, disabledHeaders: disabled })}
+          onDisabledCollectionHeadersChange={(disabled) => updateRequest({ disabledCollectionHeaders: disabled })}
         />
       {:else if activeTab === 'Auth'}
         <AuthTab
