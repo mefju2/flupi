@@ -8,7 +8,7 @@
   import { searchOpen, theme, type Theme } from '$lib/stores/ui';
   import { project } from '$lib/stores/project';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
-  import { listEnvironments, getPreferences } from '$lib/services/tauri-commands';
+  import { listEnvironments, getPreferences, getRecentProjects } from '$lib/services/tauri-commands';
 
   onMount(async () => {
     if (!$project.isOpen) { goto('/'); return; }
@@ -23,8 +23,11 @@
     const envList = entries.map(([fileName, environment]) => ({ fileName, environment, secrets: {} }));
     environments.set(envList);
     if (envList.length > 0 && $activeEnvironment === null) {
-      activeEnvironment.set(envList[0].fileName);
-      selectedEnvironmentFile.set(envList[0].fileName);
+      const { projects } = await getRecentProjects();
+      const stored = projects.find((p) => p.path === $project.path)?.activeEnvironment ?? null;
+      const validStored = stored && envList.some((e) => e.fileName === stored) ? stored : envList[0].fileName;
+      activeEnvironment.set(validStored);
+      selectedEnvironmentFile.set(validStored);
     }
 
     cleanupShortcuts = registerShortcuts([

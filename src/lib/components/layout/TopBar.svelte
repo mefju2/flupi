@@ -2,6 +2,15 @@
   import { goto } from '$app/navigation';
   import { project } from '$lib/stores/project';
   import { environments, activeEnvironment } from '$lib/stores/environment';
+  import { setProjectActiveEnvironment } from '$lib/services/tauri-commands';
+
+  function selectEnvironment(e: Event) {
+    const fileName = (e.target as HTMLSelectElement).value;
+    activeEnvironment.set(fileName);
+    if ($project.path) {
+      setProjectActiveEnvironment($project.path, fileName);
+    }
+  }
 
   let showShortcuts = $state(false);
 
@@ -30,7 +39,8 @@
     {:else}
       <select
         class="text-xs bg-app-card text-app-text-2 rounded px-2 py-1"
-        bind:value={$activeEnvironment}
+        value={$activeEnvironment}
+        onchange={selectEnvironment}
       >
         {#each $environments as env}
           <option value={env.fileName}>{env.environment.name}</option>
