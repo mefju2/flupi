@@ -96,7 +96,7 @@
                   <div class="flex-1 min-w-0">
                     {#if expandedExtracted.has(key)}
                       <div class="flex items-start gap-2">
-                        <pre class="font-mono text-xs text-app-text-2 bg-app-card rounded p-2 overflow-auto max-h-64 flex-1">{JSON.stringify(parsedVal, null, 2)}</pre>
+                        <pre class="font-mono text-xs text-app-text-2 bg-app-card rounded p-2 overflow-auto max-h-64 flex-1 whitespace-pre-wrap break-all min-w-0">{JSON.stringify(parsedVal, null, 2)}</pre>
                         <button
                           class="text-xs text-app-text-4 hover:text-app-text-2 transition-colors shrink-0 mt-1"
                           onclick={() => toggleExtracted(key)}
@@ -131,7 +131,7 @@
             >{bodyExpanded ? 'Collapse' : 'Expand'}</button>
           </div>
           {#if bodyExpanded}
-            <pre class="font-mono text-xs text-app-text-2 bg-app-card rounded p-2 overflow-auto max-h-96">{pretty}</pre>
+            <pre class="font-mono text-xs text-app-text-2 bg-app-card rounded p-2 overflow-auto max-h-96 whitespace-pre-wrap break-all">{pretty}</pre>
           {:else}
             <button
               class="w-full text-left font-mono text-xs text-app-text-3 bg-app-card rounded p-2 hover:text-app-text-2 transition-colors truncate"

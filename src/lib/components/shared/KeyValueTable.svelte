@@ -109,7 +109,7 @@
         />
       {/if}
       {#if showSecretToggle}
-        <label class="flex items-center gap-1 text-xs text-app-text-3 whitespace-nowrap cursor-pointer">
+        <label class="flex items-center gap-1 text-xs text-app-text-3 whitespace-nowrap cursor-pointer w-14 shrink-0">
           <input
             type="checkbox"
             checked={row.isSecret}
@@ -150,7 +150,7 @@
       onChange={(v) => { draftValue = v; }}
     />
     {#if showSecretToggle}
-      <div class="w-16"></div>
+      <div class="w-14 shrink-0"></div>
     {/if}
     <button disabled aria-hidden="true" class="opacity-0 text-lg leading-none pointer-events-none">×</button>
   </div>
