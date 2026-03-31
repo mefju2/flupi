@@ -57,7 +57,7 @@
     }
   });
 
-  let groupedOps = $derived(() => {
+  let groupedOps = $derived.by(() => {
     const map = new Map<string, ImportableOperation[]>();
     for (const op of operations) {
       const tag = op.tag || 'default';
@@ -94,14 +94,14 @@
   }
 
   function selectAllInTag(tag: string) {
-    const ops = groupedOps().get(tag) ?? [];
+    const ops = groupedOps.get(tag) ?? [];
     const next = new Set(selectedIds);
     ops.forEach((op) => next.add(op.operationId));
     selectedIds = next;
   }
 
   function deselectAllInTag(tag: string) {
-    const ops = groupedOps().get(tag) ?? [];
+    const ops = groupedOps.get(tag) ?? [];
     const next = new Set(selectedIds);
     ops.forEach((op) => next.delete(op.operationId));
     selectedIds = next;
@@ -214,7 +214,7 @@
         <div class="flex items-center justify-between">
           <span class="text-xs text-app-text-3">{selectedIds.size} selected</span>
         </div>
-        {#each [...groupedOps().entries()] as [tag, ops]}
+        {#each [...groupedOps.entries()] as [tag, ops]}
           <div class="flex flex-col gap-1">
             <div class="flex items-center gap-2">
               <span class="text-xs font-semibold text-app-text-2 uppercase tracking-wide">{tag}</span>
