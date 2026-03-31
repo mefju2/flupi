@@ -86,7 +86,7 @@
 </script>
 
 <div class="flex flex-col h-full bg-app-panel">
-  <div class="px-3 py-2 text-xs font-medium text-app-text-4 border-b border-app-border">
+  <div class="px-3 py-2 text-xs text-app-text-3 uppercase tracking-wider border-b border-app-border">
     Environments
   </div>
 

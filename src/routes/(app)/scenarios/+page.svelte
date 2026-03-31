@@ -69,7 +69,7 @@
   <!-- Main area -->
   <div class="flex-1 flex flex-col min-w-0 relative">
     {#if saveToast}
-      <div transition:fade={{ duration: 150 }} class="absolute top-2 right-4 z-10 text-xs text-cyan-400 bg-app-card border border-app-border-2 rounded px-2 py-1">
+      <div transition:fade={{ duration: 150 }} class="absolute top-2 right-17.5 z-10 text-xs text-cyan-400 bg-app-card border border-app-border-2 rounded px-3 py-1">
         {saveToast}
       </div>
     {/if}
