@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ScenarioData } from '$lib/services/tauri-commands';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
+  import ToolBar from '$lib/components/shared/ToolBar.svelte';
 
   interface Props {
     scenario: ScenarioData;
@@ -24,13 +25,13 @@
 </script>
 
 <div class="flex flex-col h-full bg-app-bg">
-  <div class="flex items-center gap-3 px-4 py-2 border-b border-app-border shrink-0">
+  <ToolBar>
     <button
       class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors"
       onclick={onBack}
     >← Back to Editor</button>
     <span class="text-sm text-app-text-2 font-medium">{scenario.name}</span>
-  </div>
+  </ToolBar>
 
   <div class="flex-1 overflow-y-auto px-4 py-6 max-w-xl">
     <SectionHeader class="mb-4">Run Parameters</SectionHeader>

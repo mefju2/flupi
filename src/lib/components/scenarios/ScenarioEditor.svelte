@@ -4,6 +4,7 @@
   import InputsList from './InputsList.svelte';
   import StepCard from './StepCard.svelte';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
+  import ToolBar from '$lib/components/shared/ToolBar.svelte';
 
   interface Props {
     scenario: ScenarioData;
@@ -65,7 +66,7 @@
 
 <div class="flex flex-col h-full bg-app-bg">
   <!-- Top bar -->
-  <div class="flex items-center gap-3 px-4 py-2 border-b border-app-border shrink-0">
+  <ToolBar>
     <input
       class="flex-1 bg-transparent text-app-text text-base font-medium focus:outline-none placeholder:text-app-text-4"
       value={scenario.name}
@@ -82,7 +83,7 @@
       disabled={scenario.steps.length === 0}
       title={scenario.steps.length === 0 ? 'Add at least one step to run' : 'Run scenario (Ctrl+Shift+Enter)'}
     >Run</button>
-  </div>
+  </ToolBar>
 
   <div class="flex-1 overflow-y-auto px-4 py-4 space-y-6">
     <!-- Inputs section -->
