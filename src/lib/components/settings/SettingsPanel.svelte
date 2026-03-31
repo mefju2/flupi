@@ -4,10 +4,16 @@
   import { project } from '$lib/stores/project';
   import { theme, type Theme } from '$lib/stores/ui';
   import { getPreferences, savePreferences } from '$lib/services/tauri-commands';
+  import { createDebouncedSave } from '$lib/services/debounced-save';
 
   let timeoutMs = $state(30000);
   let savedTimeout = $state(false);
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const debouncedSave = createDebouncedSave(async () => {
+    await savePreferences({ theme: $theme, defaultTimeoutMs: timeoutMs });
+    savedTimeout = true;
+    setTimeout(() => (savedTimeout = false), 2000);
+  }, 300);
 
   onMount(async () => {
     const prefs = await getPreferences();
@@ -24,12 +30,7 @@
     const raw = (e.target as HTMLInputElement).valueAsNumber;
     if (!Number.isFinite(raw) || raw <= 0) return;
     timeoutMs = raw;
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      await savePreferences({ theme: $theme, defaultTimeoutMs: timeoutMs });
-      savedTimeout = true;
-      setTimeout(() => (savedTimeout = false), 2000);
-    }, 300);
+    debouncedSave.trigger();
   }
 
   const themeOptions: { value: Theme; label: string }[] = [
