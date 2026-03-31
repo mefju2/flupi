@@ -19,4 +19,7 @@
   </div>
 {:else}
   <p class="px-3 py-4 text-xs text-app-text-4">{message}</p>
+  {#if description}
+    <p class="px-3 pb-4 text-xs text-app-text-4">{description}</p>
+  {/if}
 {/if}

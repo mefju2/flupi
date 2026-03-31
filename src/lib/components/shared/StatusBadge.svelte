@@ -15,7 +15,7 @@
   const variantClasses: Record<Variant, string> = {
     success: 'text-green-400 bg-green-950/40',
     error: 'text-red-400 bg-red-950/40',
-    info: 'text-cyan-400 bg-cyan-950/40 border border-cyan-800/60',
+    info: 'text-cyan-400 bg-cyan-950/40 border border-cyan-800/60', // border matches original cyan tag style
     neutral: 'text-app-text-3 bg-app-card',
   };
 </script>
