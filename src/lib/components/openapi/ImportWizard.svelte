@@ -1,7 +1,22 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { project } from '$lib/stores/project';
   import { openApiSources } from '$lib/stores/openapi';
-  import { fetchOperations, importOperations, type ImportableOperation } from '$lib/services/tauri-commands';
+  import {
+    fetchOperations,
+    importOperations,
+    createCollection,
+    getCollection,
+    loadRequestTree,
+    type ImportableOperation,
+    type RequestTreeNode,
+  } from '$lib/services/tauri-commands';
+  import {
+    activeCollectionFolder,
+    activeCollection,
+    activeRequest,
+    requestTree,
+  } from '$lib/stores/requests';
 
   interface Props {
     sourceId?: string;
@@ -19,11 +34,26 @@
   let loading = $state(false);
   let error = $state<string | null>(null);
   let importedCount = $state<number | null>(null);
+  let existingCollections = $state<Array<{ name: string; folder_name: string }>>([]);
+  let selectedCollectionValue = $state('__new__');
+  let importedFolderSlug = $state('');
+
+  let isNewCollection = $derived(selectedCollectionValue === '__new__');
 
   // If sourceId is pre-selected, fetch operations immediately
   $effect(() => {
     if (sourceId && $project.path) {
       goToStep2();
+    }
+  });
+
+  $effect(() => {
+    if (step === 3 && $project.path) {
+      loadRequestTree($project.path).then((nodes) => {
+        existingCollections = nodes
+          .filter((n): n is Extract<RequestTreeNode, { type: 'Collection' }> => n.type === 'Collection')
+          .map((n) => ({ name: n.name, folder_name: n.folder_name }));
+      });
     }
   });
 
