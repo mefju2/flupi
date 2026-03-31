@@ -16,13 +16,19 @@
   function setType(type: BodyConfig['type']) {
     if (type === 'none') onUpdate({ type: 'none' });
     else if (type === 'json') onUpdate({ type: 'json', content: '' });
-    else if (type === 'form') onUpdate({ type: 'form', content: {} });
+    else if (type === 'form') onUpdate({ type: 'form', content: {}, disabledFields: [] });
     else if (type === 'raw') onUpdate({ type: 'raw', content: '' });
   }
 
   function formRows(b: BodyConfig | undefined) {
     if (b?.type !== 'form') return [];
-    return Object.entries(b.content).map(([key, value]) => ({ id: key, key, value }));
+    const disabled = b.disabledFields ?? [];
+    return Object.entries(b.content).map(([key, value]) => ({
+      id: key,
+      key,
+      value,
+      enabled: !disabled.includes(key),
+    }));
   }
 
   const jsonPlaceholder = '{ "key": "value" }';
@@ -36,7 +42,7 @@
         <button
           class="text-xs px-2 py-0.5 transition-colors {bodyType === t ? 'bg-app-hover text-app-text' : 'text-app-text-3 hover:text-app-text-2 hover:bg-app-card'}"
           onclick={() => setType(t as BodyConfig['type'])}
-        >{t.charAt(0).toUpperCase() + t.slice(1)}</button>
+        >{t === 'form' ? 'Form' : t.charAt(0).toUpperCase() + t.slice(1)}</button>
       {/each}
     </div>
   </div>
@@ -50,12 +56,20 @@
       placeholder={jsonPlaceholder}
     />
   {:else if body.type === 'form'}
+    <p class="text-xs text-app-text-4">Encoded as <span class="font-mono">application/x-www-form-urlencoded</span></p>
     <KeyValueTable
       rows={formRows(body)}
+      showEnabled={true}
       onUpdate={(rows) => {
         const c: Record<string, string> = {};
-        for (const r of rows) { if (r.key) c[r.key] = r.value; }
-        onUpdate({ type: 'form', content: c });
+        const disabled: string[] = [];
+        for (const r of rows) {
+          if (r.key) {
+            c[r.key] = r.value;
+            if (r.enabled === false) disabled.push(r.key);
+          }
+        }
+        onUpdate({ type: 'form', content: c, disabledFields: disabled });
       }}
     />
   {:else if body.type === 'raw'}
