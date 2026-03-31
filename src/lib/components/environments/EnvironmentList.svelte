@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
-  import { listEnvironments, saveEnvironment, deleteEnvironment } from '$lib/services/tauri-commands';
+  import { listEnvironments, saveEnvironment, deleteEnvironment, getRecentProjects, setProjectActiveEnvironment } from '$lib/services/tauri-commands';
   import { project } from '$lib/stores/project';
 
   let creatingNew = false;
@@ -19,9 +19,13 @@
             secrets: {},
           }))
         );
+
         if (entries.length > 0 && $activeEnvironment === null) {
-          activeEnvironment.set(entries[0][0]);
-          selectedEnvironmentFile.set(entries[0][0]);
+          const { projects } = await getRecentProjects();
+          const stored = projects.find((p) => p.path === $project.path)?.activeEnvironment ?? null;
+          const validStored = stored && entries.some(([f]) => f === stored) ? stored : entries[0][0];
+          activeEnvironment.set(validStored);
+          selectedEnvironmentFile.set(validStored);
         } else if (entries.length > 0 && $selectedEnvironmentFile === null) {
           selectedEnvironmentFile.set($activeEnvironment ?? entries[0][0]);
         }
