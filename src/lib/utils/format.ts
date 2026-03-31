@@ -11,3 +11,7 @@ export function getMethodColor(method: string): string {
   };
   return colors[method?.toUpperCase()] ?? 'text-zinc-400';
 }
+
+export function tryParseJson(raw: string): unknown | null {
+  try { return JSON.parse(raw); } catch { return null; }
+}

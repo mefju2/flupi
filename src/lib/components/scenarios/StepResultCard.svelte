@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tryParseJson } from '$lib/utils/format';
   import type { ScenarioStep, StepResult } from '$lib/services/tauri-commands';
 
   interface Props {
@@ -21,10 +22,6 @@
   let statusCode = $derived(result.response?.status);
   let duration = $derived(result.response?.durationMs);
   let extractedEntries = $derived(Object.entries(result.extracted ?? {}));
-
-  function tryParseJson(raw: string): unknown | null {
-    try { return JSON.parse(raw); } catch { return null; }
-  }
 
   function bodySummary(parsed: unknown, raw: string): string {
     if (parsed === null || parsed === undefined) return raw.slice(0, 120) + (raw.length > 120 ? '…' : '');

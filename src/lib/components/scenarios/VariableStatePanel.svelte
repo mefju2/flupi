@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tryParseJson } from '$lib/utils/format';
+
   interface Props {
     variables: Record<string, string>;
     secretKeys?: string[];
@@ -13,10 +15,6 @@
     const next = new Set(expandedKeys);
     if (next.has(key)) next.delete(key); else next.add(key);
     expandedKeys = next;
-  }
-
-  function tryParseJson(raw: string): unknown | null {
-    try { return JSON.parse(raw); } catch { return null; }
   }
 
 </script>
