@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { Extraction } from '$lib/services/tauri-commands';
   import SchemaAutocomplete from './SchemaAutocomplete.svelte';
+  import VariableNameInput from '$lib/components/shared/VariableNameInput.svelte';
   import { buildJsonPathSuggestions } from '$lib/utils/schema-paths';
+  import { environments, activeEnvironment } from '$lib/stores/environment';
 
   interface Props {
     extractions: Extraction[];
@@ -12,6 +14,15 @@
   let { extractions, onUpdate, responseSchema = null }: Props = $props();
 
   let suggestions = $derived(buildJsonPathSuggestions(responseSchema));
+
+  const envVarNames = $derived.by(() => {
+    const entry = $environments.find((e) => e.fileName === $activeEnvironment);
+    if (!entry) return [];
+    return [
+      ...Object.keys(entry.environment.variables),
+      ...entry.environment.secrets,
+    ];
+  });
 
   function addRow() {
     onUpdate([...extractions, { variable: '', from: 'response.body', path: '' }]);
@@ -43,10 +54,10 @@
 
   {#each extractions as extraction, i}
     <div class="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
-      <input
-        class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
+      <VariableNameInput
         value={extraction.variable}
-        oninput={(e) => updateRow(i, 'variable', e.currentTarget.value)}
+        onChange={(v) => updateRow(i, 'variable', v)}
+        envVars={envVarNames}
         placeholder="variableName"
       />
       <select
