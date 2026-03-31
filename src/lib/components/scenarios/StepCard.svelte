@@ -10,6 +10,7 @@
   import OverridesPanel from './OverridesPanel.svelte';
   import ExtractionsPanel from './ExtractionsPanel.svelte';
   import RequestPicker from './RequestPicker.svelte';
+  import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
 
   interface Props {
     step: ScenarioStep;
@@ -129,7 +130,7 @@
       </div>
 
       <div>
-        <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Overrides</p>
+        <SectionHeader class="mb-2">Overrides</SectionHeader>
         <OverridesPanel
           overrides={step.overrides}
           {requestSchema}
@@ -140,7 +141,7 @@
       </div>
 
       <div>
-        <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Extractions</p>
+        <SectionHeader class="mb-2">Extractions</SectionHeader>
         <ExtractionsPanel
           extractions={step.extract}
           {responseSchema}

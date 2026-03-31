@@ -4,6 +4,7 @@
   import { resolveString, findUnresolved } from '$lib/services/variable-resolver';
   import { getMethodColor } from '$lib/utils/format';
   import type { CollectionData, AuthConfig } from '$lib/services/tauri-commands';
+  import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
 
   interface Props {
     collection?: CollectionData | null;
@@ -67,7 +68,7 @@
   {:else}
     <!-- Resolved URL -->
     <section>
-      <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Resolved URL</p>
+      <SectionHeader class="mb-2">Resolved URL</SectionHeader>
       <div class="flex items-center gap-2 bg-app-panel border border-app-border rounded px-3 py-2">
         <span class="font-semibold shrink-0 {getMethodColor(req.method)}">{req.method}</span>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -80,7 +81,7 @@
 
     <!-- Effective Headers -->
     <section>
-      <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Effective Headers</p>
+      <SectionHeader class="mb-2">Effective Headers</SectionHeader>
       {#if Object.keys(effectiveHeaders).length === 0}
         <p class="text-app-text-4 text-xs italic">No headers.</p>
       {:else}
@@ -103,7 +104,7 @@
 
     <!-- Auth -->
     <section>
-      <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Auth</p>
+      <SectionHeader class="mb-2">Auth</SectionHeader>
       <div class="bg-app-panel border border-app-border rounded px-3 py-2 font-mono text-app-text">
         {authLabel(effectiveAuth)}
       </div>
@@ -112,7 +113,7 @@
     <!-- Body -->
     {#if req.body && req.body.type !== 'none'}
       <section>
-        <p class="text-xs text-app-text-3 uppercase tracking-wider mb-2">Body ({req.body.type})</p>
+        <SectionHeader class="mb-2">Body ({req.body.type})</SectionHeader>
         <div class="bg-app-panel border border-app-border rounded px-3 py-2 font-mono text-app-text text-xs whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
           {#if req.body.type === 'json'}
             {typeof req.body.content === 'string' ? req.body.content : JSON.stringify(req.body.content, null, 2)}

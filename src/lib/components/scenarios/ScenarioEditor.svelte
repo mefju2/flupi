@@ -3,6 +3,7 @@
   import { requestTree } from '$lib/stores/requests';
   import InputsList from './InputsList.svelte';
   import StepCard from './StepCard.svelte';
+  import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
 
   interface Props {
     scenario: ScenarioData;
@@ -86,7 +87,7 @@
   <div class="flex-1 overflow-y-auto px-4 py-4 space-y-6">
     <!-- Inputs section -->
     <section>
-      <h2 class="text-xs text-app-text-3 uppercase tracking-wider mb-3">Inputs</h2>
+      <SectionHeader class="mb-3">Inputs</SectionHeader>
       <InputsList
         inputs={scenario.inputs}
         onUpdate={(inputs) => onUpdate({ ...scenario, inputs })}
@@ -95,7 +96,7 @@
 
     <!-- Steps section -->
     <section>
-      <h2 class="text-xs text-app-text-3 uppercase tracking-wider mb-3">Steps</h2>
+      <SectionHeader class="mb-3">Steps</SectionHeader>
       {#each scenario.steps as step, i (step.id)}
         <StepCard
           {step}

@@ -2,6 +2,7 @@
   import { project } from '$lib/stores/project';
   import { driftedRequestIds } from '$lib/stores/openapi';
   import { getRequest } from '$lib/services/tauri-commands';
+  import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
 
   interface Props {
     requestId: string;
@@ -66,7 +67,7 @@
 
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1">
-          <h3 class="text-xs font-semibold text-app-text-3 uppercase tracking-wider">Request Schema</h3>
+          <SectionHeader class="font-semibold">Request Schema</SectionHeader>
           {#if formatSchema(ref.requestSchema)}
             <pre class="bg-app-panel border border-app-border rounded p-3 font-mono text-xs text-app-text-2 overflow-x-auto whitespace-pre">{formatSchema(ref.requestSchema)}</pre>
           {:else}
@@ -74,7 +75,7 @@
           {/if}
         </div>
         <div class="flex flex-col gap-1">
-          <h3 class="text-xs font-semibold text-app-text-3 uppercase tracking-wider">Response Schema</h3>
+          <SectionHeader class="font-semibold">Response Schema</SectionHeader>
           {#if formatSchema(ref.responseSchema)}
             <pre class="bg-app-panel border border-app-border rounded p-3 font-mono text-xs text-app-text-2 overflow-x-auto whitespace-pre">{formatSchema(ref.responseSchema)}</pre>
           {:else}

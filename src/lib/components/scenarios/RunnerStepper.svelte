@@ -4,6 +4,7 @@
   import type { ScenarioData, ScenarioStep, StepResult } from '$lib/services/tauri-commands';
   import StepResultCard from './StepResultCard.svelte';
   import VariableStatePanel from './VariableStatePanel.svelte';
+  import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
 
   interface Props {
     scenario: ScenarioData;
@@ -121,7 +122,7 @@
 
     <!-- Variable state panel -->
     <div class="w-56 border-l border-app-border px-3 py-4 overflow-y-auto shrink-0">
-      <p class="text-xs text-app-text-3 uppercase tracking-wider mb-3">Variables</p>
+      <SectionHeader class="mb-3">Variables</SectionHeader>
       <VariableStatePanel variables={currentVariables} />
     </div>
   </div>

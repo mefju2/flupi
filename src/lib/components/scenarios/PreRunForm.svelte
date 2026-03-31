@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ScenarioData } from '$lib/services/tauri-commands';
+  import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
 
   interface Props {
     scenario: ScenarioData;
@@ -32,7 +33,7 @@
   </div>
 
   <div class="flex-1 overflow-y-auto px-4 py-6 max-w-xl">
-    <h2 class="text-xs text-app-text-3 uppercase tracking-wider mb-4">Run Parameters</h2>
+    <SectionHeader class="mb-4">Run Parameters</SectionHeader>
 
     {#if scenario.inputs.length === 0}
       <p class="text-sm text-app-text-3 mb-6">This scenario has no input parameters.</p>
