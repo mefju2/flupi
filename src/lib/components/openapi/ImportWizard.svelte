@@ -211,14 +211,32 @@
 
       {:else if step === 3}
         <!-- Step 3: Collection folder -->
-        <div class="flex flex-col gap-2">
-          <label class="text-xs text-app-text-3">Collection folder name</label>
-          <input
-            class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
-            bind:value={collectionFolder}
-            placeholder="my-api"
-          />
-          <p class="text-xs text-app-text-3 mt-1">Lowercase letters, numbers, and hyphens (e.g. users-service)</p>
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs text-app-text-3">Add to collection</label>
+            <select
+              class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text focus:outline-none focus:border-cyan-600"
+              bind:value={selectedCollectionValue}
+            >
+              {#each existingCollections as col}
+                <option value={col.folder_name}>{col.name}</option>
+              {/each}
+              <option value="__new__">＋ Create new collection…</option>
+            </select>
+          </div>
+
+          {#if isNewCollection}
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs text-app-text-3">Folder name</label>
+              <input
+                class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
+                bind:value={collectionFolder}
+                placeholder="my-api"
+              />
+              <p class="text-xs text-app-text-4">Lowercase letters, numbers, and hyphens (e.g. users-service)</p>
+            </div>
+          {/if}
+
           <p class="text-xs text-app-text-4">{selectedIds.size} operations will be imported</p>
         </div>
         {#if error}<p class="text-xs text-red-400">{error}</p>{/if}
@@ -229,7 +247,7 @@
           >← Back</button>
           <button
             class="px-3 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white rounded transition-colors disabled:opacity-50"
-            disabled={!collectionFolder.trim() || loading}
+            disabled={loading || (isNewCollection ? !collectionFolder.trim() : !selectedCollectionValue)}
             onclick={handleImport}
           >{loading ? 'Importing…' : 'Import'}</button>
         </div>
