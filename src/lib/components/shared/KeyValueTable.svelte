@@ -6,20 +6,18 @@
     key: string;
     value: string;
     isSecret?: boolean;
+    enabled?: boolean;
   }
 
   interface Props {
     rows: Row[];
     showSecretToggle?: boolean;
+    showEnabled?: boolean;
     readOnlyKeys?: string[];
     onUpdate: (rows: Row[]) => void;
   }
 
-  let { rows, showSecretToggle = false, readOnlyKeys = [], onUpdate }: Props = $props();
-
-  function addRow() {
-    onUpdate([...rows, { id: crypto.randomUUID(), key: '', value: '', isSecret: false }]);
-  }
+  let { rows, showSecretToggle = false, showEnabled = false, readOnlyKeys = [], onUpdate }: Props = $props();
 
   function removeRow(index: number) {
     onUpdate(rows.filter((_, i) => i !== index));
@@ -30,11 +28,46 @@
     updated[index] = { ...updated[index], [field]: value };
     onUpdate(updated);
   }
+
+  // Draft row state — never passed to onUpdate until committed
+  let draftKey = $state('');
+  let draftValue = $state('');
+  let draftId = $state(crypto.randomUUID());
+  let draftContainer: HTMLDivElement | undefined = $state();
+
+  function commitDraft() {
+    if (!draftKey) return;
+    onUpdate([...rows, { id: draftId, key: draftKey, value: draftValue, enabled: true }]);
+    draftKey = '';
+    draftValue = '';
+    draftId = crypto.randomUUID();
+  }
+
+  function onDraftFocusOut(e: FocusEvent) {
+    const related = e.relatedTarget as HTMLElement | null;
+    if (!related || !draftContainer?.contains(related)) {
+      commitDraft();
+    }
+  }
+
+  function onDraftKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter') { e.preventDefault(); commitDraft(); }
+    if (e.key === 'Escape') { draftKey = ''; draftValue = ''; }
+  }
 </script>
 
 <div class="space-y-1">
   {#each rows as row, i (row.id)}
-    <div class="flex gap-2 items-center">
+    <div class="flex gap-2 items-center {row.enabled === false ? 'opacity-40' : ''}">
+      {#if showEnabled}
+        <input
+          type="checkbox"
+          checked={row.enabled !== false}
+          onchange={(e) => updateRow(i, 'enabled', e.currentTarget.checked)}
+          class="accent-cyan-500 shrink-0"
+          aria-label="Enable row"
+        />
+      {/if}
       <input
         class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
         value={row.key}
@@ -79,8 +112,32 @@
       >×</button>
     </div>
   {/each}
-  <button
-    class="text-xs text-cyan-500 hover:text-cyan-400 transition-colors mt-1"
-    onclick={addRow}
-  >+ Add variable</button>
+
+  <!-- Trailing empty row — always shown, committed on focus-out or Enter -->
+  <div
+    bind:this={draftContainer}
+    class="flex gap-2 items-center"
+    onfocusout={onDraftFocusOut}
+  >
+    {#if showEnabled}
+      <input type="checkbox" disabled class="accent-cyan-500 shrink-0 opacity-30" aria-label="Enable row" />
+    {/if}
+    <input
+      class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
+      value={draftKey}
+      oninput={(e) => { draftKey = e.currentTarget.value; }}
+      onkeydown={onDraftKeyDown}
+      placeholder="Key"
+    />
+    <VariableAutocomplete
+      class="flex-1"
+      value={draftValue}
+      placeholder="Value"
+      onChange={(v) => { draftValue = v; }}
+    />
+    {#if showSecretToggle}
+      <div class="w-16"></div>
+    {/if}
+    <div class="w-6"></div>
+  </div>
 </div>
