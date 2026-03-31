@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tryParseJson } from '$lib/utils/format';
+  import EmptyState from '$lib/components/shared/EmptyState.svelte';
 
   interface Props {
     variables: Record<string, string>;
@@ -21,7 +22,7 @@
 
 <div class="space-y-1">
   {#if entries.length === 0}
-    <p class="text-xs text-app-text-4 italic">No variables in context.</p>
+    <EmptyState message="No variables in context." />
   {:else}
     {#each entries as [key, value]}
       {@const isSecret = secretKeys.includes(key)}

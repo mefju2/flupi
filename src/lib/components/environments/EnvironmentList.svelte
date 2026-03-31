@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
   import { listEnvironments, saveEnvironment, deleteEnvironment, getRecentProjects, setProjectActiveEnvironment } from '$lib/services/tauri-commands';
+  import EmptyState from '$lib/components/shared/EmptyState.svelte';
   import { project } from '$lib/stores/project';
 
   let creatingNew = false;
@@ -127,7 +128,7 @@
     {/each}
 
     {#if $environments.length === 0}
-      <p class="px-3 py-4 text-xs text-app-text-4">No environments yet. Create one to manage variables like API keys and base URLs.</p>
+      <EmptyState message="No environments yet. Create one to manage variables like API keys and base URLs." />
     {/if}
   </div>
 

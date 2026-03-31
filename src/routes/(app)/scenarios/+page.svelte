@@ -12,6 +12,7 @@
   import ScenarioTree from '$lib/components/scenarios/ScenarioTree.svelte';
   import ScenarioEditor from '$lib/components/scenarios/ScenarioEditor.svelte';
   import ScenarioRunner from '$lib/components/scenarios/ScenarioRunner.svelte';
+  import EmptyState from '$lib/components/shared/EmptyState.svelte';
 
   type View = 'editor' | 'runner';
   let view = $state<View>('editor');
@@ -74,9 +75,7 @@
     {/if}
 
     {#if !$activeScenario}
-      <div class="flex-1 flex items-center justify-center text-app-text-4 text-sm">
-        Select a scenario to edit.
-      </div>
+      <EmptyState message="Select a scenario to edit." centered />
     {:else if view === 'editor'}
       <ScenarioEditor
         scenario={$activeScenario}

@@ -7,6 +7,7 @@
     renameScenario, duplicateScenario, type ScenarioTreeNode,
   } from '$lib/services/tauri-commands';
   import ContextMenu from '$lib/components/shared/ContextMenu.svelte';
+  import EmptyState from '$lib/components/shared/EmptyState.svelte';
 
   let toast = $state<string | null>(null);
   let contextMenu: { x: number; y: number; items: { label: string; action: () => void; danger?: boolean }[] } | null = $state(null);
@@ -147,7 +148,7 @@
     {/each}
 
     {#if $scenarioTree.length === 0}
-      <p class="px-3 py-4 text-xs text-app-text-4">No scenarios yet. Create one to chain requests together.</p>
+      <EmptyState message="No scenarios yet. Create one to chain requests together." />
     {/if}
   </div>
 

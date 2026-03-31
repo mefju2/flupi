@@ -2,6 +2,7 @@
   import { project } from '$lib/stores/project';
   import { openApiSources, driftedRequestIds } from '$lib/stores/openapi';
   import { removeOpenApiSource, refreshSource, listOpenApiSources } from '$lib/services/tauri-commands';
+  import EmptyState from '$lib/components/shared/EmptyState.svelte';
 
   interface Props {
     onAddSource: () => void;
@@ -95,10 +96,11 @@
   </div>
 
   {#if $openApiSources.length === 0}
-    <div class="flex flex-col items-center justify-center py-16 gap-4">
-      <p class="text-sm text-app-text-3">No OpenAPI sources yet</p>
-      <p class="text-xs text-app-text-4">Start by adding a source to import API endpoints</p>
-    </div>
+    <EmptyState
+      message="No OpenAPI sources yet"
+      description="Start by adding a source to import API endpoints"
+      centered
+    />
   {/if}
 
   {#each $openApiSources as source (source.id)}
