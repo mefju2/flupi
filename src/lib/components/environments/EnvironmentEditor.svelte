@@ -4,7 +4,7 @@
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import { project } from '$lib/stores/project';
   import KeyValueTable from '$lib/components/shared/KeyValueTable.svelte';
-  import { fade } from 'svelte/transition';
+  import SavedIndicator from '$lib/components/shared/SavedIndicator.svelte';
 
   interface Row {
     id: string;
@@ -97,9 +97,7 @@
   {#if currentEntry}
     <div class="flex items-center gap-3 mb-4">
       <h2 class="text-app-text text-base font-semibold">{currentEntry.environment.name}</h2>
-      {#if savedRecently}
-        <span class="text-xs text-green-400" transition:fade={{ duration: 150 }}>Saved</span>
-      {/if}
+      <SavedIndicator visible={savedRecently} />
     </div>
     <KeyValueTable
       rows={rows}

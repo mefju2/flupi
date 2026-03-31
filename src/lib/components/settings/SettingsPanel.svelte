@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fade } from 'svelte/transition';
+  import SavedIndicator from '$lib/components/shared/SavedIndicator.svelte';
   import { project } from '$lib/stores/project';
   import { theme, type Theme } from '$lib/stores/ui';
   import { getPreferences, savePreferences } from '$lib/services/tauri-commands';
@@ -96,9 +96,7 @@
             class="w-40 px-3 py-2 rounded bg-app-card text-sm text-app-text font-mono
                    border border-transparent focus:border-cyan-500 focus:outline-none transition-colors"
           />
-          {#if savedTimeout}
-            <span class="text-xs text-green-400 ml-2" transition:fade={{ duration: 150 }}>Saved</span>
-          {/if}
+          <SavedIndicator visible={savedTimeout} class="ml-2" />
         </div>
         <p class="text-xs text-app-text-3 mt-1">Applied to requests without an explicit timeout configured.</p>
       </div>
