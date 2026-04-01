@@ -59,6 +59,8 @@ fn generate_value(schema: &Value, required: bool, import_timestamp: &str) -> Val
                 Some(p) => p,
                 None => return Value::Object(serde_json::Map::new()),
             };
+            // `required` array takes precedence; fall back to `nullable: true` only when
+            // no `required` array is present (common in .NET-generated specs).
             let required_fields = schema.get("required").and_then(|v| v.as_array());
             let mut obj = serde_json::Map::new();
             for (name, field_schema) in props {
@@ -77,10 +79,11 @@ fn generate_value(schema: &Value, required: bool, import_timestamp: &str) -> Val
             }
             Value::Object(obj)
         }
-        Some("array") => {
-            let items = schema.get("items").cloned().unwrap_or(Value::Null);
-            Value::Array(vec![generate_value(&items, true, import_timestamp)])
-        }
+        Some("array") => match schema.get("items") {
+            Some(items) => Value::Array(vec![generate_value(items, true, import_timestamp)]),
+            // No items schema — return empty array rather than [null]
+            None => Value::Array(vec![]),
+        },
         Some("string") => match schema.get("format").and_then(|v| v.as_str()) {
             Some("uuid") => Value::String(uuid::Uuid::new_v4().to_string()),
             Some("date-time") => Value::String(import_timestamp.to_string()),

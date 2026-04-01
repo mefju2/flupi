@@ -186,3 +186,9 @@ fn test_default_body_nested_object() {
     // address: not nullable → required → recurse
     assert_eq!(result["address"]["zip"], serde_json::json!(""));
 }
+
+#[test]
+fn test_default_body_array_without_items_returns_empty() {
+    let schema = serde_json::json!({"type": "array"});
+    assert_eq!(generate_default_body(&schema, "ts"), serde_json::json!([]));
+}
