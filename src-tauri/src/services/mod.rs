@@ -6,3 +6,4 @@ pub mod http_client;
 pub mod referential_integrity;
 pub mod openapi_import;
 pub mod drift_detection;
+pub mod schema_defaults;
