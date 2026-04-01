@@ -16,6 +16,7 @@ pub fn resolve_refs(schema: &Value, spec: &Value, depth: u8) -> Value {
                 return resolve_refs(target, spec, depth + 1);
             }
         }
+        // External/relative refs (e.g. "Pet.yaml") are out of scope — return null.
         return Value::Null;
     }
 
