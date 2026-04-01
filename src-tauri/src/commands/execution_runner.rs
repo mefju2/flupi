@@ -3,7 +3,8 @@ use std::path::{Path, PathBuf};
 use tauri::{command, AppHandle, Emitter};
 use serde::Serialize;
 use crate::error::FlupiError;
-use crate::models::scenario::{Scenario, Extraction};
+use crate::models::scenario::Scenario;
+use crate::models::extraction::Extraction;
 use crate::services::{file_io, http_client};
 use super::execution::{acquire_lock, release_lock, execute_single_request};
 

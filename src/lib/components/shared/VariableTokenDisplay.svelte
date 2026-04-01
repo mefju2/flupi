@@ -37,7 +37,7 @@
 </script>
 
 <div
-  class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm font-mono text-app-text cursor-text w-full min-h-[30px] flex items-center"
+  class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm font-mono text-app-text cursor-text w-full min-h-[30px] flex items-center overflow-hidden whitespace-nowrap"
   role="textbox"
   aria-readonly="true"
   aria-multiline="false"

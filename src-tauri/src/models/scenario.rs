@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::models::extraction::Extraction;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Scenario {
@@ -34,13 +35,6 @@ pub struct ScenarioStep {
     pub overrides: HashMap<String, String>,
     #[serde(default)]
     pub extract: Vec<Extraction>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Extraction {
-    pub variable: String,
-    pub from: String,
-    pub path: String,
 }
 
 #[cfg(test)]

@@ -83,16 +83,16 @@
         />
       {/if}
       <input
-        class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
+        class="flex-1 min-w-0 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
         value={row.key}
         readonly={readOnlyKeys.includes(row.key)}
         oninput={(e) => updateRow(i, 'key', e.currentTarget.value)}
         placeholder="Key"
       />
       {#if row.isSecret}
-        <div class="flex-1 flex items-center gap-1">
+        <div class="flex-1 min-w-0 flex items-center gap-1">
           <input
-            class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover opacity-60"
+            class="flex-1 min-w-0 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover opacity-60"
             type="password"
             value={row.value}
             oninput={(e) => updateRow(i, 'value', e.currentTarget.value)}
@@ -102,7 +102,7 @@
         </div>
       {:else}
         <VariableAutocomplete
-          class="flex-1"
+          class="flex-1 min-w-0"
           value={row.value}
           placeholder="Value"
           onChange={(v) => updateRow(i, 'value', v)}
@@ -137,14 +137,14 @@
       <input type="checkbox" disabled class="accent-cyan-500 shrink-0 opacity-30" aria-label="Enable row" />
     {/if}
     <input
-      class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
+      class="flex-1 min-w-0 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
       value={draftKey}
       oninput={(e) => { draftKey = e.currentTarget.value; }}
       onkeydown={onDraftKeyDown}
       placeholder="Key"
     />
     <VariableAutocomplete
-      class="flex-1"
+      class="flex-1 min-w-0"
       value={draftValue}
       placeholder="Value"
       onChange={(v) => { draftValue = v; }}

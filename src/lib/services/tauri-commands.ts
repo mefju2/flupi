@@ -115,6 +115,7 @@ export interface RequestData {
   body?: BodyConfig;
   templateRef?: TemplateRef;
   pathParams?: Record<string, string>;
+  extractions?: Extraction[];
 }
 
 export interface CollectionData {

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use indexmap::IndexMap;
 use std::path::Path;
+use crate::models::extraction::Extraction;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Request {
@@ -21,6 +22,8 @@ pub struct Request {
     pub disabled_headers: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "disabledCollectionHeaders")]
     pub disabled_collection_headers: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub extractions: Vec<Extraction>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

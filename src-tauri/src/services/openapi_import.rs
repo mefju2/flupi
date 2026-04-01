@@ -163,6 +163,7 @@ pub fn import_operations(
             }),
             disabled_headers: vec![],
             disabled_collection_headers: vec![],
+            extractions: vec![],
         };
 
         let file_path = project_path

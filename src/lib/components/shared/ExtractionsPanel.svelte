@@ -9,9 +9,10 @@
     extractions: Extraction[];
     onUpdate: (extractions: Extraction[]) => void;
     responseSchema?: unknown;
+    unknownVariableLabel?: string;
   }
 
-  let { extractions, onUpdate, responseSchema = null }: Props = $props();
+  let { extractions, onUpdate, responseSchema = null, unknownVariableLabel = 'scenario' }: Props = $props();
 
   let suggestions = $derived(buildJsonPathSuggestions(responseSchema));
 
@@ -40,8 +41,7 @@
 </script>
 
 <div class="space-y-1">
-  <p class="text-xs text-app-text-3 mb-1">Extract values from the response into variables.</p>
-  <p class="text-xs text-app-text-3 mt-1">JSONPath: $.field, $.array[0].value</p>
+  <p class="text-xs text-app-text-3 mb-2">Extract values from the response into variables. JSONPath: <span class="font-mono">$.field</span>, <span class="font-mono">$.array[0].value</span></p>
 
   {#if extractions.length > 0}
     <div class="grid grid-cols-[1fr_auto_1fr_auto] gap-2 mb-1">
@@ -59,6 +59,7 @@
         onChange={(v) => updateRow(i, 'variable', v)}
         envVars={envVarNames}
         placeholder="variableName"
+        unknownLabel={unknownVariableLabel}
       />
       <select
         class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text-2 focus:outline-none focus:border-app-border-2"
@@ -68,14 +69,23 @@
         <option value="response.body">response.body</option>
         <option value="response.headers">response.headers</option>
       </select>
-      <SchemaAutocomplete
-        {suggestions}
-        value={extraction.path}
-        placeholder="$.data.id"
-        inputClass="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
-        onSelect={(path) => updateRow(i, 'path', path)}
-        onInput={(v) => updateRow(i, 'path', v)}
-      />
+      {#if extraction.from === 'response.headers'}
+        <input
+          class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
+          value={extraction.path}
+          placeholder="Content-Type"
+          oninput={(e) => updateRow(i, 'path', e.currentTarget.value)}
+        />
+      {:else}
+        <SchemaAutocomplete
+          {suggestions}
+          value={extraction.path}
+          placeholder="$.data.id"
+          inputClass="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
+          onSelect={(path) => updateRow(i, 'path', path)}
+          onInput={(v) => updateRow(i, 'path', v)}
+        />
+      {/if}
       <button
         class="text-app-text-4 hover:text-red-400 transition-colors text-lg leading-none"
         onclick={() => removeRow(i)}

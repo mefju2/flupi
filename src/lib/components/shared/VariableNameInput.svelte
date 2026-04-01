@@ -4,9 +4,10 @@
     onChange: (value: string) => void;
     envVars: string[];
     placeholder?: string;
+    unknownLabel?: string;
   }
 
-  let { value, onChange, envVars, placeholder = '' }: Props = $props();
+  let { value, onChange, envVars, placeholder = '', unknownLabel = 'scenario' }: Props = $props();
 
   let inputEl = $state<HTMLInputElement | null>(null);
   let focused = $state(false);
@@ -101,7 +102,7 @@
     {#if isEnvVar}
       <span class="shrink-0 text-[10px] font-mono px-1 py-0.5 rounded border border-cyan-500/40 text-cyan-400">env</span>
     {:else}
-      <span class="shrink-0 text-[10px] font-mono px-1 py-0.5 rounded border border-amber-500/30 text-amber-400/70">scenario</span>
+      <span class="shrink-0 text-[10px] font-mono px-1 py-0.5 rounded border border-amber-500/30 text-amber-400/70">{unknownLabel}</span>
     {/if}
   {/if}
 

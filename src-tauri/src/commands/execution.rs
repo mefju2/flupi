@@ -169,6 +169,57 @@ pub async fn execute_single_request(
     http_client::execute_request(&executable).await
 }
 
+fn apply_extractions_to_env(
+    project_path: &Path,
+    env_file_name: &str,
+    extractions: &[crate::models::extraction::Extraction],
+    response: &http_client::HttpResponse,
+) -> Result<(), FlupiError> {
+    use crate::models::environment::Environment;
+    use crate::commands::execution_runner::apply_extraction;
+
+    let env_path = project_path.join("environments").join(format!("{}.json", env_file_name));
+    if !env_path.exists() {
+        return Ok(());
+    }
+
+    let mut env: Environment = file_io::read_json(&env_path)?;
+    let secrets_path = project_path.join("environments").join(format!("{}.secrets.json", env_file_name));
+    let mut secrets: Option<HashMap<String, String>> = if secrets_path.exists() {
+        Some(file_io::read_json(&secrets_path)?)
+    } else {
+        None
+    };
+
+    let mut env_dirty = false;
+    let mut secrets_dirty = false;
+
+    for extraction in extractions.iter().filter(|e| !e.variable.is_empty() && !e.path.is_empty()) {
+        let value = match apply_extraction(extraction, &response.body, &response.headers) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        if env.variables.contains_key(&extraction.variable) {
+            env.variables.insert(extraction.variable.clone(), value);
+            env_dirty = true;
+        } else if env.secrets.contains(&extraction.variable) {
+            let s = secrets.get_or_insert_with(HashMap::new);
+            s.insert(extraction.variable.clone(), value);
+            secrets_dirty = true;
+        }
+    }
+
+    if env_dirty {
+        file_io::write_json(&env_path, &env)?;
+    }
+    if secrets_dirty {
+        if let Some(s) = &secrets {
+            file_io::write_json(&secrets_path, s)?;
+        }
+    }
+    Ok(())
+}
+
 #[command]
 pub async fn send_request(
     project_path: PathBuf,
@@ -176,8 +227,24 @@ pub async fn send_request(
     env_file_name: String,
     timeout_ms: u64,
 ) -> Result<http_client::HttpResponse, FlupiError> {
+    // Read extractions once before the request is sent to avoid a race where
+    // the user saves new extractions while a slow request is in flight.
+    let request_path = resolve_request_path(&project_path, &request_id);
+    let extractions = file_io::read_json::<crate::models::request::Request>(&request_path)
+        .map(|r| r.extractions)
+        .unwrap_or_default();
+
     acquire_lock()?;
     let result = execute_single_request(&project_path, &request_id, &env_file_name, timeout_ms, &HashMap::new(), &HashMap::new()).await;
+
+    if let Ok(ref response) = result {
+        if !extractions.is_empty() {
+            if let Err(e) = apply_extractions_to_env(&project_path, &env_file_name, &extractions, response) {
+                eprintln!("[flupi] extraction write failed: {e}");
+            }
+        }
+    }
+
     release_lock();
     result
 }

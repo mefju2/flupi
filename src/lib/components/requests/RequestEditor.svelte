@@ -12,11 +12,13 @@
   import HeadersTab from './HeadersTab.svelte';
   import AuthTab from './AuthTab.svelte';
   import BodyTab from './BodyTab.svelte';
+  import ExtractionsPanel from '$lib/components/shared/ExtractionsPanel.svelte';
   import ResponsePanel from './ResponsePanel.svelte';
   import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
+  import type { Extraction } from '$lib/services/tauri-commands';
 
   const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
-  const TABS = ['Params', 'Path', 'Headers', 'Auth', 'Body'] as const;
+  const TABS = ['Params', 'Path', 'Headers', 'Auth', 'Body', 'Extractions'] as const;
   type Tab = (typeof TABS)[number];
 
   let activeTab = $state<Tab>('Params');
@@ -158,6 +160,15 @@
           body={$activeRequest.body}
           onUpdate={(b: BodyConfig) => updateRequest({ body: b })}
         />
+      {:else if activeTab === 'Extractions'}
+        <div class="p-4">
+          <ExtractionsPanel
+            extractions={$activeRequest.extractions ?? []}
+            onUpdate={(extractions: Extraction[]) => updateRequest({ extractions })}
+            responseSchema={$activeRequest.templateRef?.responseSchema ?? null}
+            unknownVariableLabel="not in env"
+          />
+        </div>
       {/if}
     </div>
 

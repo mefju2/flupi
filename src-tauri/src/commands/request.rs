@@ -85,6 +85,7 @@ pub fn create_request(
         template_ref: None,
         disabled_headers: vec![],
         disabled_collection_headers: vec![],
+        extractions: vec![],
     };
     file_io::write_json(&path, &request)?;
     Ok(id)

@@ -35,9 +35,61 @@ pub fn resolve_refs(schema: &Value, spec: &Value, depth: u8) -> Value {
     }
 }
 
+/// Generates a default JSON body value from a fully-resolved JSON Schema.
+/// `import_timestamp` is an ISO 8601 string used as the default for `date-time` fields.
 pub fn generate_default_body(schema: &Value, import_timestamp: &str) -> Value {
-    let _ = (schema, import_timestamp);
-    Value::Null // stub — implemented in Task 3
+    generate_value(schema, true, import_timestamp)
+}
+
+fn generate_value(schema: &Value, required: bool, import_timestamp: &str) -> Value {
+    if !required {
+        return Value::Null;
+    }
+
+    // Enum takes precedence over type
+    if let Some(enum_values) = schema.get("enum").and_then(|v| v.as_array()) {
+        if let Some(first) = enum_values.first() {
+            return first.clone();
+        }
+    }
+
+    match schema.get("type").and_then(|v| v.as_str()) {
+        Some("object") => {
+            let props = match schema.get("properties").and_then(|v| v.as_object()) {
+                Some(p) => p,
+                None => return Value::Object(serde_json::Map::new()),
+            };
+            let required_fields = schema.get("required").and_then(|v| v.as_array());
+            let mut obj = serde_json::Map::new();
+            for (name, field_schema) in props {
+                let field_required = if let Some(req) = required_fields {
+                    req.iter().any(|r| r.as_str() == Some(name.as_str()))
+                } else {
+                    !field_schema
+                        .get("nullable")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false)
+                };
+                obj.insert(
+                    name.clone(),
+                    generate_value(field_schema, field_required, import_timestamp),
+                );
+            }
+            Value::Object(obj)
+        }
+        Some("array") => {
+            let items = schema.get("items").cloned().unwrap_or(Value::Null);
+            Value::Array(vec![generate_value(&items, true, import_timestamp)])
+        }
+        Some("string") => match schema.get("format").and_then(|v| v.as_str()) {
+            Some("uuid") => Value::String(uuid::Uuid::new_v4().to_string()),
+            Some("date-time") => Value::String(import_timestamp.to_string()),
+            _ => Value::String(String::new()),
+        },
+        Some("integer") | Some("number") => Value::Number(serde_json::Number::from(0)),
+        Some("boolean") => Value::Bool(false),
+        _ => Value::Null,
+    }
 }
 
 #[cfg(test)]

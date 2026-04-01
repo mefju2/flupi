@@ -8,7 +8,7 @@
   import { project } from '$lib/stores/project';
   import { getMethodColor } from '$lib/utils/format';
   import OverridesPanel from './OverridesPanel.svelte';
-  import ExtractionsPanel from './ExtractionsPanel.svelte';
+  import ExtractionsPanel from '$lib/components/shared/ExtractionsPanel.svelte';
   import RequestPicker from './RequestPicker.svelte';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
 

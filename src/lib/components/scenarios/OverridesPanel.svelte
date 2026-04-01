@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SchemaAutocomplete from './SchemaAutocomplete.svelte';
+  import SchemaAutocomplete from '$lib/components/shared/SchemaAutocomplete.svelte';
   import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
   import { buildOverrideSuggestions } from '$lib/utils/schema-paths';
 
