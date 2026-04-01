@@ -19,6 +19,7 @@ fn make_request(
         template_ref: None,
         disabled_headers: vec![],
         disabled_collection_headers: vec![],
+        extractions: vec![],
     }
 }
 

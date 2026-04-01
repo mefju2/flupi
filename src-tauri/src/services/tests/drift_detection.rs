@@ -44,6 +44,7 @@ fn write_request_with_template_ref(
         }),
         disabled_headers: vec![],
         disabled_collection_headers: vec![],
+        extractions: vec![],
     };
     let path = project_path
         .join("collections")

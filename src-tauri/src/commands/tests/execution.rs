@@ -1,6 +1,6 @@
 use super::*;
 use std::collections::HashMap;
-use crate::models::scenario::Extraction;
+use crate::models::extraction::Extraction;
 
 fn make_extraction(variable: &str, from: &str, path: &str) -> Extraction {
     Extraction {
