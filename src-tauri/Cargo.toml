@@ -33,6 +33,7 @@ base64 = "0.22"
 thiserror = "2"
 regex = "1"
 chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
 indexmap = { version = "2", features = ["serde"] }
 serde_json_path = "0.7"
 
