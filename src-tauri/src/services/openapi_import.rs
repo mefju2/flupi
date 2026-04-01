@@ -2,8 +2,8 @@ use std::path::Path;
 use sha2::{Sha256, Digest};
 use crate::error::{FlupiError, Result};
 use crate::models::openapi::ImportableOperation;
-use crate::models::request::{Request, TemplateRef};
-use crate::services::file_io;
+use crate::models::request::{BodyConfig, Request, TemplateRef};
+use crate::services::{file_io, schema_defaults};
 
 const HTTP_METHODS: &[&str] = &["get", "post", "put", "delete", "patch", "head", "options", "trace"];
 
@@ -19,24 +19,20 @@ pub fn read_spec_from_file(path: &Path) -> Result<serde_json::Value> {
 }
 
 fn derive_operation_id(method: &str, path: &str) -> String {
-    // Build a camelCase id from method + path segments, e.g. GET /api/Role/{roleId} → getApiRoleRoleId
     let mut parts = vec![method.to_lowercase()];
     for segment in path.split('/') {
         if segment.is_empty() { continue; }
-        // Strip path parameter braces and colons: {roleId} → roleId, :ping → ping
         let clean = segment
             .trim_start_matches('{').trim_end_matches('}')
             .trim_start_matches(':');
-        // Convert kebab-case / dot-separated segments to camelCase and capitalize first letter
         let camel: String = clean.split(|c| c == '-' || c == '.')
             .filter(|s| !s.is_empty())
             .enumerate()
-            .map(|(i, word)| {
+            .map(|(_, word)| {
                 let mut c = word.chars();
                 match c.next() {
                     None => String::new(),
-                    Some(f) => if i == 0 { f.to_uppercase().collect::<String>() + c.as_str() }
-                               else { f.to_uppercase().collect::<String>() + c.as_str() },
+                    Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
                 }
             })
             .collect();
@@ -108,25 +104,30 @@ pub fn compute_operation_hash(operation: &serde_json::Value) -> String {
     hex::encode(hasher.finalize())
 }
 
-fn extract_request_schema(operation: &serde_json::Value) -> serde_json::Value {
-    operation
+fn extract_request_schema(operation: &serde_json::Value, spec: &serde_json::Value) -> serde_json::Value {
+    let raw = operation
         .pointer("/requestBody/content/application~1json/schema")
         .cloned()
-        .unwrap_or(serde_json::Value::Null)
+        .unwrap_or(serde_json::Value::Null);
+    if raw.is_null() {
+        return serde_json::Value::Null;
+    }
+    schema_defaults::resolve_refs(&raw, spec, 0)
 }
 
-fn extract_response_schema(operation: &serde_json::Value) -> serde_json::Value {
+fn extract_response_schema(operation: &serde_json::Value, spec: &serde_json::Value) -> serde_json::Value {
+    let resolve = |raw: &serde_json::Value| schema_defaults::resolve_refs(raw, spec, 0);
+
     if let Some(schema) = operation.pointer("/responses/200/content/application~1json/schema") {
-        return schema.clone();
+        return resolve(schema);
     }
-    // Try other 2xx responses
     if let Some(responses) = operation["responses"].as_object() {
         for code in &["201", "202", "203", "204"] {
             if let Some(schema) = responses
                 .get(*code)
                 .and_then(|r| r.pointer("/content/application~1json/schema"))
             {
-                return schema.clone();
+                return resolve(schema);
             }
         }
     }
@@ -138,13 +139,22 @@ pub fn import_operations(
     source_id: &str,
     operations: &[(ImportableOperation, serde_json::Value)],
     collection_folder: &str,
+    spec: &serde_json::Value,
 ) -> Result<Vec<String>> {
+    let import_timestamp = chrono::Utc::now().to_rfc3339();
     let mut created_ids = Vec::new();
 
     for (op, op_json) in operations {
         let schema_hash = compute_operation_hash(op_json);
-        let request_schema = extract_request_schema(op_json);
-        let response_schema = extract_response_schema(op_json);
+        let request_schema = extract_request_schema(op_json, spec);
+        let response_schema = extract_response_schema(op_json, spec);
+
+        let body = if request_schema.is_null() {
+            None
+        } else {
+            let content = schema_defaults::generate_default_body(&request_schema, &import_timestamp);
+            Some(BodyConfig::Json { content })
+        };
 
         let request = Request {
             name: op.summary.clone().unwrap_or_else(|| op.operation_id.clone()),
@@ -153,7 +163,7 @@ pub fn import_operations(
             auth: None,
             headers: indexmap::IndexMap::new(),
             path_params: indexmap::IndexMap::new(),
-            body: None,
+            body,
             template_ref: Some(TemplateRef {
                 source_id: source_id.to_string(),
                 operation_id: op.operation_id.clone(),

@@ -84,7 +84,7 @@ pub async fn import_operations(
         .filter(|(op, _)| operation_ids.contains(&op.operation_id))
         .collect();
 
-    openapi_import::import_operations(&project_path, &source_id, &filtered, &collection_folder)
+    openapi_import::import_operations(&project_path, &source_id, &filtered, &collection_folder, &spec)
 }
 
 #[command]

@@ -108,7 +108,7 @@ fn test_import_operations_creates_request_files() {
     let spec = minimal_openapi_spec();
     let ops = parse_operations(&spec).unwrap();
 
-    let created = import_operations(project_path, "src-1", &ops, "my-collection").unwrap();
+    let created = import_operations(project_path, "src-1", &ops, "my-collection", &spec).unwrap();
     assert_eq!(created.len(), 2);
 
     // Verify files were created
@@ -128,7 +128,7 @@ fn test_import_operations_sets_template_ref() {
     let spec = minimal_openapi_spec();
     let ops = parse_operations(&spec).unwrap();
 
-    import_operations(project_path, "src-1", &ops, "col").unwrap();
+    import_operations(project_path, "src-1", &ops, "col", &spec).unwrap();
 
     let req_path = project_path.join("collections/col/requests/listPets.json");
     let content = std::fs::read_to_string(&req_path).unwrap();
@@ -146,7 +146,7 @@ fn test_import_operations_sets_method_and_path() {
     let spec = minimal_openapi_spec();
     let ops = parse_operations(&spec).unwrap();
 
-    import_operations(project_path, "src-1", &ops, "col").unwrap();
+    import_operations(project_path, "src-1", &ops, "col", &spec).unwrap();
 
     let req_path = project_path.join("collections/col/requests/listPets.json");
     let content = std::fs::read_to_string(&req_path).unwrap();
@@ -165,4 +165,39 @@ fn test_read_spec_from_file() {
 
     let loaded = read_spec_from_file(&spec_path).unwrap();
     assert_eq!(loaded["openapi"], "3.0.0");
+}
+
+#[test]
+fn test_import_operations_sets_json_body_for_post_with_schema() {
+    let dir = TempDir::new().unwrap();
+    let project_path = dir.path();
+    let spec = minimal_openapi_spec();
+    let ops = parse_operations(&spec).unwrap();
+
+    import_operations(project_path, "src-1", &ops, "col", &spec).unwrap();
+
+    let req_path = project_path.join("collections/col/requests/createPet.json");
+    let content = std::fs::read_to_string(&req_path).unwrap();
+    let req: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+    // createPet has a requestBody with { name: string } — name is not nullable → required → ""
+    assert_eq!(req["body"]["type"], "json");
+    assert_eq!(req["body"]["content"]["name"], "");
+}
+
+#[test]
+fn test_import_operations_no_body_for_get_without_schema() {
+    let dir = TempDir::new().unwrap();
+    let project_path = dir.path();
+    let spec = minimal_openapi_spec();
+    let ops = parse_operations(&spec).unwrap();
+
+    import_operations(project_path, "src-1", &ops, "col", &spec).unwrap();
+
+    let req_path = project_path.join("collections/col/requests/listPets.json");
+    let content = std::fs::read_to_string(&req_path).unwrap();
+    let req: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+    // listPets is a GET with no requestBody — body field must be absent
+    assert!(req.get("body").is_none());
 }
