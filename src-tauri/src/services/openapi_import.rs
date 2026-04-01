@@ -27,8 +27,7 @@ fn derive_operation_id(method: &str, path: &str) -> String {
             .trim_start_matches(':');
         let camel: String = clean.split(|c| c == '-' || c == '.')
             .filter(|s| !s.is_empty())
-            .enumerate()
-            .map(|(_, word)| {
+            .map(|word| {
                 let mut c = word.chars();
                 match c.next() {
                     None => String::new(),
@@ -194,3 +193,7 @@ pub fn import_operations(
 #[cfg(test)]
 #[path = "tests/openapi_import.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/openapi_import_body.rs"]
+mod body_tests;
