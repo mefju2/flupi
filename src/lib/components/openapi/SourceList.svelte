@@ -1,6 +1,6 @@
 <script lang="ts">
   import { project } from '$lib/stores/project';
-  import { openApiSources, driftedRequestIds } from '$lib/stores/openapi';
+  import { openApiSources, driftedIdsBySource } from '$lib/stores/openapi';
   import { removeOpenApiSource, refreshSource, listOpenApiSources } from '$lib/services/tauri-commands';
   import EmptyState from '$lib/components/shared/EmptyState.svelte';
 
@@ -14,27 +14,22 @@
 
   let loadingIds = $state<Set<string>>(new Set());
   let syncedSources = $state<Set<string>>(new Set());
-
-  const driftCountBySource = $derived.by(() => {
-    const counts = new Map<string, number>();
-    for (const id of $driftedRequestIds) {
-      const slashIndex = id.indexOf('/');
-      const key = slashIndex !== -1 ? id.slice(0, slashIndex) : id;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    return counts;
-  });
+  let syncErrors = $state<Map<string, string>>(new Map());
+  let deletingIds = $state<Set<string>>(new Set());
 
   async function handleRefresh(sourceId: string) {
     if (!$project.path) return;
     const addLoading = new Set(loadingIds);
     addLoading.add(sourceId);
     loadingIds = addLoading;
+    const nextErrors = new Map(syncErrors);
+    nextErrors.delete(sourceId);
+    syncErrors = nextErrors;
     try {
       const drifted = await refreshSource($project.path, sourceId);
-      driftedRequestIds.update((prev) => {
-        const next = new Set(prev);
-        drifted.forEach((id) => next.add(id));
+      driftedIdsBySource.update((prev) => {
+        const next = new Map(prev);
+        next.set(sourceId, drifted);
         return next;
       });
       openApiSources.set(await listOpenApiSources($project.path));
@@ -47,7 +42,10 @@
         syncedSources = removeSynced;
       }, 2000);
     } catch (e) {
-      console.error('Failed to refresh source:', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      const errMap = new Map(syncErrors);
+      errMap.set(sourceId, msg);
+      syncErrors = errMap;
     } finally {
       const removeLoading = new Set(loadingIds);
       removeLoading.delete(sourceId);
@@ -62,11 +60,23 @@
 
   async function handleDelete(sourceId: string) {
     if (!$project.path || !confirm('Remove this OpenAPI source?')) return;
+    const addDeleting = new Set(deletingIds);
+    addDeleting.add(sourceId);
+    deletingIds = addDeleting;
     try {
       await removeOpenApiSource($project.path, sourceId);
       openApiSources.update((prev) => prev.filter((s) => s.id !== sourceId));
+      driftedIdsBySource.update((prev) => {
+        const next = new Map(prev);
+        next.delete(sourceId);
+        return next;
+      });
     } catch (e) {
       console.error('Failed to remove source:', e);
+    } finally {
+      const removeDeleting = new Set(deletingIds);
+      removeDeleting.delete(sourceId);
+      deletingIds = removeDeleting;
     }
   }
 
@@ -105,8 +115,10 @@
 
   {#each $openApiSources as source (source.id)}
     {@const loading = loadingIds.has(source.id)}
-    {@const drift = driftCountBySource.get(source.id) ?? 0}
+    {@const drift = $driftedIdsBySource.get(source.id)?.length ?? 0}
     {@const synced = syncedSources.has(source.id)}
+    {@const syncError = syncErrors.get(source.id) ?? null}
+    {@const deleting = deletingIds.has(source.id)}
     <div class="bg-app-panel border {source.id === addedSourceId ? 'border-cyan-700' : 'border-app-border'} rounded-lg p-3 flex flex-col gap-2 transition-colors">
       <div class="flex items-start justify-between gap-2">
         <div class="flex-1 min-w-0">
@@ -120,6 +132,9 @@
             {source.type === 'url' ? source.url : source.path}
           </p>
           <p class="text-xs text-app-text-4 mt-0.5">Last synced: {formatDate(source.lastFetchedAt)}</p>
+          {#if syncError}
+            <p class="text-xs text-red-400 mt-1 break-all">Sync failed: {syncError}</p>
+          {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
           <button
@@ -136,7 +151,8 @@
             {loading ? '…' : synced ? 'Synced ✓' : 'Sync'}
           </button>
           <button
-            class="px-2 py-1 text-xs bg-app-card hover:bg-red-900 text-app-text-3 hover:text-red-300 rounded transition-colors"
+            class="px-2 py-1 text-xs bg-app-card hover:bg-red-900 text-app-text-3 hover:text-red-300 rounded transition-colors disabled:opacity-50"
+            disabled={deleting}
             onclick={() => handleDelete(source.id)}
           >
             ✕

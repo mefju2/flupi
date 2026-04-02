@@ -4,6 +4,7 @@
   import { project } from '$lib/stores/project';
   import { activeEnvironment } from '$lib/stores/environment';
   import { isExecuting, lastResponse, lastError } from '$lib/stores/execution';
+  import { driftedRequestIds } from '$lib/stores/openapi';
   import { saveRequest, sendRequest, type AuthConfig, type BodyConfig } from '$lib/services/tauri-commands';
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import { getMethodColor } from '$lib/utils/format';
@@ -12,16 +13,38 @@
   import HeadersTab from './HeadersTab.svelte';
   import AuthTab from './AuthTab.svelte';
   import BodyTab from './BodyTab.svelte';
+  import SchemaTab from './SchemaTab.svelte';
+  import EffectiveRequestTab from './EffectiveRequestTab.svelte';
+  import DriftPanel from '$lib/components/openapi/DriftPanel.svelte';
   import ExtractionsPanel from '$lib/components/shared/ExtractionsPanel.svelte';
   import ResponsePanel from './ResponsePanel.svelte';
   import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
   import type { Extraction } from '$lib/services/tauri-commands';
 
   const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
-  const TABS = ['Params', 'Path', 'Headers', 'Auth', 'Body', 'Extractions'] as const;
-  type Tab = (typeof TABS)[number];
+  type Tab = 'Params' | 'Path' | 'Headers' | 'Auth' | 'Body' | 'Extractions' | 'Schema' | 'Effective Request';
 
   let activeTab = $state<Tab>('Params');
+
+  // Tabs that are always present.
+  const BASE_TABS: Tab[] = ['Params', 'Path', 'Headers', 'Auth', 'Body', 'Extractions'];
+
+  // Schema tab only for template-derived requests; Effective Request always last.
+  let visibleTabs = $derived<Tab[]>([
+    ...BASE_TABS,
+    ...($activeRequest?.templateRef ? ['Schema' as Tab] : []),
+    'Effective Request',
+  ]);
+
+  // When the active request changes: reset to Params, but go straight to Schema if drifted.
+  $effect(() => {
+    const id = $activeRequestId;
+    if (id && $driftedRequestIds.has(id) && $activeRequest?.templateRef) {
+      activeTab = 'Schema';
+    } else {
+      activeTab = 'Params';
+    }
+  });
 
   const debouncedSave = createDebouncedSave(async () => {
     const req = $activeRequest;
@@ -120,11 +143,17 @@
 
     <!-- Tab Bar -->
     <div class="flex border-b border-app-border px-4">
-      {#each TABS as tab}
+      {#each visibleTabs as tab}
+        {@const isDriftTab = tab === 'Schema' && !!$activeRequestId && $driftedRequestIds.has($activeRequestId)}
         <button
           class="text-sm px-3 py-2 transition-all duration-150 border-b-2 -mb-px {activeTab === tab ? 'text-cyan-300 border-cyan-500' : 'text-app-text-3 border-transparent hover:text-app-text-2'}"
           onclick={() => (activeTab = tab)}
-        >{tab}</button>
+        >
+          {tab}
+          {#if isDriftTab}
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 mb-0.5" title="Drift detected"></span>
+          {/if}
+        </button>
       {/each}
     </div>
 
@@ -169,6 +198,14 @@
             unknownVariableLabel="not in env"
           />
         </div>
+      {:else if activeTab === 'Schema' && $activeRequest.templateRef}
+        {#if $activeRequestId && $driftedRequestIds.has($activeRequestId)}
+          <DriftPanel requestId={$activeRequestId} onDone={() => { activeTab = 'Schema'; }} />
+        {:else}
+          <SchemaTab templateRef={$activeRequest.templateRef} />
+        {/if}
+      {:else if activeTab === 'Effective Request'}
+        <EffectiveRequestTab collection={$activeCollection} />
       {/if}
     </div>
 

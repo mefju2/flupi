@@ -71,7 +71,7 @@ fn test_resolve_refs_depth_guard_returns_null() {
 #[test]
 fn test_default_body_string() {
     let schema = serde_json::json!({"type": "string"});
-    assert_eq!(generate_default_body(&schema, "ts"), serde_json::json!(""));
+    assert_eq!(generate_default_body(&schema, "ts"), serde_json::json!("string"));
 }
 
 #[test]
@@ -104,7 +104,7 @@ fn test_default_body_number() {
 #[test]
 fn test_default_body_boolean() {
     let schema = serde_json::json!({"type": "boolean"});
-    assert_eq!(generate_default_body(&schema, "ts"), serde_json::json!(false));
+    assert_eq!(generate_default_body(&schema, "ts"), serde_json::json!(true));
 }
 
 #[test]
@@ -114,8 +114,8 @@ fn test_default_body_enum_uses_first_value() {
 }
 
 #[test]
-fn test_default_body_object_with_required_array() {
-    // Fields in `required` get type defaults; others get null
+fn test_default_body_all_properties_get_type_defaults() {
+    // All properties get type-based defaults regardless of required array or nullable flag
     let schema = serde_json::json!({
         "type": "object",
         "required": ["name"],
@@ -125,13 +125,13 @@ fn test_default_body_object_with_required_array() {
         }
     });
     let result = generate_default_body(&schema, "ts");
-    assert_eq!(result["name"], serde_json::json!(""));
-    assert_eq!(result["description"], serde_json::Value::Null);
+    assert_eq!(result["name"], serde_json::json!("string"));
+    assert_eq!(result["description"], serde_json::json!("string"));
 }
 
 #[test]
-fn test_default_body_dotnet_style_nullable_means_optional() {
-    // .NET-generated specs: no `required` array; nullable: true = optional
+fn test_default_body_nullable_field_still_gets_type_default() {
+    // nullable flag is ignored — all fields get type-based defaults
     let schema = serde_json::json!({
         "type": "object",
         "properties": {
@@ -140,17 +140,15 @@ fn test_default_body_dotnet_style_nullable_means_optional() {
         }
     });
     let result = generate_default_body(&schema, "ts");
-    // id: not nullable → required → valid UUID
     uuid::Uuid::parse_str(result["id"].as_str().unwrap())
         .expect("id should be a valid UUID");
-    // name: nullable → null
-    assert_eq!(result["name"], serde_json::Value::Null);
+    assert_eq!(result["name"], serde_json::json!("string"));
 }
 
 #[test]
 fn test_default_body_array_with_string_items() {
     let schema = serde_json::json!({"type": "array", "items": {"type": "string"}});
-    assert_eq!(generate_default_body(&schema, "ts"), serde_json::json!([""]));
+    assert_eq!(generate_default_body(&schema, "ts"), serde_json::json!(["string"]));
 }
 
 #[test]
@@ -165,7 +163,6 @@ fn test_default_body_array_with_object_items() {
         }
     });
     let result = generate_default_body(&schema, "ts");
-    // Array with one item, that item has count=0 (non-nullable → required)
     assert_eq!(result[0]["count"], serde_json::json!(0));
 }
 
@@ -183,8 +180,7 @@ fn test_default_body_nested_object() {
         }
     });
     let result = generate_default_body(&schema, "ts");
-    // address: not nullable → required → recurse
-    assert_eq!(result["address"]["zip"], serde_json::json!(""));
+    assert_eq!(result["address"]["zip"], serde_json::json!("string"));
 }
 
 #[test]

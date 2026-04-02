@@ -8,11 +8,25 @@ pub enum FlupiError {
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
-    #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
+    #[error("{0}")]
+    Http(String),
 
     #[error("{0}")]
     Custom(String),
+}
+
+impl From<reqwest::Error> for FlupiError {
+    fn from(err: reqwest::Error) -> Self {
+        if let Some(status) = err.status() {
+            FlupiError::Http(format!("HTTP {}: {}", status.as_u16(), status.canonical_reason().unwrap_or("Unknown")))
+        } else if err.is_timeout() {
+            FlupiError::Http("Request timed out".to_string())
+        } else if err.is_connect() {
+            FlupiError::Http(format!("Could not connect: {}", err.url().map(|u| u.as_str()).unwrap_or("unknown URL")))
+        } else {
+            FlupiError::Http(format!("Network error: {err}"))
+        }
+    }
 }
 
 impl Serialize for FlupiError {

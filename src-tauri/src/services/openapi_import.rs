@@ -1,5 +1,7 @@
 use std::path::Path;
+use std::time::Duration;
 use sha2::{Sha256, Digest};
+use once_cell::sync::Lazy;
 use crate::error::{FlupiError, Result};
 use crate::models::openapi::ImportableOperation;
 use crate::models::request::{BodyConfig, Request, TemplateRef};
@@ -7,9 +9,16 @@ use crate::services::{file_io, schema_defaults};
 
 const HTTP_METHODS: &[&str] = &["get", "post", "put", "delete", "patch", "head", "options", "trace"];
 
+/// Shared HTTP client — connection pool is reused across all spec fetches.
+static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .expect("Failed to build reqwest client")
+});
+
 pub async fn fetch_spec_from_url(url: &str) -> Result<serde_json::Value> {
-    let client = reqwest::Client::new();
-    let resp = client.get(url).send().await?;
+    let resp = HTTP_CLIENT.get(url).send().await?.error_for_status()?;
     let value = resp.json::<serde_json::Value>().await?;
     Ok(value)
 }
@@ -101,6 +110,19 @@ pub fn compute_operation_hash(operation: &serde_json::Value) -> String {
     let mut hasher = Sha256::new();
     hasher.update(serialized.as_bytes());
     hex::encode(hasher.finalize())
+}
+
+/// Hash of the entire OpenAPI spec document — used as source-level `last_hash`
+/// metadata only. Never compared against per-operation `schema_hash` values.
+pub fn compute_spec_hash(spec: &serde_json::Value) -> String {
+    compute_operation_hash(spec)
+}
+
+pub fn extract_schemas(
+    op_json: &serde_json::Value,
+    spec: &serde_json::Value,
+) -> (serde_json::Value, serde_json::Value) {
+    (extract_request_schema(op_json, spec), extract_response_schema(op_json, spec))
 }
 
 fn extract_request_schema(operation: &serde_json::Value, spec: &serde_json::Value) -> serde_json::Value {

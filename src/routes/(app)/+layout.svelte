@@ -8,10 +8,14 @@
   import { searchOpen, theme, type Theme } from '$lib/stores/ui';
   import { project } from '$lib/stores/project';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
-  import { listEnvironments, getPreferences, getRecentProjects } from '$lib/services/tauri-commands';
+  import { listEnvironments, getPreferences, getRecentProjects, listOpenApiSources, refreshSource } from '$lib/services/tauri-commands';
+  import { openApiSources, driftedIdsBySource } from '$lib/stores/openapi';
 
   onMount(async () => {
     if (!$project.isOpen) { goto('/'); return; }
+
+    // Clear stale drift state from any previous project session.
+    driftedIdsBySource.set(new Map());
 
     const [prefs, entries] = await Promise.all([
       getPreferences(),
@@ -29,6 +33,30 @@
       activeEnvironment.set(validStored);
       selectedEnvironmentFile.set(validStored);
     }
+
+    // Startup drift scan — runs in the background without blocking the UI.
+    (async () => {
+      try {
+        const sources = await listOpenApiSources($project.path!);
+        openApiSources.set(sources);
+        await Promise.all(
+          sources.map(async (source) => {
+            try {
+              const drifted = await refreshSource($project.path!, source.id);
+              driftedIdsBySource.update((prev) => {
+                const next = new Map(prev);
+                next.set(source.id, drifted);
+                return next;
+              });
+            } catch {
+              // A single source failing (e.g. unreachable URL) should not block others.
+            }
+          }),
+        );
+      } catch {
+        // Sources file missing or unreadable — not a startup-blocking error.
+      }
+    })();
 
     cleanupShortcuts = registerShortcuts([
       { key: 'Enter', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:send-request')) },

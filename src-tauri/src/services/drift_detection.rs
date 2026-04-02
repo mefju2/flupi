@@ -8,8 +8,9 @@ pub fn detect_drift(
     project_path: &Path,
     source_id: &str,
     operations: &[(ImportableOperation, serde_json::Value)],
+    spec: &serde_json::Value,
 ) -> Result<Vec<String>> {
-    let request_files = collect_all_request_files(project_path)?;
+    let request_files = collect_request_files(project_path)?;
     let mut drifted = Vec::new();
 
     for file_path in &request_files {
@@ -27,13 +28,31 @@ pub fn detect_drift(
             continue;
         }
 
-        let current_hash = find_operation_hash(&template_ref.operation_id, operations);
+        let found = operations
+            .iter()
+            .find(|(op, _)| op.operation_id == template_ref.operation_id);
 
-        if let Some(hash) = current_hash {
-            if hash != template_ref.schema_hash {
-                if let Ok(request_id) = crate::models::request::derive_request_id(project_path, file_path) {
-                    drifted.push(request_id);
+        let is_drifted = match found {
+            // Operation no longer exists in the spec → drift
+            None => true,
+            Some((current_op, op_json)) => {
+                let current_hash = openapi_import::compute_operation_hash(op_json);
+                if current_hash != template_ref.schema_hash || current_op.path != request.path {
+                    true
+                } else {
+                    // Secondary check: compare resolved schemas to catch $ref-based
+                    // contract changes (e.g. a property added to a shared component).
+                    let (new_req_schema, new_res_schema) =
+                        openapi_import::extract_schemas(op_json, spec);
+                    new_req_schema != template_ref.request_schema
+                        || new_res_schema != template_ref.response_schema
                 }
+            }
+        };
+
+        if is_drifted {
+            if let Ok(request_id) = crate::models::request::derive_request_id(project_path, file_path) {
+                drifted.push(request_id);
             }
         }
     }
@@ -41,17 +60,7 @@ pub fn detect_drift(
     Ok(drifted)
 }
 
-fn find_operation_hash(
-    operation_id: &str,
-    operations: &[(ImportableOperation, serde_json::Value)],
-) -> Option<String> {
-    operations
-        .iter()
-        .find(|(op, _)| op.operation_id == operation_id)
-        .map(|(_, json)| openapi_import::compute_operation_hash(json))
-}
-
-fn collect_all_request_files(project_path: &Path) -> Result<Vec<std::path::PathBuf>> {
+pub fn collect_request_files(project_path: &Path) -> Result<Vec<std::path::PathBuf>> {
     let mut files = Vec::new();
 
     // Collect from collections/{folder}/requests/

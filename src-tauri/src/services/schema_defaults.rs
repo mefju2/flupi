@@ -36,16 +36,13 @@ pub fn resolve_refs(schema: &Value, spec: &Value, depth: u8) -> Value {
 }
 
 /// Generates a default JSON body value from a fully-resolved JSON Schema.
+/// Every field gets a type-named placeholder regardless of required/nullable status.
 /// `import_timestamp` is an ISO 8601 string used as the default for `date-time` fields.
 pub fn generate_default_body(schema: &Value, import_timestamp: &str) -> Value {
-    generate_value(schema, true, import_timestamp)
+    generate_value(schema, import_timestamp)
 }
 
-fn generate_value(schema: &Value, required: bool, import_timestamp: &str) -> Value {
-    if !required {
-        return Value::Null;
-    }
-
+fn generate_value(schema: &Value, import_timestamp: &str) -> Value {
     // Enum takes precedence over type
     if let Some(enum_values) = schema.get("enum").and_then(|v| v.as_array()) {
         if let Some(first) = enum_values.first() {
@@ -59,38 +56,24 @@ fn generate_value(schema: &Value, required: bool, import_timestamp: &str) -> Val
                 Some(p) => p,
                 None => return Value::Object(serde_json::Map::new()),
             };
-            // `required` array takes precedence; fall back to `nullable: true` only when
-            // no `required` array is present (common in .NET-generated specs).
-            let required_fields = schema.get("required").and_then(|v| v.as_array());
             let mut obj = serde_json::Map::new();
             for (name, field_schema) in props {
-                let field_required = if let Some(req) = required_fields {
-                    req.iter().any(|r| r.as_str() == Some(name.as_str()))
-                } else {
-                    !field_schema
-                        .get("nullable")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(false)
-                };
-                obj.insert(
-                    name.clone(),
-                    generate_value(field_schema, field_required, import_timestamp),
-                );
+                obj.insert(name.clone(), generate_value(field_schema, import_timestamp));
             }
             Value::Object(obj)
         }
         Some("array") => match schema.get("items") {
-            Some(items) => Value::Array(vec![generate_value(items, true, import_timestamp)]),
-            // No items schema — return empty array rather than [null]
+            Some(items) => Value::Array(vec![generate_value(items, import_timestamp)]),
+            // No items schema — return empty array rather than ["string"]
             None => Value::Array(vec![]),
         },
         Some("string") => match schema.get("format").and_then(|v| v.as_str()) {
             Some("uuid") => Value::String(uuid::Uuid::new_v4().to_string()),
             Some("date-time") => Value::String(import_timestamp.to_string()),
-            _ => Value::String(String::new()),
+            _ => Value::String("string".to_string()),
         },
         Some("integer") | Some("number") => Value::Number(serde_json::Number::from(0)),
-        Some("boolean") => Value::Bool(false),
+        Some("boolean") => Value::Bool(true),
         _ => Value::Null,
     }
 }

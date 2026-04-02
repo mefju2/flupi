@@ -4,6 +4,22 @@ pub mod commands;
 pub mod models;
 pub mod utils;
 
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
+/// Shared application state injected via Tauri's managed state system.
+pub struct AppState {
+    /// Serialises all reads/writes of `openapi-sources.json` so concurrent
+    /// `refresh_source` calls (startup scan, "Sync All") cannot corrupt the file.
+    pub sources_lock: Arc<Mutex<()>>,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self { sources_lock: Arc::new(Mutex::new(())) }
+    }
+}
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -13,6 +29,7 @@ fn greet(name: &str) -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(AppState::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -58,6 +75,8 @@ pub fn run() {
             commands::openapi::fetch_operations,
             commands::openapi::import_operations,
             commands::openapi::refresh_source,
+            commands::openapi::resolve_drift,
+            commands::openapi::get_drift_details,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

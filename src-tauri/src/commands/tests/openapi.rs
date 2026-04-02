@@ -32,7 +32,7 @@ fn test_add_openapi_source_creates_file() {
         last_hash: None,
     };
 
-    add_openapi_source(project_path.clone(), source).unwrap();
+    add_source_to_disk(&project_path, source).unwrap();
 
     let sources_path = project_path.join("openapi-sources.json");
     assert!(sources_path.exists());
@@ -63,8 +63,8 @@ fn test_add_openapi_source_appends_to_existing() {
         last_hash: None,
     };
 
-    add_openapi_source(project_path.clone(), source1).unwrap();
-    add_openapi_source(project_path.clone(), source2).unwrap();
+    add_source_to_disk(&project_path, source1).unwrap();
+    add_source_to_disk(&project_path, source2).unwrap();
 
     let sources = list_openapi_sources(project_path).unwrap();
     assert_eq!(sources.len(), 2);
@@ -90,9 +90,9 @@ fn test_remove_openapi_source() {
         last_hash: None,
     };
 
-    add_openapi_source(project_path.clone(), source1).unwrap();
-    add_openapi_source(project_path.clone(), source2).unwrap();
-    remove_openapi_source(project_path.clone(), "src-1".to_string()).unwrap();
+    add_source_to_disk(&project_path, source1).unwrap();
+    add_source_to_disk(&project_path, source2).unwrap();
+    remove_source_from_disk(&project_path, "src-1").unwrap();
 
     let sources = list_openapi_sources(project_path).unwrap();
     assert_eq!(sources.len(), 1);
@@ -123,7 +123,7 @@ async fn test_fetch_operations_from_file_source() {
         last_fetched_at: None,
         last_hash: None,
     };
-    add_openapi_source(project_path.clone(), source).unwrap();
+    add_source_to_disk(&project_path, source).unwrap();
 
     let ops = fetch_operations(project_path, "src-file".to_string()).await.unwrap();
     assert_eq!(ops.len(), 1);

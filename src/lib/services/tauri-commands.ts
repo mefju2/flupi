@@ -327,3 +327,27 @@ export async function importOperations(
 export async function refreshSource(projectPath: string, sourceId: string): Promise<string[]> {
   return invoke('refresh_source', { projectPath, sourceId });
 }
+
+export async function resolveDrift(
+  projectPath: string,
+  requestId: string,
+  sourceId: string,
+): Promise<void> {
+  return invoke('resolve_drift', { projectPath, requestId, sourceId });
+}
+
+export interface DriftDetails {
+  sourceId: string;
+  operationId: string;
+  storedPath: string;
+  currentPath: string | null;
+  /** Set when operationId was re-derived from a renamed path. */
+  currentOperationId: string | null;
+  pathChanged: boolean;
+  schemaChanged: boolean;
+  operationRemoved: boolean;
+}
+
+export async function getDriftDetails(projectPath: string, requestId: string): Promise<DriftDetails> {
+  return invoke('get_drift_details', { projectPath, requestId });
+}

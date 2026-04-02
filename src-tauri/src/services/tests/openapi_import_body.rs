@@ -47,9 +47,8 @@ fn test_import_operations_sets_json_body_for_post_with_schema() {
     ).unwrap();
     let req: serde_json::Value = serde_json::from_str(&content).unwrap();
 
-    // Schema has no required array and name has no nullable: true → treated as required → ""
     assert_eq!(req["body"]["type"], "json");
-    assert_eq!(req["body"]["content"]["name"], "");
+    assert_eq!(req["body"]["content"]["name"], "string");
 }
 
 #[test]
