@@ -6,11 +6,12 @@
   interface Props {
     auth: AuthConfig | undefined;
     onUpdate: (auth: AuthConfig) => void;
+    showInherit?: boolean;
   }
 
-  let { auth, onUpdate }: Props = $props();
+  let { auth, onUpdate, showInherit = true }: Props = $props();
 
-  let authType = $derived(auth?.type ?? 'inherit');
+  let authType = $derived(auth?.type ?? (showInherit ? 'inherit' : 'none'));
 
   function setType(type: AuthConfig['type']) {
     if (type === 'none') onUpdate({ type: 'none' });
@@ -36,7 +37,7 @@
       value={authType}
       onchange={(e) => setType(e.currentTarget.value as AuthConfig['type'])}
     >
-      <option value="inherit">Inherit from collection</option>
+      {#if showInherit}<option value="inherit">Inherit from collection</option>{/if}
       <option value="none">None</option>
       <option value="bearer">Bearer Token</option>
       <option value="basic">Basic Auth</option>

@@ -165,9 +165,19 @@
   }
 
   const baseClass = 'bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2';
+
+  let wrapperEl = $state<HTMLDivElement | null>(null);
+  let dropdownPos = $state({ top: 0, left: 0, width: 0 });
+
+  $effect(() => {
+    if (showDropdown && wrapperEl) {
+      const rect = wrapperEl.getBoundingClientRect();
+      dropdownPos = { top: rect.bottom + 2, left: rect.left, width: rect.width };
+    }
+  });
 </script>
 
-<div class="relative {className}">
+<div bind:this={wrapperEl} class="relative {className}">
   {#if !multiline}
     {#if !focused}
       <VariableTokenDisplay
@@ -191,14 +201,27 @@
       onfocus={handleFocus}
     />
   {:else}
+    {#if !focused}
+      <VariableTokenDisplay
+        {value}
+        vars={varNames}
+        secrets={secretsList}
+        {placeholder}
+        multiline={true}
+        onTokenHover={onTokenHover}
+        onTokenLeave={scheduleTooltipClose}
+        onclick={() => (inputEl as HTMLTextAreaElement | null)?.focus()}
+      />
+    {/if}
     <textarea
       bind:this={inputEl as HTMLTextAreaElement}
-      class="w-full {baseClass} min-h-[60px] resize-y"
+      class="w-full {baseClass} min-h-15 resize-y {!focused ? 'sr-only' : ''}"
       {value}
       {placeholder}
       oninput={handleInput}
       onkeydown={handleKeydown}
       onblur={handleBlur}
+      onfocus={handleFocus}
     ></textarea>
   {/if}
 
@@ -215,7 +238,10 @@
   {/if}
 
   {#if showDropdown && filtered.length > 0}
-    <ul class="absolute z-50 top-full left-0 mt-0.5 w-full max-h-48 overflow-y-auto bg-app-panel border border-app-border-2 rounded shadow-lg">
+    <ul
+      class="fixed z-50 max-h-48 overflow-y-auto bg-app-panel border border-app-border-2 rounded shadow-lg"
+      style="top: {dropdownPos.top}px; left: {dropdownPos.left}px; width: {dropdownPos.width}px"
+    >
       {#each filtered as item, idx}
         <li>
           <button

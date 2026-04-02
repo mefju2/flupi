@@ -2,7 +2,7 @@
   import RequestTree from '$lib/components/requests/RequestTree.svelte';
   import RequestEditor from '$lib/components/requests/RequestEditor.svelte';
   import CollectionEditor from '$lib/components/requests/CollectionEditor.svelte';
-  import { activeRequest, activeCollectionFolder, activeCollection } from '$lib/stores/requests';
+  import { activeRequest, activeCollectionFolder, activeCollection, requestTree } from '$lib/stores/requests';
 </script>
 
 <div class="flex h-full">
@@ -15,7 +15,16 @@
         <CollectionEditor
           folderName={$activeCollectionFolder}
           collection={$activeCollection}
-          onUpdate={(updated) => activeCollection.set(updated)}
+          onUpdate={(updated) => {
+            activeCollection.set(updated);
+            requestTree.update(tree =>
+              tree.map(n =>
+                n.type === 'Collection' && n.folder_name === $activeCollectionFolder
+                  ? { ...n, name: updated.name }
+                  : n
+              )
+            );
+          }}
         />
       </div>
     {:else if $activeRequest}

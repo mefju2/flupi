@@ -20,7 +20,12 @@
 
   $effect(() => {
     folderName; // track folderName as the reset signal
-    local = untrack(() => ({ ...collection, headers: { ...collection.headers } }));
+    const incomingName = collection.name; // also track name so external renames are reflected
+    untrack(() => {
+      if (local.name !== incomingName) {
+        local = { ...collection, headers: { ...collection.headers } };
+      }
+    });
   });
 
   const debouncedSave = createDebouncedSave(async () => {
@@ -80,6 +85,7 @@
     <div class="bg-app-panel border border-app-border rounded">
       <AuthTab
         auth={local.auth}
+        showInherit={false}
         onUpdate={handleAuthUpdate}
       />
     </div>

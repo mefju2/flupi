@@ -10,12 +10,13 @@
     vars: Set<string>;
     secrets: string[];
     placeholder?: string;
+    multiline?: boolean;
     onTokenHover: (varName: string, anchorEl: HTMLElement) => void;
     onTokenLeave?: () => void;
     onclick: () => void;
   }
 
-  let { value, vars, secrets, placeholder = '', onTokenHover, onTokenLeave, onclick }: Props = $props();
+  let { value, vars, secrets, placeholder = '', multiline = false, onTokenHover, onTokenLeave, onclick }: Props = $props();
 
   const parsedParts: Part[] = $derived.by(() => {
     const parts: Part[] = [];
@@ -37,10 +38,11 @@
 </script>
 
 <div
-  class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm font-mono text-app-text cursor-text w-full min-h-[30px] flex items-center overflow-hidden whitespace-nowrap"
+  class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm font-mono text-app-text cursor-text w-full
+    {multiline ? 'min-h-15 whitespace-pre-wrap break-all flex flex-wrap items-baseline content-start' : 'min-h-7.5 flex items-center overflow-hidden whitespace-nowrap'}"
   role="textbox"
   aria-readonly="true"
-  aria-multiline="false"
+  aria-multiline={multiline ? 'true' : 'false'}
   tabindex="-1"
   aria-label="value with variable tokens"
   {onclick}

@@ -124,7 +124,16 @@
       if (type === 'new-request') await createRequest($project.path, id || null, trimmed);
       else if (type === 'new-collection') await createCollection($project.path, trimmed);
       else if (type === 'rename-request') await renameRequest($project.path, id, trimmed);
-      else if (type === 'rename-collection') await renameCollection($project.path, id, trimmed);
+      else if (type === 'rename-collection') {
+        const newSlug = await renameCollection($project.path, id, trimmed);
+        await reload();
+        if ($activeCollectionFolder === id) {
+          const updated = await getCollection($project.path, newSlug);
+          activeCollectionFolder.set(newSlug);
+          activeCollection.set(updated);
+        }
+        return;
+      }
       await reload();
     } catch (e) { console.error(e); }
   }
@@ -136,6 +145,16 @@
 
   function makeInlineEdit(item: DndItem) {
     if (pendingInput?.type !== 'rename-request' || pendingInput.id !== item.id) return null;
+    return {
+      value: pendingInput.value,
+      onChange: (v: string) => { if (pendingInput) pendingInput = { ...pendingInput, value: v }; },
+      onConfirm: confirmPendingInput,
+      onCancel: () => { pendingInput = null; },
+    };
+  }
+
+  function makeInlineEditCollection(folderName: string) {
+    if (pendingInput?.type !== 'rename-collection' || pendingInput.id !== folderName) return null;
     return {
       value: pendingInput.value,
       onChange: (v: string) => { if (pendingInput) pendingInput = { ...pendingInput, value: v }; },
@@ -158,7 +177,7 @@
     {#each collections as collection (collection.folder_name)}
       {@const key = collection.folder_name}
       {@const items = dndItems[key] ?? []}
-      <TreeNode node={{ ...collection, children: [] }} activeRequestId={$activeRequestId} activeCollectionFolder={$activeCollectionFolder} onSelect={selectRequest} onSelectCollection={selectCollection} onContextMenu={openContextMenu} expanded={collectionExpanded[key] ?? true} onToggleExpanded={() => { collectionExpanded[key] = !(collectionExpanded[key] ?? true); }} />
+      <TreeNode node={{ ...collection, children: [] }} activeRequestId={$activeRequestId} activeCollectionFolder={$activeCollectionFolder} onSelect={selectRequest} onSelectCollection={selectCollection} onContextMenu={openContextMenu} expanded={collectionExpanded[key] ?? true} onToggleExpanded={() => { collectionExpanded[key] = !(collectionExpanded[key] ?? true); }} inlineEdit={makeInlineEditCollection(collection.folder_name)} />
       {#if collectionExpanded[key] ?? true}
       <div class="ml-3 border-l border-app-border pl-1 min-h-1"
         use:dndzone={{ items, type: 'request', flipDurationMs: 150 }}

@@ -51,11 +51,23 @@
         class="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer"
         role="button"
         tabindex="0"
-        onclick={() => node.type === 'Collection' ? onSelectCollection?.(node.folder_name) : onToggleExpanded?.()}
-        onkeydown={(e) => { if (e.key === 'Enter') node.type === 'Collection' ? onSelectCollection?.(node.folder_name) : onToggleExpanded?.(); }}
+        onclick={() => !inlineEdit && (node.type === 'Collection' ? onSelectCollection?.(node.folder_name) : onToggleExpanded?.())}
+        onkeydown={(e) => { if (e.key === 'Enter' && !inlineEdit) node.type === 'Collection' ? onSelectCollection?.(node.folder_name) : onToggleExpanded?.(); }}
       >
-        <span class="text-app-text-3 text-xs">📁</span>
-        <span class="truncate">{node.name}</span>
+        <span class="text-app-text-3 text-xs shrink-0">📁</span>
+        {#if inlineEdit}
+          <input
+            class="flex-1 min-w-0 bg-app-card border border-cyan-600 rounded px-1 py-0 text-sm text-app-text font-mono focus:outline-none"
+            value={inlineEdit.value}
+            oninput={(e) => inlineEdit!.onChange((e.target as HTMLInputElement).value)}
+            onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); inlineEdit!.onConfirm(); } if (e.key === 'Escape') { e.stopPropagation(); inlineEdit!.onCancel(); } }}
+            onblur={() => inlineEdit?.onConfirm()}
+            onclick={(e) => e.stopPropagation()}
+            use:focusAndSelect
+          />
+        {:else}
+          <span class="truncate">{node.name}</span>
+        {/if}
       </span>
     </div>
 
