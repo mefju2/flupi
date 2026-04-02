@@ -176,7 +176,7 @@
     </div>
 
     <!-- Tab Content -->
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-hidden">
       {#if activeTab === 'Params'}
         <ParamsTab
           path={$activeRequest.path}
@@ -206,9 +206,10 @@
         <BodyTab
           body={$activeRequest.body}
           onUpdate={(b: BodyConfig) => updateRequest({ body: b })}
+          requestSchema={$activeRequest.templateRef?.requestSchema}
         />
       {:else if activeTab === 'Extractions'}
-        <div class="p-4">
+        <div class="p-4 h-full overflow-y-auto">
           <ExtractionsPanel
             extractions={$activeRequest.extractions ?? []}
             onUpdate={(extractions: Extraction[]) => updateRequest({ extractions })}

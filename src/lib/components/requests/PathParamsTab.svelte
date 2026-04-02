@@ -29,7 +29,7 @@
   }
 </script>
 
-<div class="p-4">
+<div class="p-4 h-full overflow-y-auto">
   {#if detectedParams.length === 0}
     <p class="text-xs text-app-text-3">
       Add <span class="font-mono">{'{paramName}'}</span> segments to your URL path to define path parameters.

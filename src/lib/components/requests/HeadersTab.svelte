@@ -61,7 +61,7 @@
   }
 </script>
 
-<div class="p-4 space-y-4">
+<div class="p-4 space-y-4 h-full overflow-y-auto">
   {#if collectionRows.length > 0}
     <div>
       <p class="text-xs text-app-text-3 mb-2">Inherited from collection</p>

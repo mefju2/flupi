@@ -23,9 +23,13 @@
       .filter(Boolean)
       .map((pair) => {
         const [k, ...rest] = pair.split('=');
-        const key = decodeURIComponent(k ?? '');
-        return { id: key, key, value: decodeURIComponent(rest.join('=') ?? '') };
+        const key = safeDecode(k ?? '');
+        return { id: key, key, value: safeDecode(rest.join('=') ?? '') };
       });
+  }
+
+  function safeDecode(s: string): string {
+    try { return decodeURIComponent(s); } catch { return s; }
   }
 
   function buildPath(basePath: string, rows: Row[]): string {
@@ -44,7 +48,7 @@
   }
 </script>
 
-<div class="p-4">
+<div class="p-4 h-full overflow-y-auto">
   <p class="text-xs text-app-text-3 mb-3">Query parameters are appended to the URL path.</p>
   <KeyValueTable rows={rows} onUpdate={handleUpdate} />
 </div>

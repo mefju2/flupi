@@ -7,9 +7,10 @@
   interface Props {
     body: BodyConfig | undefined;
     onUpdate: (body: BodyConfig) => void;
+    requestSchema?: unknown;
   }
 
-  let { body, onUpdate }: Props = $props();
+  let { body, onUpdate, requestSchema = undefined }: Props = $props();
 
   let bodyType = $derived(body?.type ?? 'none');
 
@@ -34,8 +35,9 @@
   const jsonPlaceholder = '{ "key": "value" }';
 </script>
 
-<div class="p-4 space-y-3">
-  <div class="flex items-center gap-2">
+<div class="flex flex-col h-full">
+  <!-- Type switcher bar -->
+  <div class="flex items-center gap-2 px-4 py-3 border-b border-app-border shrink-0">
     <span class="text-xs text-app-text-3">Body</span>
     <div class="flex border border-app-border-2 rounded overflow-hidden">
       {#each ['none', 'json', 'form', 'raw'] as t}
@@ -47,37 +49,47 @@
     </div>
   </div>
 
+  <!-- Content area -->
   {#if body?.type === 'none' || !body}
-    <p class="text-sm text-app-text-3">No request body.</p>
+    <div class="flex-1 overflow-y-auto px-4 py-3">
+      <p class="text-sm text-app-text-3">No request body.</p>
+    </div>
   {:else if body.type === 'json'}
-    <JsonEditor
-      value={typeof body.content === 'string' ? body.content : JSON.stringify(body.content, null, 2)}
-      onChange={(v) => onUpdate({ type: 'json', content: v })}
-      placeholder={jsonPlaceholder}
-    />
+    <div class="flex-1 overflow-hidden">
+      <JsonEditor
+        value={typeof body.content === 'string' ? body.content : JSON.stringify(body.content, null, 2)}
+        onChange={(v) => onUpdate({ type: 'json', content: v })}
+        placeholder={jsonPlaceholder}
+        schema={requestSchema}
+      />
+    </div>
   {:else if body.type === 'form'}
-    <p class="text-xs text-app-text-4">Encoded as <span class="font-mono">application/x-www-form-urlencoded</span></p>
-    <KeyValueTable
-      rows={formRows(body)}
-      showEnabled={true}
-      onUpdate={(rows) => {
-        const c: Record<string, string> = {};
-        const disabled: string[] = [];
-        for (const r of rows) {
-          if (r.key) {
-            c[r.key] = r.value;
-            if (r.enabled === false) disabled.push(r.key);
+    <div class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <p class="text-xs text-app-text-4">Encoded as <span class="font-mono">application/x-www-form-urlencoded</span></p>
+      <KeyValueTable
+        rows={formRows(body)}
+        showEnabled={true}
+        onUpdate={(rows) => {
+          const c: Record<string, string> = {};
+          const disabled: string[] = [];
+          for (const r of rows) {
+            if (r.key) {
+              c[r.key] = r.value;
+              if (r.enabled === false) disabled.push(r.key);
+            }
           }
-        }
-        onUpdate({ type: 'form', content: c, disabledFields: disabled });
-      }}
-    />
+          onUpdate({ type: 'form', content: c, disabledFields: disabled });
+        }}
+      />
+    </div>
   {:else if body.type === 'raw'}
-    <VariableAutocomplete
-      value={body.content}
-      placeholder="Raw body content..."
-      multiline={true}
-      onChange={(v) => onUpdate({ type: 'raw', content: v })}
-    />
+    <div class="flex-1 overflow-y-auto px-4 py-3">
+      <VariableAutocomplete
+        value={body.content}
+        placeholder="Raw body content..."
+        multiline={true}
+        onChange={(v) => onUpdate({ type: 'raw', content: v })}
+      />
+    </div>
   {/if}
 </div>

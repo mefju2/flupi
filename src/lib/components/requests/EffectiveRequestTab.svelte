@@ -52,8 +52,12 @@
     return 'None';
   }
 
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function highlightVars(text: string): string {
-    return text.replace(
+    return escapeHtml(text).replace(
       /\{\{(\w+)\}\}/g,
       (match, key) => key in vars
         ? `<span class="text-cyan-400">${match}</span>`
@@ -62,7 +66,7 @@
   }
 </script>
 
-<div class="p-4 space-y-5 text-sm">
+<div class="p-4 space-y-5 text-sm h-full overflow-y-auto">
   {#if !req}
     <p class="text-app-text-4">Select a request to preview.</p>
   {:else}

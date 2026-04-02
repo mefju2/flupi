@@ -8,6 +8,10 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [sveltekit(), tailwindcss()],
+  // Monaco Editor: must not be pre-bundled (it uses its own internal module resolution)
+  optimizeDeps: {
+    exclude: ['monaco-editor'],
+  },
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

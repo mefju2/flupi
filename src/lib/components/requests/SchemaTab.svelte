@@ -21,7 +21,7 @@
   let responseSchemaText = $derived(formatSchema(templateRef.responseSchema));
 </script>
 
-<div class="flex flex-col gap-4 p-3">
+<div class="flex flex-col gap-4 p-3 h-full overflow-y-auto">
   <!-- Source info -->
   <div class="flex flex-col gap-0.5">
     <div class="flex items-center gap-2 text-xs text-app-text-3">
