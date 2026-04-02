@@ -24,6 +24,19 @@
   const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
   type Tab = 'Params' | 'Path' | 'Headers' | 'Auth' | 'Body' | 'Extractions' | 'Schema' | 'Effective Request';
 
+  const TAB_STORAGE_KEY = 'flupi:active-request-tab';
+
+  function readStoredTab(): Tab | null {
+    const stored = localStorage.getItem(TAB_STORAGE_KEY);
+    const valid: Tab[] = ['Params', 'Path', 'Headers', 'Auth', 'Body', 'Extractions', 'Schema', 'Effective Request'];
+    return valid.includes(stored as Tab) ? (stored as Tab) : null;
+  }
+
+  function selectTab(tab: Tab) {
+    activeTab = tab;
+    localStorage.setItem(TAB_STORAGE_KEY, tab);
+  }
+
   let activeTab = $state<Tab>('Params');
 
   // Tabs that are always present.
@@ -36,13 +49,18 @@
     'Effective Request',
   ]);
 
-  // When the active request changes: reset to Params, but go straight to Schema if drifted.
+  // When the active request changes: restore last-used tab, but force Schema if drifted.
   $effect(() => {
     const id = $activeRequestId;
     if (id && $driftedRequestIds.has(id) && $activeRequest?.templateRef) {
       activeTab = 'Schema';
     } else {
-      activeTab = 'Params';
+      const stored = readStoredTab();
+      if (stored === 'Schema' && !$activeRequest?.templateRef) {
+        activeTab = 'Params';
+      } else {
+        activeTab = stored ?? 'Params';
+      }
     }
   });
 
@@ -147,7 +165,7 @@
         {@const isDriftTab = tab === 'Schema' && !!$activeRequestId && $driftedRequestIds.has($activeRequestId)}
         <button
           class="text-sm px-3 py-2 transition-all duration-150 border-b-2 -mb-px {activeTab === tab ? 'text-cyan-300 border-cyan-500' : 'text-app-text-3 border-transparent hover:text-app-text-2'}"
-          onclick={() => (activeTab = tab)}
+          onclick={() => selectTab(tab)}
         >
           {tab}
           {#if isDriftTab}
@@ -195,7 +213,6 @@
             extractions={$activeRequest.extractions ?? []}
             onUpdate={(extractions: Extraction[]) => updateRequest({ extractions })}
             responseSchema={$activeRequest.templateRef?.responseSchema ?? null}
-            unknownVariableLabel="not in env"
           />
         </div>
       {:else if activeTab === 'Schema' && $activeRequest.templateRef}

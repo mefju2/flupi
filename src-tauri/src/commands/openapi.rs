@@ -17,50 +17,130 @@ pub struct DriftDetails {
     /// The path stored in the request file (what was imported).
     #[serde(rename = "storedPath")]
     pub stored_path: String,
-    /// The path currently in the spec — None if the operation was truly deleted.
+    /// For an exact-operationId match where only the path changed: the new path.
+    /// None when the operationId no longer exists (user picks from `candidates`).
     #[serde(rename = "currentPath")]
     pub current_path: Option<String>,
-    /// When the operationId itself changed (e.g. path rename re-derived the ID),
-    /// this holds the new operationId so the UI can show it.
-    #[serde(rename = "currentOperationId")]
-    pub current_operation_id: Option<String>,
     #[serde(rename = "pathChanged")]
     pub path_changed: bool,
     #[serde(rename = "schemaChanged")]
     pub schema_changed: bool,
-    /// True only when the operation is genuinely gone with no plausible rename candidate.
+    /// True only when the operationId is gone and no plausible rename candidates exist.
     #[serde(rename = "operationRemoved")]
     pub operation_removed: bool,
+    /// Rename candidates sorted by similarity score (descending). Non-empty only when
+    /// the stored operationId no longer exists in the spec. Empty means exact-match or
+    /// truly removed.
+    pub candidates: Vec<PathCandidate>,
+    /// Schema snapshots — only populated when `schema_changed` is true (exact-match case).
+    #[serde(rename = "storedRequestSchema", skip_serializing_if = "Option::is_none")]
+    pub stored_request_schema: Option<serde_json::Value>,
+    #[serde(rename = "storedResponseSchema", skip_serializing_if = "Option::is_none")]
+    pub stored_response_schema: Option<serde_json::Value>,
+    #[serde(rename = "newRequestSchema", skip_serializing_if = "Option::is_none")]
+    pub new_request_schema: Option<serde_json::Value>,
+    #[serde(rename = "newResponseSchema", skip_serializing_if = "Option::is_none")]
+    pub new_response_schema: Option<serde_json::Value>,
 }
 
-/// Find a likely-renamed operation by same HTTP method + best path similarity.
-/// Returns Some only when similarity exceeds 60% (common-prefix / min-length).
-fn find_candidate_operation<'a>(
-    stored_method: &str,
-    stored_path: &str,
-    operations: &'a [(ImportableOperation, serde_json::Value)],
-) -> Option<&'a (ImportableOperation, serde_json::Value)> {
-    let method_up = stored_method.to_uppercase();
-    let min_req_len = (stored_path.len() as f64 * 0.6) as usize;
-
-    operations
-        .iter()
-        .filter(|(op, _)| op.method.to_uppercase() == method_up)
-        .filter_map(|entry| {
-            let prefix = common_prefix_len(stored_path, &entry.0.path);
-            if prefix >= min_req_len { Some((prefix, entry)) } else { None }
-        })
-        .max_by_key(|(score, _)| *score)
-        .map(|(_, entry)| entry)
+/// A candidate operation the user can remap this drifted request to.
+#[derive(Debug, Serialize, Clone)]
+pub struct PathCandidate {
+    #[serde(rename = "operationId")]
+    pub operation_id: String,
+    pub path: String,
+    pub method: String,
+    pub summary: Option<String>,
 }
 
 fn common_prefix_len(a: &str, b: &str) -> usize {
     a.chars().zip(b.chars()).take_while(|(x, y)| x == y).count()
 }
 
+/// Returns plausible rename candidates sorted by normalised Dice-prefix score (descending).
+/// Threshold: 0.20. Cap: 8 results. Excludes `excluded_ids` (operations already mapped
+/// by other requests in the same source, so they are not a rename target for this one).
+fn find_candidate_operations(
+    stored_method: &str,
+    stored_path: &str,
+    operations: &[(ImportableOperation, serde_json::Value)],
+    excluded_ids: &std::collections::HashSet<String>,
+) -> Vec<PathCandidate> {
+    const MIN_SCORE: f64 = 0.20;
+    const MAX_CANDIDATES: usize = 8;
+
+    let method_up = stored_method.to_uppercase();
+    let a_len = stored_path.chars().count();
+
+    let mut scored: Vec<(u32, PathCandidate)> = operations
+        .iter()
+        .filter(|(op, _)| {
+            op.method.to_uppercase() == method_up
+                && !excluded_ids.contains(&op.operation_id)
+        })
+        .filter_map(|(op, _)| {
+            let b_len = op.path.chars().count();
+            let denom = a_len + b_len;
+            let score = if denom == 0 {
+                0.0
+            } else {
+                2.0 * common_prefix_len(stored_path, &op.path) as f64 / denom as f64
+            };
+            if score >= MIN_SCORE {
+                Some(((score * 1_000_000.0) as u32, PathCandidate {
+                    operation_id: op.operation_id.clone(),
+                    path: op.path.clone(),
+                    method: op.method.clone(),
+                    summary: op.summary.clone(),
+                }))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    scored.sort_by(|a, b| b.0.cmp(&a.0));
+    scored.truncate(MAX_CANDIDATES);
+    scored.into_iter().map(|(_, c)| c).collect()
+}
+
+/// Collects operationIds already claimed by other requests in this project that belong
+/// to `source_id`, excluding `exclude_request_id` itself (the drifted request we're
+/// computing candidates for).
+fn collect_claimed_operation_ids(
+    project_path: &std::path::Path,
+    source_id: &str,
+    exclude_request_id: &str,
+) -> std::collections::HashSet<String> {
+    let mut claimed = std::collections::HashSet::new();
+    let files = match crate::services::drift_detection::collect_request_files(project_path) {
+        Ok(f) => f,
+        Err(_) => return claimed,
+    };
+    for file_path in &files {
+        let rid = match crate::models::request::derive_request_id(project_path, file_path) {
+            Ok(id) => id,
+            Err(_) => continue,
+        };
+        if rid == exclude_request_id {
+            continue;
+        }
+        let req: crate::models::request::Request = match file_io::read_json(file_path) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        if let Some(tr) = &req.template_ref {
+            if tr.source_id == source_id {
+                claimed.insert(tr.operation_id.clone());
+            }
+        }
+    }
+    claimed
+}
+
 const SOURCES_FILE: &str = "openapi-sources.json";
 
-fn load_sources(project_path: &PathBuf) -> Result<OpenApiSources> {
+fn load_sources(project_path: &std::path::Path) -> Result<OpenApiSources> {
     let path = project_path.join(SOURCES_FILE);
     if !path.exists() {
         return Ok(OpenApiSources::default());
@@ -68,18 +148,18 @@ fn load_sources(project_path: &PathBuf) -> Result<OpenApiSources> {
     file_io::read_json(&path)
 }
 
-fn save_sources(project_path: &PathBuf, sources: &OpenApiSources) -> Result<()> {
+fn save_sources(project_path: &std::path::Path, sources: &OpenApiSources) -> Result<()> {
     let path = project_path.join(SOURCES_FILE);
     file_io::write_json(&path, sources)
 }
 
-fn add_source_to_disk(project_path: &PathBuf, source: OpenApiSource) -> Result<()> {
+fn add_source_to_disk(project_path: &std::path::Path, source: OpenApiSource) -> Result<()> {
     let mut sources = load_sources(project_path)?;
     sources.sources.push(source);
     save_sources(project_path, &sources)
 }
 
-fn remove_source_from_disk(project_path: &PathBuf, source_id: &str) -> Result<()> {
+fn remove_source_from_disk(project_path: &std::path::Path, source_id: &str) -> Result<()> {
     let mut sources = load_sources(project_path)?;
     sources.sources.retain(|s| s.id() != source_id);
     save_sources(project_path, &sources)
@@ -209,7 +289,15 @@ pub async fn refresh_source(
 }
 
 #[command]
-pub async fn resolve_drift(project_path: PathBuf, request_id: String, source_id: String) -> Result<()> {
+pub async fn resolve_drift(
+    project_path: PathBuf,
+    request_id: String,
+    source_id: String,
+    // The operationId the user chose from the candidates list.
+    // Required when the stored operationId no longer exists (rename case).
+    // Pass None for exact-match path-change (stored operationId is still valid).
+    chosen_operation_id: Option<String>,
+) -> Result<()> {
     let sources = load_sources(&project_path)?;
     let source = sources
         .sources
@@ -237,21 +325,23 @@ pub async fn resolve_drift(project_path: PathBuf, request_id: String, source_id:
         .as_ref()
         .ok_or_else(|| FlupiError::Custom("Request has no templateRef".to_string()))?;
 
-    // Try exact operationId match first, then fall back to method+path similarity
-    // to handle renames where the operationId was re-derived from the new path.
+    // When the user chose a rename candidate, look up by that ID directly.
+    // Otherwise fall back to the stored operationId (exact-match path-change case).
+    let lookup_id = chosen_operation_id
+        .as_deref()
+        .unwrap_or(&template_ref.operation_id);
     let (current_op, op_json) = ops
         .iter()
-        .find(|(op, _)| op.operation_id == template_ref.operation_id)
-        .or_else(|| find_candidate_operation(&request.method, &request.path, &ops))
+        .find(|(op, _)| op.operation_id == lookup_id)
         .ok_or_else(|| FlupiError::Custom(format!(
-            "Operation '{}' not found in current spec and no rename candidate found",
-            template_ref.operation_id
+            "Operation '{}' not found in current spec",
+            lookup_id
         )))?;
 
     // Compute all new values before any mutation (avoids borrow conflict).
     let new_path = current_op.path.clone();
     let new_operation_id = current_op.operation_id.clone();
-    let new_schema_hash = openapi_import::compute_operation_hash(op_json);
+    let new_schema_hash = openapi_import::compute_sha256_hash(op_json);
     let (new_request_schema, new_response_schema) = openapi_import::extract_schemas(op_json, &spec);
 
     // Now apply: update path and templateRef atomically (including operationId if renamed).
@@ -298,54 +388,58 @@ pub async fn get_drift_details(project_path: PathBuf, request_id: String) -> Res
 
     match found {
         None => {
-            // Exact operationId not found — check if it was renamed (same method, similar path).
-            let candidate = find_candidate_operation(&request.method, &request.path, &ops);
-            match candidate {
-                Some((cand_op, cand_json)) => {
-                    // Likely a rename: path (and derived operationId) both changed.
-                    let current_hash = openapi_import::compute_operation_hash(cand_json);
-                    let (new_req, new_res) = openapi_import::extract_schemas(cand_json, &spec);
-                    let schema_changed = current_hash != template_ref.schema_hash
-                        || new_req != template_ref.request_schema
-                        || new_res != template_ref.response_schema;
-                    Ok(DriftDetails {
-                        source_id: template_ref.source_id.clone(),
-                        operation_id: template_ref.operation_id.clone(),
-                        stored_path: request.path.clone(),
-                        current_path: Some(cand_op.path.clone()),
-                        current_operation_id: Some(cand_op.operation_id.clone()),
-                        path_changed: true,
-                        schema_changed,
-                        operation_removed: false,
-                    })
-                }
-                None => Ok(DriftDetails {
-                    source_id: template_ref.source_id.clone(),
-                    operation_id: template_ref.operation_id.clone(),
-                    stored_path: request.path,
-                    current_path: None,
-                    current_operation_id: None,
-                    path_changed: false,
-                    schema_changed: false,
-                    operation_removed: true,
-                }),
-            }
+            // Exact operationId not found — build a ranked list of rename candidates,
+            // filtered to exclude operations already claimed by other requests.
+            let claimed = collect_claimed_operation_ids(
+                &project_path, &template_ref.source_id, &request_id,
+            );
+            let candidates = find_candidate_operations(
+                &request.method, &request.path, &ops, &claimed,
+            );
+            Ok(DriftDetails {
+                source_id: template_ref.source_id.clone(),
+                operation_id: template_ref.operation_id.clone(),
+                stored_path: request.path,
+                current_path: None,
+                path_changed: !candidates.is_empty(),
+                schema_changed: false,
+                operation_removed: candidates.is_empty(),
+                candidates,
+                stored_request_schema: None,
+                stored_response_schema: None,
+                new_request_schema: None,
+                new_response_schema: None,
+            })
         }
         Some((current_op, op_json)) => {
-            let current_hash = openapi_import::compute_operation_hash(op_json);
+            let current_hash = openapi_import::compute_sha256_hash(op_json);
             let (new_req, new_res) = openapi_import::extract_schemas(op_json, &spec);
             let schema_changed = current_hash != template_ref.schema_hash
                 || new_req != template_ref.request_schema
                 || new_res != template_ref.response_schema;
+            let (stored_req, stored_res, new_req_out, new_res_out) = if schema_changed {
+                (
+                    Some(template_ref.request_schema.clone()),
+                    Some(template_ref.response_schema.clone()),
+                    Some(new_req),
+                    Some(new_res),
+                )
+            } else {
+                (None, None, None, None)
+            };
             Ok(DriftDetails {
                 source_id: template_ref.source_id.clone(),
                 operation_id: template_ref.operation_id.clone(),
                 stored_path: request.path.clone(),
                 current_path: Some(current_op.path.clone()),
-                current_operation_id: None,
                 path_changed: current_op.path != request.path,
                 schema_changed,
                 operation_removed: false,
+                candidates: vec![],
+                stored_request_schema: stored_req,
+                stored_response_schema: stored_res,
+                new_request_schema: new_req_out,
+                new_response_schema: new_res_out,
             })
         }
     }

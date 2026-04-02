@@ -130,3 +130,91 @@ async fn test_fetch_operations_from_file_source() {
     assert_eq!(ops[0].operation_id, "getHealth");
     assert_eq!(ops[0].method, "get");
 }
+
+// ── find_candidate_operations ────────────────────────────────────────────────
+
+fn make_ops(paths_methods: &[(&str, &str, &str)]) -> Vec<(crate::models::openapi::ImportableOperation, serde_json::Value)> {
+    paths_methods
+        .iter()
+        .map(|(method, path, op_id)| {
+            let op = crate::models::openapi::ImportableOperation {
+                tag: "test".to_string(),
+                operation_id: op_id.to_string(),
+                method: method.to_string(),
+                path: path.to_string(),
+                summary: None,
+            };
+            (op, serde_json::json!({"operationId": op_id}))
+        })
+        .collect()
+}
+
+#[test]
+fn test_candidates_ranked_by_normalized_score() {
+    // /api/Roles (len=10) vs /api/Role (len=9): score = 2*9/19 ≈ 0.947
+    // /api/Roles (len=10) vs /api/RoleIntentAssignment/role-with-intents (len=42): score = 2*9/52 ≈ 0.346
+    let ops = make_ops(&[
+        ("get", "/api/RoleIntentAssignment/role-with-intents", "getApiRoleRoleId"),
+        ("get", "/api/Role", "getApiRole"),
+    ]);
+    let excluded = std::collections::HashSet::new();
+    let candidates = find_candidate_operations("get", "/api/Roles", &ops, &excluded);
+    assert!(!candidates.is_empty(), "Expected at least one candidate");
+    // /api/Role must be ranked first (highest score)
+    assert_eq!(candidates[0].path, "/api/Role",
+        "Expected /api/Role as top candidate, got: {:?}", candidates.iter().map(|c| &c.path).collect::<Vec<_>>());
+}
+
+#[test]
+fn test_candidates_excludes_claimed_operations() {
+    let ops = make_ops(&[
+        ("get", "/api/Role", "getApiRole"),
+        ("get", "/api/Roles", "getApiRoles"),
+    ]);
+    let mut excluded = std::collections::HashSet::new();
+    excluded.insert("getApiRole".to_string()); // already claimed by another request
+    let candidates = find_candidate_operations("get", "/api/Roles", &ops, &excluded);
+    // getApiRole is excluded; getApiRoles has different operationId but same path — should still appear
+    assert!(
+        candidates.iter().all(|c| c.operation_id != "getApiRole"),
+        "Claimed operation must not appear in candidates"
+    );
+}
+
+#[test]
+fn test_candidates_filters_wrong_method() {
+    let ops = make_ops(&[
+        ("post", "/api/Role", "postApiRole"), // wrong method
+        ("get", "/api/Role", "getApiRole"),
+    ]);
+    let excluded = std::collections::HashSet::new();
+    let candidates = find_candidate_operations("get", "/api/Roles", &ops, &excluded);
+    assert!(
+        candidates.iter().all(|c| c.method == "get"),
+        "Only same-method candidates should appear"
+    );
+}
+
+#[test]
+fn test_candidates_below_threshold_excluded() {
+    // /api/Roles vs /v2/completely/different — prefix = 0, score = 0 → below 0.20 threshold
+    let ops = make_ops(&[("get", "/v2/completely/different", "someOp")]);
+    let excluded = std::collections::HashSet::new();
+    let candidates = find_candidate_operations("get", "/api/Roles", &ops, &excluded);
+    assert!(candidates.is_empty(), "Dissimilar paths must not be candidates");
+}
+
+#[test]
+fn test_candidates_capped_at_eight() {
+    let many_ops: Vec<(&str, String, String)> = (0..20)
+        .map(|i| ("get", format!("/api/Role{}", i), format!("getRole{}", i)))
+        .collect();
+    let ops_ref: Vec<(&str, &str, &str)> = many_ops
+        .iter()
+        .map(|(m, p, id)| (*m, p.as_str(), id.as_str()))
+        .collect();
+    let ops = make_ops(&ops_ref);
+    let excluded = std::collections::HashSet::new();
+    let candidates = find_candidate_operations("get", "/api/Role", &ops, &excluded);
+    assert!(candidates.len() <= 8, "Must not return more than 8 candidates");
+}

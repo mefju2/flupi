@@ -328,24 +328,39 @@ export async function refreshSource(projectPath: string, sourceId: string): Prom
   return invoke('refresh_source', { projectPath, sourceId });
 }
 
+export interface PathCandidate {
+  operationId: string;
+  path: string;
+  method: string;
+  summary: string | null;
+}
+
 export async function resolveDrift(
   projectPath: string,
   requestId: string,
   sourceId: string,
+  /** Required when the stored operationId no longer exists (rename case). Null for exact-match path changes. */
+  chosenOperationId: string | null,
 ): Promise<void> {
-  return invoke('resolve_drift', { projectPath, requestId, sourceId });
+  return invoke('resolve_drift', { projectPath, requestId, sourceId, chosenOperationId });
 }
 
 export interface DriftDetails {
   sourceId: string;
   operationId: string;
   storedPath: string;
+  /** For exact-match path change: the new path. Null when user must pick from candidates. */
   currentPath: string | null;
-  /** Set when operationId was re-derived from a renamed path. */
-  currentOperationId: string | null;
   pathChanged: boolean;
   schemaChanged: boolean;
   operationRemoved: boolean;
+  /** Rename candidates sorted by similarity (descending). Non-empty only when stored operationId is gone. */
+  candidates: PathCandidate[];
+  /** Only populated when schemaChanged is true. */
+  storedRequestSchema?: unknown;
+  storedResponseSchema?: unknown;
+  newRequestSchema?: unknown;
+  newResponseSchema?: unknown;
 }
 
 export async function getDriftDetails(projectPath: string, requestId: string): Promise<DriftDetails> {

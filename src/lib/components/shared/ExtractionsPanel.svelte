@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Extraction } from '$lib/services/tauri-commands';
   import SchemaAutocomplete from './SchemaAutocomplete.svelte';
-  import VariableNameInput from '$lib/components/shared/VariableNameInput.svelte';
+  import EnvVarSelect from '$lib/components/shared/EnvVarSelect.svelte';
   import { buildJsonPathSuggestions } from '$lib/utils/schema-paths';
   import { environments, activeEnvironment } from '$lib/stores/environment';
 
@@ -9,10 +9,9 @@
     extractions: Extraction[];
     onUpdate: (extractions: Extraction[]) => void;
     responseSchema?: unknown;
-    unknownVariableLabel?: string;
   }
 
-  let { extractions, onUpdate, responseSchema = null, unknownVariableLabel = 'scenario' }: Props = $props();
+  let { extractions, onUpdate, responseSchema = null }: Props = $props();
 
   let suggestions = $derived(buildJsonPathSuggestions(responseSchema));
 
@@ -54,12 +53,10 @@
 
   {#each extractions as extraction, i}
     <div class="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
-      <VariableNameInput
+      <EnvVarSelect
         value={extraction.variable}
         onChange={(v) => updateRow(i, 'variable', v)}
         envVars={envVarNames}
-        placeholder="variableName"
-        unknownLabel={unknownVariableLabel}
       />
       <select
         class="bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text-2 focus:outline-none focus:border-app-border-2"

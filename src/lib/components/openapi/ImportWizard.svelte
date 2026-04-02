@@ -197,8 +197,8 @@
       {:else if step === 1}
         <!-- Step 1: Select source -->
         <div class="flex flex-col gap-2">
-          <label class="text-xs text-app-text-3">Select a source</label>
-          <select class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text focus:outline-none focus:border-cyan-600" bind:value={selectedSourceId}>
+          <label for="source-select" class="text-xs text-app-text-3">Select a source</label>
+          <select id="source-select" class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text focus:outline-none focus:border-cyan-600" bind:value={selectedSourceId}>
             <option value="">-- Choose a source --</option>
             {#each $openApiSources as src}
               <option value={src.id}>{src.name}</option>
@@ -255,8 +255,9 @@
         <!-- Step 3: Collection folder -->
         <div class="flex flex-col gap-3">
           <div class="flex flex-col gap-1.5">
-            <label class="text-xs text-app-text-3">Add to collection</label>
+            <label for="collection-select" class="text-xs text-app-text-3">Add to collection</label>
             <select
+              id="collection-select"
               class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text focus:outline-none focus:border-cyan-600"
               bind:value={selectedCollectionValue}
             >
@@ -269,8 +270,9 @@
 
           {#if isNewCollection}
             <div class="flex flex-col gap-1.5">
-              <label class="text-xs text-app-text-3">Folder name</label>
+              <label for="collection-folder" class="text-xs text-app-text-3">Folder name</label>
               <input
+                id="collection-folder"
                 class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
                 bind:value={collectionFolder}
                 placeholder="my-api"

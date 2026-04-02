@@ -36,7 +36,7 @@ pub fn detect_drift(
             // Operation no longer exists in the spec → drift
             None => true,
             Some((current_op, op_json)) => {
-                let current_hash = openapi_import::compute_operation_hash(op_json);
+                let current_hash = openapi_import::compute_sha256_hash(op_json);
                 if current_hash != template_ref.schema_hash || current_op.path != request.path {
                     true
                 } else {

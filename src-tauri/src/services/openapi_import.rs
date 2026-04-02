@@ -34,7 +34,7 @@ fn derive_operation_id(method: &str, path: &str) -> String {
         let clean = segment
             .trim_start_matches('{').trim_end_matches('}')
             .trim_start_matches(':');
-        let camel: String = clean.split(|c| c == '-' || c == '.')
+        let camel: String = clean.split(['-', '.'])
             .filter(|s| !s.is_empty())
             .map(|word| {
                 let mut c = word.chars();
@@ -105,7 +105,7 @@ pub fn parse_operations(spec: &serde_json::Value) -> Result<Vec<(ImportableOpera
     Ok(result)
 }
 
-pub fn compute_operation_hash(operation: &serde_json::Value) -> String {
+pub fn compute_sha256_hash(operation: &serde_json::Value) -> String {
     let serialized = serde_json::to_string(operation).unwrap_or_default();
     let mut hasher = Sha256::new();
     hasher.update(serialized.as_bytes());
@@ -115,7 +115,7 @@ pub fn compute_operation_hash(operation: &serde_json::Value) -> String {
 /// Hash of the entire OpenAPI spec document — used as source-level `last_hash`
 /// metadata only. Never compared against per-operation `schema_hash` values.
 pub fn compute_spec_hash(spec: &serde_json::Value) -> String {
-    compute_operation_hash(spec)
+    compute_sha256_hash(spec)
 }
 
 pub fn extract_schemas(
@@ -166,7 +166,7 @@ pub fn import_operations(
     let mut created_ids = Vec::new();
 
     for (op, op_json) in operations {
-        let schema_hash = compute_operation_hash(op_json);
+        let schema_hash = compute_sha256_hash(op_json);
         let request_schema = extract_request_schema(op_json, spec);
         let response_schema = extract_response_schema(op_json, spec);
 

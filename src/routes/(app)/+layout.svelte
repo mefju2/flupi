@@ -11,15 +11,21 @@
   import { listEnvironments, getPreferences, getRecentProjects, listOpenApiSources, refreshSource } from '$lib/services/tauri-commands';
   import { openApiSources, driftedIdsBySource } from '$lib/stores/openapi';
 
+  let driftScanCancelled = false;
+
   onMount(async () => {
     if (!$project.isOpen) { goto('/'); return; }
 
     // Clear stale drift state from any previous project session.
     driftedIdsBySource.set(new Map());
 
+    // Capture path once so the background scan always uses this project's path,
+    // even if the store changes before the async work completes.
+    const projectPath = $project.path!;
+
     const [prefs, entries] = await Promise.all([
       getPreferences(),
-      listEnvironments($project.path!),
+      listEnvironments(projectPath),
     ]);
 
     theme.set(prefs.theme as Theme);
@@ -28,7 +34,7 @@
     environments.set(envList);
     if (envList.length > 0 && $activeEnvironment === null) {
       const { projects } = await getRecentProjects();
-      const stored = projects.find((p) => p.path === $project.path)?.activeEnvironment ?? null;
+      const stored = projects.find((p) => p.path === projectPath)?.activeEnvironment ?? null;
       const validStored = stored && envList.some((e) => e.fileName === stored) ? stored : envList[0].fileName;
       activeEnvironment.set(validStored);
       selectedEnvironmentFile.set(validStored);
@@ -37,12 +43,14 @@
     // Startup drift scan — runs in the background without blocking the UI.
     (async () => {
       try {
-        const sources = await listOpenApiSources($project.path!);
+        const sources = await listOpenApiSources(projectPath);
+        if (driftScanCancelled) return;
         openApiSources.set(sources);
         await Promise.all(
           sources.map(async (source) => {
             try {
-              const drifted = await refreshSource($project.path!, source.id);
+              const drifted = await refreshSource(projectPath, source.id);
+              if (driftScanCancelled) return;
               driftedIdsBySource.update((prev) => {
                 const next = new Map(prev);
                 next.set(source.id, drifted);
@@ -69,7 +77,10 @@
   });
 
   let cleanupShortcuts: (() => void) | undefined;
-  onDestroy(() => cleanupShortcuts?.());
+  onDestroy(() => {
+    driftScanCancelled = true;
+    cleanupShortcuts?.();
+  });
 </script>
 
 <div class="flex flex-col h-screen bg-app-bg text-app-text">

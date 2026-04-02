@@ -74,6 +74,7 @@ fn generate_value(schema: &Value, import_timestamp: &str) -> Value {
         },
         Some("integer") | Some("number") => Value::Number(serde_json::Number::from(0)),
         Some("boolean") => Value::Bool(true),
+        // TODO: handle allOf / oneOf / anyOf composition keywords (currently returns Null)
         _ => Value::Null,
     }
 }

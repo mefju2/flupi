@@ -83,22 +83,22 @@ fn test_parse_operations_extracts_summary() {
 }
 
 #[test]
-fn test_compute_operation_hash_is_consistent() {
+fn test_compute_sha256_hash_is_consistent() {
     let op_json = serde_json::json!({
         "operationId": "listPets",
         "summary": "List all pets"
     });
-    let hash1 = compute_operation_hash(&op_json);
-    let hash2 = compute_operation_hash(&op_json);
+    let hash1 = compute_sha256_hash(&op_json);
+    let hash2 = compute_sha256_hash(&op_json);
     assert_eq!(hash1, hash2);
     assert_eq!(hash1.len(), 64); // SHA-256 hex is 64 chars
 }
 
 #[test]
-fn test_compute_operation_hash_differs_for_different_ops() {
+fn test_compute_sha256_hash_differs_for_different_ops() {
     let op1 = serde_json::json!({ "operationId": "op1" });
     let op2 = serde_json::json!({ "operationId": "op2" });
-    assert_ne!(compute_operation_hash(&op1), compute_operation_hash(&op2));
+    assert_ne!(compute_sha256_hash(&op1), compute_sha256_hash(&op2));
 }
 
 #[test]

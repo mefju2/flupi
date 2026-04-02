@@ -14,7 +14,7 @@ fn make_operation(operation_id: &str, hash: &str) -> (ImportableOperation, serde
         summary: None,
     };
     // Create a JSON value whose hash will match `hash` by using it directly
-    // We'll store the hash separately; compute_operation_hash will give a real hash
+    // We'll store the hash separately; compute_sha256_hash will give a real hash
     let json = serde_json::json!({ "operationId": operation_id, "_marker": hash });
     (op, json)
 }
@@ -92,7 +92,7 @@ fn test_detect_drift_no_drift_when_hash_matches() {
     let project_path = dir.path();
 
     let (op, op_json) = make_operation("listPets", "marker1");
-    let correct_hash = crate::services::openapi_import::compute_operation_hash(&op_json);
+    let correct_hash = crate::services::openapi_import::compute_sha256_hash(&op_json);
 
     write_request_with_template_ref(
         project_path,
@@ -139,7 +139,7 @@ fn test_detect_drift_ignores_other_sources() {
     let project_path = dir.path();
 
     let (op, op_json) = make_operation("listPets", "marker1");
-    let correct_hash = crate::services::openapi_import::compute_operation_hash(&op_json);
+    let correct_hash = crate::services::openapi_import::compute_sha256_hash(&op_json);
 
     // Write a request that belongs to a different source
     write_request_with_template_ref(
@@ -186,7 +186,7 @@ fn test_detect_drift_multiple_collections() {
     let project_path = dir.path();
 
     let (op, op_json) = make_operation("listPets", "marker1");
-    let correct_hash = crate::services::openapi_import::compute_operation_hash(&op_json);
+    let correct_hash = crate::services::openapi_import::compute_sha256_hash(&op_json);
 
     // One request with correct hash, one with wrong hash, in different collections
     write_request_with_template_ref(
@@ -241,7 +241,7 @@ fn test_detect_drift_when_path_changed() {
 
     // Spec now has the operation at the NEW path
     let (op_new, op_json) = make_operation_at("listPets", "/api/Pets", "marker1");
-    let hash = crate::services::openapi_import::compute_operation_hash(&op_json);
+    let hash = crate::services::openapi_import::compute_sha256_hash(&op_json);
 
     // Request was imported from the OLD path — same hash, same operationId, but stale path
     write_request_at_path(
@@ -291,7 +291,7 @@ fn test_detect_drift_when_resolved_schema_changes() {
         }
     });
     let spec = serde_json::json!({"paths": {}});
-    let current_hash = crate::services::openapi_import::compute_operation_hash(&op_json);
+    let current_hash = crate::services::openapi_import::compute_sha256_hash(&op_json);
 
     let op = ImportableOperation {
         tag: "test".to_string(),
