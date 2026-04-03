@@ -13,9 +13,10 @@
     requestTree: RequestTreeNode[];
     value: string;
     onChange: (id: string) => void;
+    id?: string;
   }
 
-  let { requestTree, value, onChange }: Props = $props();
+  let { requestTree, value, onChange, id }: Props = $props();
 
   let open = $state(false);
   let search = $state('');
@@ -85,6 +86,7 @@
 
 <div class="relative">
   <button
+    {id}
     type="button"
     class="w-full text-left bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm focus:outline-none focus:border-app-border-2 flex items-center gap-2 min-w-0"
     onclick={openPicker}

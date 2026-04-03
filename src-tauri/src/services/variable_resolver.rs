@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 pub use crate::models::variable::VariableContext;
 
 pub fn resolve_string(template: &str, ctx: &VariableContext) -> String {
-    let re = Regex::new(r"\{\{([a-zA-Z0-9_.-]+)\}\}").unwrap();
+    let re = Regex::new(r"\{\{([^{}]+)\}\}").unwrap();
     re.replace_all(template, |caps: &regex::Captures| {
         let key = &caps[1];
         ctx.get(key).unwrap_or(&caps[0]).to_string()
@@ -13,7 +13,7 @@ pub fn resolve_string(template: &str, ctx: &VariableContext) -> String {
 }
 
 pub fn find_unresolved(template: &str, ctx: &VariableContext) -> Vec<String> {
-    let re = Regex::new(r"\{\{([a-zA-Z0-9_.-]+)\}\}").unwrap();
+    let re = Regex::new(r"\{\{([^{}]+)\}\}").unwrap();
     re.captures_iter(template)
         .filter_map(|cap| {
             let key = cap[1].to_string();

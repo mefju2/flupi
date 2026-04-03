@@ -8,3 +8,4 @@ pub mod execution;
 pub mod execution_runner;
 pub mod scenario;
 pub mod openapi;
+pub mod functions;

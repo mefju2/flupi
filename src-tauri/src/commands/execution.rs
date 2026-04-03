@@ -166,6 +166,9 @@ pub async fn execute_single_request(
         timeout_ms,
     };
 
+    eprintln!("[flupi] sending request:\n  url:     {}\n  method:  {}\n  headers: {:?}\n  body:    {:?}",
+        executable.url, executable.method, executable.headers, executable.body);
+
     http_client::execute_request(&executable).await
 }
 
@@ -226,6 +229,7 @@ pub async fn send_request(
     request_id: String,
     env_file_name: String,
     timeout_ms: u64,
+    injected_vars: Option<HashMap<String, String>>,
 ) -> Result<http_client::HttpResponse, FlupiError> {
     // Read extractions once before the request is sent to avoid a race where
     // the user saves new extractions while a slow request is in flight.
@@ -234,8 +238,10 @@ pub async fn send_request(
         .map(|r| r.extractions)
         .unwrap_or_default();
 
+    let extra_vars: HashMap<String, String> = injected_vars.unwrap_or_default();
+
     acquire_lock()?;
-    let result = execute_single_request(&project_path, &request_id, &env_file_name, timeout_ms, &HashMap::new(), &HashMap::new()).await;
+    let result = execute_single_request(&project_path, &request_id, &env_file_name, timeout_ms, &extra_vars, &HashMap::new()).await;
 
     if let Ok(ref response) = result {
         if !extractions.is_empty() {

@@ -56,8 +56,13 @@
     if (originalKey !== key) {
       const target = containerKeyToArg(key);
       try {
-        await moveRequest($project.path, id, target);
+        const newId = await moveRequest($project.path, id, target);
         await reload();
+        // If the moved request was active, refresh it under its new ID so
+        // req.collection and req.id reflect the new location
+        if ($activeRequestId === id) {
+          await selectRequest(newId);
+        }
         showToast(`Request will now inherit auth and headers from ${target ?? 'root'}.`);
       } catch (err) { console.error('Failed to move request:', err); await reload(); }
     }
@@ -70,9 +75,14 @@
         lastResponse.set(null);
         lastError.set(null);
         activeCollectionFolder.set(null);
-        activeCollection.set(null);
         activeRequestId.set(id);
         activeRequest.set(req);
+        if (req.collection) {
+          const col = await getCollection($project.path, req.collection);
+          activeCollection.set(col);
+        } else {
+          activeCollection.set(null);
+        }
     } catch (e) { console.error('Failed to load request:', e); }
   }
 

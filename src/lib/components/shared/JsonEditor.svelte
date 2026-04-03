@@ -1,17 +1,8 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import * as monaco from 'monaco-editor';
-  import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-  import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
   import { theme } from '$lib/stores/ui';
-
-  // H-2: Set once at module level — never re-assigned on remount, no orphaned workers
-  (self as Window & typeof globalThis).MonacoEnvironment = {
-    getWorker(_: string, label: string) {
-      if (label === 'json') return new jsonWorker();
-      return new editorWorker();
-    },
-  };
+  import { ensureMonacoEnv } from '$lib/services/monaco-env';
 
   // Register themes once per module lifetime
   let _themesRegistered = false;
@@ -110,6 +101,7 @@
     const initialValue = untrack(() => value);
     const initialReadonly = untrack(() => readonly);
 
+    ensureMonacoEnv();
     registerThemes();
 
     const isDark = document.documentElement.classList.contains('dark');

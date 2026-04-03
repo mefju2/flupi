@@ -1,7 +1,8 @@
 <script lang="ts">
-  const TOKEN_REGEX = /\{\{(\w+)\}\}/g;
+  // Matches both {{varName}} and {{$fnName(...)}} tokens
+  const TOKEN_REGEX = /\{\{(\$[a-zA-Z_$][a-zA-Z0-9_$]*\([^)]*\)|[\w.-]+)\}\}/g;
 
-  interface TokenPart { type: 'token'; name: string; raw: string; found: boolean; }
+  interface TokenPart { type: 'token'; name: string; raw: string; found: boolean; isFunction: boolean; }
   interface TextPart { type: 'text'; text: string; }
   type Part = TokenPart | TextPart;
 
@@ -9,6 +10,7 @@
     value: string;
     vars: Set<string>;
     secrets: string[];
+    fnNames?: Set<string>;
     placeholder?: string;
     multiline?: boolean;
     onTokenHover: (varName: string, anchorEl: HTMLElement) => void;
@@ -16,7 +18,7 @@
     onclick: () => void;
   }
 
-  let { value, vars, secrets, placeholder = '', multiline = false, onTokenHover, onTokenLeave, onclick }: Props = $props();
+  let { value, vars, secrets, fnNames = new Set(), placeholder = '', multiline = false, onTokenHover, onTokenLeave, onclick }: Props = $props();
 
   const parsedParts: Part[] = $derived.by(() => {
     const parts: Part[] = [];
@@ -27,7 +29,16 @@
       if (match.index > lastIndex) {
         parts.push({ type: 'text', text: value.slice(lastIndex, match.index) });
       }
-      parts.push({ type: 'token', name: match[1], raw: match[0], found: vars.has(match[1]) || secrets.includes(match[1]) });
+      const inner = match[1];
+      const isFunction = inner.startsWith('$');
+      let found: boolean;
+      if (isFunction) {
+        const fnName = inner.slice(1, inner.indexOf('('));
+        found = fnNames.has(fnName);
+      } else {
+        found = vars.has(inner) || secrets.includes(inner);
+      }
+      parts.push({ type: 'token', name: inner, raw: match[0], found, isFunction });
       lastIndex = match.index + match[0].length;
     }
     if (lastIndex < value.length) {
@@ -46,6 +57,7 @@
   tabindex="-1"
   aria-label="value with variable tokens"
   {onclick}
+  onkeydown={(e) => e.key === 'Enter' && onclick()}
 >
   {#if value === '' && placeholder !== ''}
     <span class="text-app-text-4">{placeholder}</span>
@@ -53,9 +65,12 @@
     {#each parsedParts as part}
       {#if part.type === 'token'}
         <span
-          class="{part.found ? 'text-green-400' : 'text-red-400'}"
-          onmouseenter={(e) => onTokenHover(part.name, e.currentTarget as HTMLElement)}
-          onmouseleave={() => onTokenLeave?.()}
+          role="img"
+          aria-label={part.name}
+          title={part.isFunction ? (part.found ? 'Defined' : 'Not found — create it on the Functions page') : undefined}
+          class="{part.isFunction ? (part.found ? 'text-cyan-400' : 'text-yellow-400') : (part.found ? 'text-green-400' : 'text-red-400')}"
+          onmouseenter={part.isFunction ? undefined : (e) => onTokenHover(part.name, e.currentTarget as HTMLElement)}
+          onmouseleave={part.isFunction ? undefined : () => onTokenLeave?.()}
         >{part.raw}</span>
       {:else}
         <span class="text-app-text">{part.text}</span>

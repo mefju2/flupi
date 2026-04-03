@@ -1,5 +1,6 @@
 <script lang="ts">
   import VariableAutocomplete from './VariableAutocomplete.svelte';
+  import SecretValue from './SecretValue.svelte';
 
   interface Row {
     id: string;
@@ -90,16 +91,7 @@
         placeholder="Key"
       />
       {#if row.isSecret}
-        <div class="flex-1 min-w-0 flex items-center gap-1">
-          <input
-            class="flex-1 min-w-0 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover opacity-60"
-            type="password"
-            value={row.value}
-            oninput={(e) => updateRow(i, 'value', e.currentTarget.value)}
-            placeholder="Value"
-          />
-          <span class="text-app-text-3 text-xs shrink-0" title="Secret">🔒</span>
-        </div>
+        <SecretValue class="flex-1 min-w-0" value={row.value} onchange={(v) => updateRow(i, 'value', v)} />
       {:else}
         <VariableAutocomplete
           class="flex-1 min-w-0"

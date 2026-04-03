@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ScenarioData, ScenarioStep } from '$lib/services/tauri-commands';
   import { requestTree } from '$lib/stores/requests';
+  import { dndzone } from 'svelte-dnd-action';
   import InputsList from './InputsList.svelte';
   import StepCard from './StepCard.svelte';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
@@ -52,6 +53,14 @@
     onUpdate({ ...scenario, steps: scenario.steps.filter((_, i) => i !== index) });
   }
 
+  function handleDndConsider(e: CustomEvent<{ items: ScenarioStep[] }>) {
+    onUpdate({ ...scenario, steps: e.detail.items });
+  }
+
+  function handleDndFinalize(e: CustomEvent<{ items: ScenarioStep[] }>) {
+    onUpdate({ ...scenario, steps: e.detail.items });
+  }
+
   // Variables available to step N: scenario inputs + variables extracted by steps 0..N-1
   function extractedVarsBefore(index: number): string[] {
     const names: string[] = scenario.inputs.map((inp) => inp.name);
@@ -98,16 +107,22 @@
     <!-- Steps section -->
     <section>
       <SectionHeader class="mb-3">Steps</SectionHeader>
-      {#each scenario.steps as step, i (step.id)}
-        <StepCard
-          {step}
-          requestTree={$requestTree}
-          index={i}
-          extractedVars={extractedVarsBefore(i)}
-          onUpdate={(s) => updateStep(i, s)}
-          onDelete={() => deleteStep(i)}
-        />
-      {/each}
+      <div
+        use:dndzone={{ items: scenario.steps, dropTargetStyle: {} }}
+        onconsider={handleDndConsider}
+        onfinalize={handleDndFinalize}
+      >
+        {#each scenario.steps as step, i (step.id)}
+          <StepCard
+            {step}
+            requestTree={$requestTree}
+            index={i}
+            extractedVars={extractedVarsBefore(i)}
+            onUpdate={(s) => updateStep(i, s)}
+            onDelete={() => deleteStep(i)}
+          />
+        {/each}
+      </div>
       {#if scenario.steps.length === 0}
         <p class="text-xs text-app-text-4 italic">No steps yet.</p>
       {/if}

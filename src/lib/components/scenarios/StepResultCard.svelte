@@ -10,7 +10,7 @@
 
   let { step, result }: Props = $props();
 
-  let expanded = $state(false);
+  let expanded = $state(result.status === 'error');
   let bodyExpanded = $state(false);
   let expandedExtracted = $state(new Set<string>());
 
@@ -73,6 +73,16 @@
 
   {#if expanded}
     <div class="border-t border-app-border px-3 py-3 space-y-3">
+      {#if statusCode !== undefined || duration !== undefined}
+        <div class="flex items-center gap-2">
+          {#if statusCode !== undefined}
+            <StatusBadge variant={statusCode >= 200 && statusCode < 300 ? 'success' : 'error'}>{statusCode}</StatusBadge>
+          {/if}
+          {#if duration !== undefined}
+            <span class="text-xs text-app-text-3">{duration}ms</span>
+          {/if}
+        </div>
+      {/if}
       {#if result.error}
         <div>
           <p class="text-xs text-app-text-3 mb-1">Error</p>

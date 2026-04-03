@@ -8,6 +8,8 @@
   import {
     loadScenarioTree, saveScenario, runScenario, type ScenarioData,
   } from '$lib/services/tauri-commands';
+  import { evaluateFunctionCalls } from '$lib/services/function-evaluator';
+  import { functions } from '$lib/stores/functions';
   import { fade } from 'svelte/transition';
   import ScenarioTree from '$lib/components/scenarios/ScenarioTree.svelte';
   import ScenarioEditor from '$lib/components/scenarios/ScenarioEditor.svelte';
@@ -17,6 +19,10 @@
   type View = 'editor' | 'runner';
   let view = $state<View>('editor');
   let saveToast = $state<string | null>(null);
+
+  $effect(() => {
+    if ($activeScenarioId) view = 'editor';
+  });
 
   onMount(async () => {
     if (!$project.path) return;
@@ -52,7 +58,33 @@
   async function handleRun(inputs: Record<string, string>) {
     if (!$project.path || !$activeScenarioId) return;
     const envFile = $activeEnvironment ?? '';
-    await runScenario($project.path, $activeScenarioId, envFile, inputs);
+
+    // Collect all string templates across all steps so function calls can be
+    // pre-evaluated once for the entire scenario run (same call → same value).
+    const scenario = $activeScenario;
+    const templates = scenario ? [
+      ...Object.values(inputs),
+      ...scenario.steps.flatMap((s) => Object.values(s.overrides ?? {})),
+    ] : [];
+
+    let injectedVars: Record<string, string> = {};
+    try {
+      injectedVars = await evaluateFunctionCalls(templates, $functions);
+    } catch (e) {
+      console.error('Function evaluation failed:', e);
+      return {};
+    }
+
+    // Build resolved inputs for display: replace {{$fn()}} tokens with their evaluated values
+    const resolvedInputs = Object.fromEntries(
+      Object.entries(inputs).map(([k, v]) => [
+        k,
+        v.replace(/\{\{(\$[a-zA-Z_$][a-zA-Z0-9_$]*\([^)]*\))\}\}/g, (_, token) => injectedVars[token] ?? v),
+      ])
+    );
+
+    await runScenario($project.path, $activeScenarioId, envFile, inputs, 30000, injectedVars);
+    return resolvedInputs;
   }
 
   function handleScenarioUpdate(updated: ScenarioData) {

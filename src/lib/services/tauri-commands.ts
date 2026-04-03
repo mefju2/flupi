@@ -108,6 +108,7 @@ export interface RequestData {
   name: string;
   method: string;
   path: string;
+  collection?: string;
   auth?: AuthConfig;
   headers: Record<string, string>;
   disabledHeaders?: string[];
@@ -196,8 +197,9 @@ export async function sendRequest(
   requestId: string,
   envFileName: string,
   timeoutMs: number = 30000,
+  injectedVars?: Record<string, string>,
 ): Promise<HttpResponse> {
-  return invoke('send_request', { projectPath, requestId, envFileName, timeoutMs });
+  return invoke('send_request', { projectPath, requestId, envFileName, timeoutMs, injectedVars: injectedVars ?? null });
 }
 
 // === Scenario Types ===
@@ -279,8 +281,9 @@ export async function runScenario(
   envFileName: string,
   inputs: Record<string, string>,
   timeoutMs: number = 30000,
+  injectedVars?: Record<string, string>,
 ): Promise<void> {
-  return invoke('run_scenario', { projectPath, scenarioId, envFileName, inputs, timeoutMs });
+  return invoke('run_scenario', { projectPath, scenarioId, envFileName, inputs, timeoutMs, injectedVars: injectedVars ?? null });
 }
 
 // === OpenAPI Types ===
@@ -365,4 +368,23 @@ export interface DriftDetails {
 
 export async function getDriftDetails(projectPath: string, requestId: string): Promise<DriftDetails> {
   return invoke('get_drift_details', { projectPath, requestId });
+}
+
+// === Script Functions ===
+
+export interface ScriptFunction {
+  name: string;
+  body: string;
+}
+
+export async function listFunctions(projectPath: string): Promise<ScriptFunction[]> {
+  return invoke('list_functions', { projectPath });
+}
+
+export async function saveFunction(projectPath: string, fn: ScriptFunction): Promise<void> {
+  return invoke('save_function', { projectPath, function: fn });
+}
+
+export async function deleteFunction(projectPath: string, name: string): Promise<void> {
+  return invoke('delete_function', { projectPath, name });
 }

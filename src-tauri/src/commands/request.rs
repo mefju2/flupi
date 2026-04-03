@@ -1,9 +1,20 @@
 use std::path::{Path, PathBuf};
+use serde::Serialize;
 use tauri::command;
 use crate::error::FlupiError;
 use crate::models::request::{Request, derive_request_id};
 use crate::services::file_io;
 use crate::utils::name_to_slug;
+
+/// `Request` enriched with a derived `collection` field for the frontend.
+/// The `collection` field is never persisted to disk — it is computed from
+/// the request ID at read time so the frontend doesn't have to parse paths.
+#[derive(Serialize)]
+pub struct RequestResponse {
+    #[serde(flatten)]
+    pub inner: Request,
+    pub collection: Option<String>,
+}
 
 /// Resolves a request ID to an absolute file path.
 ///
@@ -36,9 +47,22 @@ fn resolve_request_path(project_path: &Path, request_id: &str) -> PathBuf {
 }
 
 #[command]
-pub fn get_request(project_path: PathBuf, request_id: String) -> Result<Request, FlupiError> {
+pub fn get_request(project_path: PathBuf, request_id: String) -> Result<RequestResponse, FlupiError> {
     let path = resolve_request_path(&project_path, &request_id);
-    file_io::read_json(&path)
+    let inner: Request = file_io::read_json(&path)?;
+    let collection = collection_folder_for(&request_id, &project_path);
+    Ok(RequestResponse { inner, collection })
+}
+
+fn collection_folder_for(request_id: &str, project_path: &Path) -> Option<String> {
+    let parts: Vec<&str> = request_id.splitn(2, '/').collect();
+    if parts.len() == 2 {
+        let first = parts[0];
+        if project_path.join("collections").join(first).exists() {
+            return Some(first.to_string());
+        }
+    }
+    None
 }
 
 #[command]

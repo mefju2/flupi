@@ -58,6 +58,7 @@ pub async fn run_scenario(
     env_file_name: String,
     inputs: HashMap<String, String>,
     timeout_ms: u64,
+    injected_vars: Option<HashMap<String, String>>,
 ) -> Result<(), FlupiError> {
     acquire_lock()?;
 
@@ -68,6 +69,7 @@ pub async fn run_scenario(
         &env_file_name,
         inputs,
         timeout_ms,
+        injected_vars.unwrap_or_default(),
     )
     .await;
 
@@ -82,6 +84,7 @@ async fn run_scenario_inner(
     env_file_name: &str,
     inputs: HashMap<String, String>,
     timeout_ms: u64,
+    injected_vars: HashMap<String, String>,
 ) -> Result<(), FlupiError> {
     let scenario_path = project_path
         .join("scenarios")
@@ -89,7 +92,12 @@ async fn run_scenario_inner(
 
     let scenario: Scenario = file_io::read_json(&scenario_path)?;
 
-    let mut extracted: HashMap<String, String> = inputs.clone();
+    // Seed injected vars (pre-evaluated function results) into the initial
+    // extracted map so they are available throughout the entire scenario run.
+    let mut extracted: HashMap<String, String> = injected_vars;
+    for (k, v) in inputs {
+        extracted.insert(k, v);
+    }
 
     for step in &scenario.steps {
         let mut path_param_overrides: HashMap<String, String> = HashMap::new();

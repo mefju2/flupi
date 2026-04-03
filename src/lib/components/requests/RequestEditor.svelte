@@ -2,12 +2,14 @@
   import { onMount } from 'svelte';
   import { activeRequest, activeRequestId, activeCollection } from '$lib/stores/requests';
   import { project } from '$lib/stores/project';
-  import { activeEnvironment } from '$lib/stores/environment';
+  import { activeEnvironment, environments } from '$lib/stores/environment';
   import { isExecuting, lastResponse, lastError } from '$lib/stores/execution';
   import { driftedRequestIds } from '$lib/stores/openapi';
-  import { saveRequest, sendRequest, type AuthConfig, type BodyConfig } from '$lib/services/tauri-commands';
+  import { saveRequest, sendRequest, getResolvedVariables, type AuthConfig, type BodyConfig } from '$lib/services/tauri-commands';
   import { createDebouncedSave } from '$lib/services/debounced-save';
   import { getMethodColor } from '$lib/utils/format';
+  import { evaluateFunctionCalls } from '$lib/services/function-evaluator';
+  import { functions } from '$lib/stores/functions';
   import ParamsTab from './ParamsTab.svelte';
   import PathParamsTab from './PathParamsTab.svelte';
   import HeadersTab from './HeadersTab.svelte';
@@ -112,12 +114,63 @@
     const env = $activeEnvironment ?? '';
     if (!id || !path || $isExecuting) return;
 
+    // Collect all string templates in this request so we can find function calls.
+    const req = $activeRequest;
+    const authTemplates = (() => {
+      if (!req?.auth) return [];
+      const a = req.auth;
+      if (a.type === 'bearer') return [a.token];
+      if (a.type === 'basic') return [a.username, a.password];
+      if (a.type === 'apiKey') return [a.header, a.value];
+      if (a.type === 'custom') return Object.values(a.headers);
+      return [];
+    })();
+    const templates = req ? [
+      req.path,
+      ...Object.values(req.pathParams ?? {}),
+      ...Object.values(req.headers ?? {}),
+      ...authTemplates,
+      req.body?.type === 'json' ? JSON.stringify(req.body.content) : '',
+      req.body?.type === 'raw' ? req.body.content : '',
+      req.body?.type === 'form' ? Object.values(req.body.content ?? {}).join('\n') : '',
+    ] : [];
+
+    let injectedVars: Record<string, string> | undefined;
+    try {
+      injectedVars = await evaluateFunctionCalls(templates, $functions);
+    } catch (e) {
+      lastError.set(e instanceof Error ? e.message : String(e));
+      return;
+    }
+
     isExecuting.set(true);
     lastResponse.set(null);
     lastError.set(null);
     try {
-      const response = await sendRequest(path, id, env);
+      const response = await sendRequest(path, id, env, 30000, injectedVars);
       lastResponse.set(response);
+      // If the request has extractions and an env is active, refresh the env
+      // store so extracted values (including secrets) are immediately visible.
+      if (env && $activeRequest?.extractions?.length) {
+        try {
+          const resolved = await getResolvedVariables(path, env);
+          environments.update((list) => list.map((entry) => {
+            if (entry.fileName !== env) return entry;
+            const secretKeys = new Set(entry.environment.secrets);
+            const updatedVars = { ...entry.environment.variables };
+            const updatedSecrets = { ...entry.secrets };
+            for (const [k, v] of Object.entries(resolved)) {
+              if (secretKeys.has(k)) updatedSecrets[k] = v;
+              else if (k in updatedVars) updatedVars[k] = v;
+            }
+            return {
+              ...entry,
+              environment: { ...entry.environment, variables: updatedVars },
+              secrets: updatedSecrets,
+            };
+          }));
+        } catch { /* non-critical — extraction values will be correct on next send */ }
+      }
     } catch (e) {
       lastError.set(typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Request failed'));
     } finally {

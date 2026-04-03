@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
-  import { listEnvironments, saveEnvironment, deleteEnvironment, getRecentProjects, setProjectActiveEnvironment } from '$lib/services/tauri-commands';
+  import { listEnvironments, saveEnvironment, deleteEnvironment, getRecentProjects, setProjectActiveEnvironment, getResolvedVariables } from '$lib/services/tauri-commands';
   import EmptyState from '$lib/components/shared/EmptyState.svelte';
   import { project } from '$lib/stores/project';
 
@@ -13,11 +13,26 @@
     if ($project.path) {
       try {
         const entries = await listEnvironments($project.path);
+        const existing = $environments;
+        const projectPath = $project.path;
+        const secretMaps = await Promise.all(
+          entries.map(async ([fileName, environment]) => {
+            const cached = existing.find((e) => e.fileName === fileName);
+            if (cached) return cached.secrets;
+            if (!environment.secrets.length) return {};
+            try {
+              const resolved = await getResolvedVariables(projectPath, fileName);
+              return Object.fromEntries(environment.secrets.map((k) => [k, resolved[k] ?? '']));
+            } catch {
+              return {};
+            }
+          })
+        );
         environments.set(
-          entries.map(([fileName, environment]) => ({
+          entries.map(([fileName, environment], i) => ({
             fileName,
             environment,
-            secrets: {},
+            secrets: secretMaps[i],
           }))
         );
 

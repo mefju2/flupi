@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tryParseJson } from '$lib/utils/format';
   import EmptyState from '$lib/components/shared/EmptyState.svelte';
+  import SecretValue from '$lib/components/shared/SecretValue.svelte';
 
   interface Props {
     variables: Record<string, string>;
@@ -51,9 +52,11 @@
         {:else}
           <div class="flex items-baseline gap-2">
             <span class="font-mono text-xs text-app-text-3 shrink-0">{key}</span>
-            <span class="font-mono text-xs text-app-text wrap-break-word min-w-0">
-              {isSecret ? '••••••' : value}
-            </span>
+            {#if isSecret}
+              <SecretValue {value} class="text-xs" />
+            {:else}
+              <span class="font-mono text-xs text-app-text wrap-break-word min-w-0">{value}</span>
+            {/if}
           </div>
         {/if}
       </div>

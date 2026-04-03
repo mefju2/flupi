@@ -77,6 +77,9 @@ pub fn run() {
             commands::openapi::refresh_source,
             commands::openapi::resolve_drift,
             commands::openapi::get_drift_details,
+            commands::functions::list_functions,
+            commands::functions::save_function,
+            commands::functions::delete_function,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

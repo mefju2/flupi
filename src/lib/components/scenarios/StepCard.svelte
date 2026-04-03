@@ -82,7 +82,13 @@
     onclick={() => expanded = !expanded}
     onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)}
   >
-    <span class="drag-handle text-app-text-4 hover:text-app-text-3 cursor-grab active:cursor-grabbing text-xs shrink-0">⠿</span>
+    <button
+      type="button"
+      tabindex="-1"
+      aria-label="Drag to reorder"
+      class="drag-handle text-app-text-4 hover:text-app-text-3 cursor-grab active:cursor-grabbing text-xs shrink-0 bg-transparent border-0 p-0"
+      onclick={(e) => e.stopPropagation()}
+    >⠿</button>
     <span class="text-xs text-app-text-3 w-5 shrink-0">{index + 1}</span>
 
     <div class="flex-1 flex items-center gap-2 min-w-0">
@@ -111,8 +117,9 @@
     <div class="border-t border-app-border px-3 py-3 space-y-4">
       <div class="flex gap-3">
         <div class="flex-1">
-          <label class="block text-xs text-app-text-3 mb-1">Step Name</label>
+          <label for="step-name" class="block text-xs text-app-text-3 mb-1">Step Name</label>
           <input
+            id="step-name"
             class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text focus:outline-none focus:border-app-border-2"
             value={step.name}
             oninput={(e) => onUpdate({ ...step, name: e.currentTarget.value })}
@@ -120,8 +127,9 @@
           />
         </div>
         <div class="flex-1">
-          <label class="block text-xs text-app-text-3 mb-1">Request</label>
+          <label for="request-picker" class="block text-xs text-app-text-3 mb-1">Request</label>
           <RequestPicker
+            id="request-picker"
             {requestTree}
             value={step.requestId}
             onChange={(id) => onUpdate({ ...step, requestId: id })}

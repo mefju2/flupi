@@ -16,7 +16,10 @@ pub fn open_project(path: PathBuf) -> Result<String, FlupiError> {
             project::ensure_project_structure(&path)?;
             Ok("partial_fixed".to_string())
         }
-        ProjectState::Empty => Ok("empty".to_string()),
+        ProjectState::Empty => {
+            project::ensure_project_structure(&path)?;
+            Ok("empty_fixed".to_string())
+        }
         ProjectState::NotFound => Err(FlupiError::Custom(
             "Project folder not found".to_string(),
         )),

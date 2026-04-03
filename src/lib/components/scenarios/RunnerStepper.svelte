@@ -9,12 +9,14 @@
 
   interface Props {
     scenario: ScenarioData;
+    inputs?: Record<string, string>;
     onBack: () => void;
+    onRetry: () => void;
   }
 
-  let { scenario, onBack }: Props = $props();
+  let { scenario, inputs = {}, onBack, onRetry }: Props = $props();
 
-  type StepState = 'waiting' | 'running' | 'success' | 'error';
+  type StepState = 'waiting' | 'running' | 'success' | 'error' | 'skipped';
 
   interface StepStatus {
     state: StepState;
@@ -26,6 +28,7 @@
   );
   let currentVariables = $state<Record<string, string>>({});
   let runComplete = $state(false);
+  let runFailed = $derived(Object.values(stepStatuses).some((s) => s.state === 'error'));
 
   let unlisten: (() => void) | null = null;
 
@@ -33,13 +36,26 @@
     unlisten = await listen<StepResult>('scenario-step-result', (event) => {
       const result = event.payload;
       const state: StepState = result.status === 'success' ? 'success' : 'error';
-      stepStatuses = { ...stepStatuses, [result.step_id]: { state, result } };
+      let newStatuses = { ...stepStatuses, [result.step_id]: { state, result } };
       currentVariables = { ...currentVariables, ...result.extracted };
 
-      // Check if all steps are done
+      if (result.status === 'error') {
+        // Mark all subsequent steps as skipped and stop the run
+        const failedIndex = scenario.steps.findIndex((s) => s.id === result.step_id);
+        for (let i = failedIndex + 1; i < scenario.steps.length; i++) {
+          newStatuses[scenario.steps[i].id] = { state: 'skipped' };
+        }
+        stepStatuses = newStatuses;
+        runComplete = true;
+        return;
+      }
+
+      stepStatuses = newStatuses;
+
+      // Check if all steps are done (success path)
       const allDone = scenario.steps.every((s) => {
-        const status = stepStatuses[s.id];
-        return status && (status.state === 'success' || status.state === 'error');
+        const status = newStatuses[s.id];
+        return status && (status.state === 'success' || status.state === 'error' || status.state === 'skipped');
       });
       if (allDone) runComplete = true;
     });
@@ -54,11 +70,11 @@
   onDestroy(() => { unlisten?.(); });
 
   $effect(() => {
-    // When a step completes, mark the next one as running
+    // When a step succeeds, mark the next waiting step as running
     for (let i = 0; i < scenario.steps.length - 1; i++) {
       const current = stepStatuses[scenario.steps[i].id];
       const next = stepStatuses[scenario.steps[i + 1].id];
-      if ((current?.state === 'success' || current?.state === 'error') && next?.state === 'waiting') {
+      if (current?.state === 'success' && next?.state === 'waiting') {
         stepStatuses = { ...stepStatuses, [scenario.steps[i + 1].id]: { state: 'running' } };
         break;
       }
@@ -73,7 +89,15 @@
     </button>
     <span class="text-sm text-app-text-2 font-medium">{scenario.name}</span>
     {#if runComplete}
-      <span class="text-xs text-green-400 ml-auto">Complete</span>
+      {#if runFailed}
+        <span class="text-xs text-red-400 ml-auto">Failed</span>
+      {:else}
+        <span class="text-xs text-green-400 ml-auto">Completed</span>
+      {/if}
+      <button
+        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+        onclick={onRetry}
+      >↺ Retry</button>
     {:else}
       <span class="text-xs text-cyan-400 ml-auto animate-pulse">Running…</span>
     {/if}
@@ -91,6 +115,7 @@
               {status.state === 'waiting' ? 'bg-app-hover text-app-text-3'
                 : status.state === 'running' ? 'bg-cyan-900 text-cyan-300'
                 : status.state === 'success' ? 'bg-green-900 text-green-300'
+                : status.state === 'skipped' ? 'bg-app-hover text-app-text-4'
                 : 'bg-red-900 text-red-300'}">
               {#if status.state === 'running'}
                 <span class="animate-spin text-xs">◌</span>
@@ -98,6 +123,8 @@
                 ✓
               {:else if status.state === 'error'}
                 ✗
+              {:else if status.state === 'skipped'}
+                —
               {:else}
                 {i + 1}
               {/if}
@@ -108,12 +135,12 @@
           </div>
 
           <!-- Step content -->
-          <div class="flex-1 pb-4">
+          <div class="flex-1 min-w-0 pb-4">
             {#if status.result}
               <StepResultCard {step} result={status.result} />
             {:else}
               <div class="border border-app-border rounded bg-app-panel px-3 py-2 {status.state === 'running' ? 'ring-1 ring-cyan-500/30' : ''}">
-                <span class="text-sm {status.state === 'running' ? 'text-cyan-300' : 'text-app-text-3'}">{step.name}</span>
+                <span class="text-sm {status.state === 'running' ? 'text-cyan-300' : status.state === 'skipped' ? 'text-app-text-4 line-through' : 'text-app-text-3'}">{step.name}</span>
               </div>
             {/if}
           </div>
@@ -122,9 +149,17 @@
     </div>
 
     <!-- Variable state panel -->
-    <div class="w-56 border-l border-app-border px-3 py-4 overflow-y-auto shrink-0">
-      <SectionHeader class="mb-3">Variables</SectionHeader>
-      <VariableStatePanel variables={currentVariables} />
+    <div class="w-56 border-l border-app-border px-3 py-4 overflow-y-auto shrink-0 space-y-4">
+      {#if Object.keys(inputs).length > 0}
+        <div>
+          <SectionHeader class="mb-3">Inputs</SectionHeader>
+          <VariableStatePanel variables={inputs} />
+        </div>
+      {/if}
+      <div>
+        <SectionHeader class="mb-3">Extracted</SectionHeader>
+        <VariableStatePanel variables={currentVariables} />
+      </div>
     </div>
   </div>
 </div>

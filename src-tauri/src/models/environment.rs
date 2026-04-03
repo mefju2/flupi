@@ -22,11 +22,11 @@ pub fn resolve_env_variables(env_path: &Path) -> Result<HashMap<String, String>>
         .filter(|(key, _)| !env.secrets.contains(key))
         .collect();
 
-    // Load secrets file if it exists
-    // Use string replace instead of with_extension to handle filenames with dots
-    let env_name = env_path.file_name().unwrap().to_string_lossy();
-    let secrets_name = env_name.replace(".json", ".secrets.json");
-    let secrets_path = env_path.with_file_name(secrets_name);
+    // Load secrets file if it exists.
+    // Use with_extension to handle filenames that already contain dots (e.g. dev.env.json.json).
+    // with_extension strips the last extension and appends the new one, producing
+    // the same path that apply_extractions_to_env writes to.
+    let secrets_path = env_path.with_extension("secrets.json");
     if secrets_path.exists() {
         let secrets: HashMap<String, String> = file_io::read_json(&secrets_path)?;
         vars.extend(secrets);

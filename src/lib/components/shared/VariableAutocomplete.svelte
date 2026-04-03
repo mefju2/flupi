@@ -2,6 +2,7 @@
   import { environments, activeEnvironment } from '$lib/stores/environment';
   import type { EnvironmentEntry } from '$lib/stores/environment';
   import { project } from '$lib/stores/project';
+  import { functions } from '$lib/stores/functions';
   import VariableTokenDisplay from './VariableTokenDisplay.svelte';
   import VariableTooltip from './VariableTooltip.svelte';
 
@@ -9,6 +10,10 @@
     name: string;
     value: string;
     masked?: boolean;
+  }
+
+  interface FnItem {
+    name: string;
   }
 
   interface Props {
@@ -26,6 +31,7 @@
   let showDropdown = $state(false);
   let activeIndex = $state(0);
   let triggerStart = $state(-1);
+  let triggerIsFunction = $state(false);
   let focused = $state(false);
   let hoveredVar = $state<string | null>(null);
   let tooltipAnchor = $state<HTMLElement | null>(null);
@@ -56,24 +62,54 @@
   });
 
   const varNames: Set<string> = $derived(new Set(allVars.map(v => v.name)));
-  const fragment: string = $derived(triggerStart < 0 ? '' : value.slice(triggerStart + 2));
-  const filtered: VarItem[] = $derived(allVars.filter((v) => v.name.toLowerCase().startsWith(fragment.toLowerCase())));
+  const fnNames: Set<string> = $derived(new Set($functions.map(f => f.name)));
 
-  function findTriggerStart(text: string, cursor: number): number {
+  // Fragment typed after {{ or {{$
+  const fragment: string = $derived(triggerStart < 0 ? '' : (() => {
+    const raw = value.slice(triggerStart + 2);
+    return triggerIsFunction ? raw.replace(/^\$/, '') : raw;
+  })());
+
+  const filteredVars: VarItem[] = $derived(
+    allVars.filter((v) => v.name.toLowerCase().startsWith(fragment.toLowerCase()))
+  );
+
+  const filteredFns: FnItem[] = $derived(
+    $functions.filter((f) => f.name.toLowerCase().startsWith(fragment.toLowerCase()))
+  );
+
+  // Flat list for keyboard navigation: vars first (when not in {{$ mode), then functions
+  const flatItems: Array<{ kind: 'var'; item: VarItem } | { kind: 'fn'; item: FnItem }> = $derived([
+    ...(triggerIsFunction ? [] : filteredVars.map(item => ({ kind: 'var' as const, item }))),
+    ...filteredFns.map(item => ({ kind: 'fn' as const, item })),
+  ]);
+
+  function fnLabel(name: string) { return '{{$' + name + '()}}'; }
+
+  function findTriggerStart(text: string, cursor: number): { start: number; isFunction: boolean } | null {
     const before = text.slice(0, cursor);
     const idx = before.lastIndexOf('{{');
-    if (idx === -1) return -1;
+    if (idx === -1) return null;
     const after = text.slice(idx + 2, cursor);
-    if (after.includes('}')) return -1;
-    return idx;
+    if (after.includes('}')) return null;
+    const isFunction = after.startsWith('$');
+    return { start: idx, isFunction };
   }
 
   function handleInput(e: Event) {
     const el = e.currentTarget as HTMLInputElement | HTMLTextAreaElement;
     const cursor = el.selectionStart ?? el.value.length;
-    const ts = findTriggerStart(el.value, cursor);
-    triggerStart = ts;
-    showDropdown = ts >= 0 && filtered.length > 0;
+    const trigger = findTriggerStart(el.value, cursor);
+    if (trigger) {
+      triggerStart = trigger.start;
+      triggerIsFunction = trigger.isFunction;
+      const hasItems = trigger.isFunction ? filteredFns.length > 0 : (filteredVars.length > 0 || filteredFns.length > 0);
+      showDropdown = hasItems;
+    } else {
+      triggerStart = -1;
+      triggerIsFunction = false;
+      showDropdown = false;
+    }
     activeIndex = 0;
     onChange(el.value);
   }
@@ -86,7 +122,6 @@
     onChange(newVal);
     showDropdown = false;
     triggerStart = -1;
-    // Restore focus and place cursor after the inserted token
     setTimeout(() => {
       if (inputEl) {
         inputEl.focus();
@@ -96,18 +131,39 @@
     }, 0);
   }
 
+  function selectFn(fnName: string) {
+    if (triggerStart < 0) return;
+    const before = value.slice(0, triggerStart);
+    const after = value.slice(triggerStart).replace(/\{\{[^}]*/, '');
+    const token = `{{$${fnName}()}}`;
+    const newVal = before + token + after;
+    onChange(newVal);
+    showDropdown = false;
+    triggerStart = -1;
+    // Place cursor between the parentheses so user can type args
+    setTimeout(() => {
+      if (inputEl) {
+        inputEl.focus();
+        const pos = before.length + token.length - 3; // inside ()
+        inputEl.setSelectionRange(pos, pos);
+      }
+    }, 0);
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if (!showDropdown) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      activeIndex = (activeIndex + 1) % filtered.length;
+      activeIndex = (activeIndex + 1) % flatItems.length;
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      activeIndex = (activeIndex - 1 + filtered.length) % filtered.length;
+      activeIndex = (activeIndex - 1 + flatItems.length) % flatItems.length;
     } else if (e.key === 'Enter' || e.key === 'Tab') {
-      if (filtered[activeIndex]) {
+      const active = flatItems[activeIndex];
+      if (active) {
         e.preventDefault();
-        selectVar(filtered[activeIndex].name);
+        if (active.kind === 'var') selectVar(active.item.name);
+        else selectFn(active.item.name);
       }
     } else if (e.key === 'Escape') {
       showDropdown = false;
@@ -123,7 +179,6 @@
   let tooltipCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   function handleBlur() {
-    // Delay to allow click on dropdown item to register
     if (blurTimer) clearTimeout(blurTimer);
     blurTimer = setTimeout(() => {
       showDropdown = false;
@@ -184,6 +239,7 @@
         {value}
         vars={varNames}
         secrets={secretsList}
+        fnNames={fnNames}
         {placeholder}
         onTokenHover={onTokenHover}
         onTokenLeave={scheduleTooltipClose}
@@ -206,6 +262,7 @@
         {value}
         vars={varNames}
         secrets={secretsList}
+        fnNames={fnNames}
         {placeholder}
         multiline={true}
         onTokenHover={onTokenHover}
@@ -237,22 +294,56 @@
     />
   {/if}
 
-  {#if showDropdown && filtered.length > 0}
+  {#if showDropdown && flatItems.length > 0}
+    {@const showVarSection = !triggerIsFunction && filteredVars.length > 0}
+    {@const showFnSection = filteredFns.length > 0}
+    {@const varOffset = 0}
+    {@const fnOffset = triggerIsFunction ? 0 : filteredVars.length}
     <ul
-      class="fixed z-50 max-h-48 overflow-y-auto bg-app-panel border border-app-border-2 rounded shadow-lg"
+      class="fixed z-50 max-h-56 overflow-y-auto bg-app-panel border border-app-border-2 rounded shadow-lg"
       style="top: {dropdownPos.top}px; left: {dropdownPos.left}px; width: {dropdownPos.width}px"
     >
-      {#each filtered as item, idx}
-        <li>
-          <button
-            class="w-full text-left px-3 py-1.5 flex items-center gap-2 {idx === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
-            onmousedown={(e) => { e.preventDefault(); selectVar(item.name); }}
-          >
-            <span class="font-mono text-sm {idx === activeIndex ? 'text-cyan-400' : 'text-app-text'}">{item.name}</span>
-            <span class="text-app-text-3 text-xs truncate">{item.masked ? '••••••' : item.value}</span>
-          </button>
+      {#if showVarSection}
+        <li class="px-3 py-1 text-xs text-app-text-4 uppercase tracking-wider border-b border-app-border select-none">
+          Variables
         </li>
-      {/each}
+        {#each filteredVars as item, idx}
+          {@const flatIdx = varOffset + idx}
+          <li>
+            <button
+              class="w-full text-left px-3 py-1.5 flex items-center gap-2 {flatIdx === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
+              onmousedown={(e) => { e.preventDefault(); selectVar(item.name); }}
+            >
+              <span class="font-mono text-sm {flatIdx === activeIndex ? 'text-cyan-400' : 'text-app-text'}">{item.name}</span>
+              <span class="text-app-text-3 text-xs truncate">{item.masked ? '••••••' : item.value}</span>
+            </button>
+          </li>
+        {/each}
+      {/if}
+
+      {#if showFnSection}
+        {#if showVarSection}
+          <li class="px-3 py-1 text-xs text-app-text-4 uppercase tracking-wider border-t border-b border-app-border select-none">
+            Functions
+          </li>
+        {:else if !triggerIsFunction}
+          <li class="px-3 py-1 text-xs text-app-text-4 uppercase tracking-wider border-b border-app-border select-none">
+            Functions
+          </li>
+        {/if}
+        {#each filteredFns as item, idx}
+          {@const flatIdx = fnOffset + idx}
+          <li>
+            <button
+              class="w-full text-left px-3 py-1.5 flex items-center gap-2 {flatIdx === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
+              onmousedown={(e) => { e.preventDefault(); selectFn(item.name); }}
+            >
+              <span class="font-mono text-sm {flatIdx === activeIndex ? 'text-cyan-400' : 'text-app-text'}">$<span class="text-cyan-300">{item.name}</span>()</span>
+              <span class="text-app-text-3 text-xs truncate font-mono">{fnLabel(item.name)}</span>
+            </button>
+          </li>
+        {/each}
+      {/if}
     </ul>
   {/if}
 </div>

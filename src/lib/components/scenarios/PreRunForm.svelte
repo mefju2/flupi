@@ -2,6 +2,7 @@
   import type { ScenarioData } from '$lib/services/tauri-commands';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
   import ToolBar from '$lib/components/shared/ToolBar.svelte';
+  import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
 
   interface Props {
     scenario: ScenarioData;
@@ -14,10 +15,6 @@
   let inputValues = $state<Record<string, string>>(
     Object.fromEntries(scenario.inputs.map((i) => [i.name, i.default ?? '']))
   );
-
-  function hasUnresolvedToken(value: string): boolean {
-    return /\{\{[^}]+\}\}/.test(value);
-  }
 
   function handleRun() {
     onRun({ ...inputValues });
@@ -42,8 +39,8 @@
       <div class="space-y-4 mb-6">
         {#each scenario.inputs as input}
           <div class="{input.required ? 'border-l-2 border-red-500 pl-2' : ''}">
-            <label class="flex items-center gap-2 text-sm text-app-text-2 mb-1">
-              <span class="font-mono">{input.name}</span>
+            <label for={input.name} class="flex items-center gap-2 text-sm text-app-text-2 mb-1">
+              <span id={input.name} class="font-mono">{input.name}</span>
               {#if input.required}
                 <span class="text-xs text-red-400">required</span>
               {/if}
@@ -51,16 +48,11 @@
             {#if input.description}
               <p class="text-xs text-app-text-3 mb-1">{input.description}</p>
             {/if}
-            <input
-              class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:border-app-border-2
-                {hasUnresolvedToken(inputValues[input.name] ?? '') ? 'text-amber-400' : 'text-app-text'}"
+            <VariableAutocomplete
               value={inputValues[input.name] ?? ''}
-              oninput={(e) => { inputValues = { ...inputValues, [input.name]: e.currentTarget.value }; }}
+              onChange={(v) => { inputValues = { ...inputValues, [input.name]: v }; }}
               placeholder={input.default || 'Enter value…'}
             />
-            {#if hasUnresolvedToken(inputValues[input.name] ?? '')}
-              <p class="text-xs text-amber-500 mt-1">Contains unresolved variable tokens</p>
-            {/if}
           </div>
         {/each}
       </div>
