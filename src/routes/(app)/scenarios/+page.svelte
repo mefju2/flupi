@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { beforeNavigate, goto } from '$app/navigation';
   import { project } from '$lib/stores/project';
   import { activeScenario, activeScenarioId, scenarioTree } from '$lib/stores/scenarios';
   import { activeEnvironment } from '$lib/stores/environment';
   import { loadRequestTree } from '$lib/services/tauri-commands';
   import { requestTree } from '$lib/stores/requests';
   import {
-    loadScenarioTree, saveScenario, runScenario, type ScenarioData,
+    loadScenarioTree, saveScenario, runScenario, getScenario, type ScenarioData,
   } from '$lib/services/tauri-commands';
   import { evaluateFunctionCalls } from '$lib/services/function-evaluator';
   import { functions } from '$lib/stores/functions';
@@ -15,10 +16,19 @@
   import ScenarioEditor from '$lib/components/scenarios/ScenarioEditor.svelte';
   import ScenarioRunner from '$lib/components/scenarios/ScenarioRunner.svelte';
   import EmptyState from '$lib/components/shared/EmptyState.svelte';
+  import UnsavedChangesDialog from '$lib/components/scenarios/UnsavedChangesDialog.svelte';
 
   type View = 'editor' | 'runner';
   let view = $state<View>('editor');
   let saveToast = $state<string | null>(null);
+
+  type PendingAction =
+    | { type: 'navigate'; url: string }
+    | { type: 'selectScenario'; id: string }
+    | { type: 'run' };
+
+  let isDirty = $state(false);
+  let pendingAction = $state<PendingAction | null>(null);
 
   $effect(() => {
     if ($activeScenarioId) view = 'editor';
@@ -39,15 +49,23 @@
   });
 
   onMount(() => {
-    const onRunShortcut = () => { if ($activeScenario) view = 'runner'; };
+    const onRunShortcut = () => { if ($activeScenario) handleRunGuard(); };
     window.addEventListener('flupi:run-scenario', onRunShortcut);
     return () => window.removeEventListener('flupi:run-scenario', onRunShortcut);
+  });
+
+  beforeNavigate(({ cancel, to }) => {
+    if (isDirty && to) {
+      cancel();
+      pendingAction = { type: 'navigate', url: to.url.pathname };
+    }
   });
 
   async function handleSave() {
     if (!$project.path || !$activeScenarioId || !$activeScenario) return;
     try {
       await saveScenario($project.path, $activeScenarioId, $activeScenario);
+      isDirty = false;
       saveToast = 'Saved';
       setTimeout(() => (saveToast = null), 2000);
     } catch (e) {
@@ -89,13 +107,68 @@
 
   function handleScenarioUpdate(updated: ScenarioData) {
     activeScenario.set(updated);
+    isDirty = true;
+  }
+
+  async function handleSelectScenario(id: string) {
+    if (isDirty) {
+      pendingAction = { type: 'selectScenario', id };
+      return;
+    }
+    await loadScenario(id);
+  }
+
+  async function loadScenario(id: string) {
+    if (!$project.path) return;
+    activeScenarioId.set(id);
+    try {
+      activeScenario.set(await getScenario($project.path, id));
+      isDirty = false;
+    } catch (e) {
+      console.error('Failed to load scenario:', e);
+    }
+  }
+
+  function handleRunGuard() {
+    if (isDirty) {
+      pendingAction = { type: 'run' };
+      return;
+    }
+    view = 'runner';
+  }
+
+  async function handleDialogSave() {
+    await handleSave();
+    await executePendingAction();
+  }
+
+  async function handleDialogDiscard() {
+    isDirty = false;
+    await executePendingAction();
+  }
+
+  function handleDialogCancel() {
+    pendingAction = null;
+  }
+
+  async function executePendingAction() {
+    const action = pendingAction;
+    pendingAction = null;
+    if (!action) return;
+    if (action.type === 'navigate') {
+      await goto(action.url);
+    } else if (action.type === 'selectScenario') {
+      await loadScenario(action.id);
+    } else if (action.type === 'run') {
+      view = 'runner';
+    }
   }
 </script>
 
 <div class="flex h-full">
   <!-- Sidebar -->
   <div class="w-56 shrink-0 border-r border-app-border">
-    <ScenarioTree />
+    <ScenarioTree onSelect={handleSelectScenario} />
   </div>
 
   <!-- Main area -->
@@ -106,6 +179,14 @@
       </div>
     {/if}
 
+    {#if pendingAction}
+      <UnsavedChangesDialog
+        onSave={handleDialogSave}
+        onDiscard={handleDialogDiscard}
+        onCancel={handleDialogCancel}
+      />
+    {/if}
+
     {#if !$activeScenario}
       <EmptyState message="Select a scenario to edit." centered />
     {:else if view === 'editor'}
@@ -113,7 +194,8 @@
         scenario={$activeScenario}
         onUpdate={handleScenarioUpdate}
         onSave={handleSave}
-        onRun={() => (view = 'runner')}
+        onRun={handleRunGuard}
+        {isDirty}
       />
     {:else}
       <ScenarioRunner
