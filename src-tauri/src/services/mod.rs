@@ -1,9 +1,12 @@
 pub mod file_io;
 pub mod project;
+pub mod request_path;
+pub mod request_executor;
 pub mod variable_resolver;
 pub mod inheritance;
 pub mod http_client;
 pub mod referential_integrity;
 pub mod openapi_import;
+pub mod openapi_sources;
 pub mod drift_detection;
 pub mod schema_defaults;

@@ -12,11 +12,18 @@ pub struct AppState {
     /// Serialises all reads/writes of `openapi-sources.json` so concurrent
     /// `refresh_source` calls (startup scan, "Sync All") cannot corrupt the file.
     pub sources_lock: Arc<Mutex<()>>,
+    /// Ensures only one request or scenario executes at a time. Using a Mutex
+    /// (rather than AtomicBool) guarantees the lock is always released when the
+    /// guard is dropped, even on panic.
+    pub execution_lock: Arc<Mutex<()>>,
 }
 
 impl Default for AppState {
     fn default() -> Self {
-        Self { sources_lock: Arc::new(Mutex::new(())) }
+        Self {
+            sources_lock: Arc::new(Mutex::new(())),
+            execution_lock: Arc::new(Mutex::new(())),
+        }
     }
 }
 

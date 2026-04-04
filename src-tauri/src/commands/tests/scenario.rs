@@ -39,7 +39,6 @@ fn test_get_scenario() {
 #[test]
 fn test_save_scenario() {
     use crate::models::scenario::{ScenarioStep, Scenario};
-    use std::collections::HashMap;
 
     let dir = setup_dir();
     let root = dir.path().to_path_buf();
@@ -53,7 +52,7 @@ fn test_save_scenario() {
             id: "step-1".to_string(),
             name: "Step One".to_string(),
             request_id: "req/login".to_string(),
-            overrides: HashMap::new(),
+            overrides: indexmap::IndexMap::new(),
             extract: vec![],
             expected_status: vec![],
         }],

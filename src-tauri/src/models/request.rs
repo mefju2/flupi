@@ -26,7 +26,7 @@ pub struct Request {
     pub extractions: Vec<Extraction>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(tag = "type")]
 pub enum AuthConfig {
     #[serde(rename = "none")]
@@ -43,7 +43,7 @@ pub enum AuthConfig {
     Custom { headers: IndexMap<String, String> },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum BodyConfig {
     #[serde(rename = "json")]
@@ -60,7 +60,7 @@ pub enum BodyConfig {
     None,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TemplateRef {
     #[serde(rename = "sourceId")]
     pub source_id: String,

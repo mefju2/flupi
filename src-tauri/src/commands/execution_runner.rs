@@ -2,11 +2,12 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tauri::{command, AppHandle, Emitter};
 use serde::Serialize;
+use crate::AppState;
 use crate::error::FlupiError;
 use crate::models::scenario::Scenario;
-use crate::models::extraction::Extraction;
-use crate::services::{file_io, http_client, variable_resolver};
-use super::execution::{acquire_lock, release_lock, execute_single_request};
+use crate::services::{file_io, http_client, variable_resolver, request_executor};
+use super::execution::execute_single_request;
+pub use request_executor::apply_extraction;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct StepResult {
@@ -15,30 +16,6 @@ pub struct StepResult {
     pub response: Option<http_client::HttpResponse>,
     pub error: Option<String>,
     pub extracted: HashMap<String, String>,
-}
-
-pub fn apply_extraction(
-    extraction: &Extraction,
-    body: &str,
-    headers: &HashMap<String, String>,
-) -> Result<String, String> {
-    if extraction.from == "response.body" {
-        let json: serde_json::Value = serde_json::from_str(body).map_err(|e| e.to_string())?;
-        let path = serde_json_path::JsonPath::parse(&extraction.path)
-            .map_err(|e| e.to_string())?;
-        let nodes = path.query(&json);
-        nodes.first()
-            .map(|v| match v {
-                serde_json::Value::String(s) => s.clone(),
-                other => other.to_string(),
-            })
-            .ok_or_else(|| format!("No match for path {}", extraction.path))
-    } else {
-        headers
-            .get(&extraction.path)
-            .cloned()
-            .ok_or_else(|| format!("Header {} not found", extraction.path))
-    }
 }
 
 pub fn apply_overrides(
@@ -52,6 +29,7 @@ pub fn apply_overrides(
 
 #[command]
 pub async fn run_scenario(
+    state: tauri::State<'_, AppState>,
     app: AppHandle,
     project_path: PathBuf,
     scenario_id: String,
@@ -60,9 +38,8 @@ pub async fn run_scenario(
     timeout_ms: u64,
     injected_vars: Option<HashMap<String, String>>,
 ) -> Result<(), FlupiError> {
-    acquire_lock()?;
-
-    let result = run_scenario_inner(
+    let _guard = state.execution_lock.lock().await;
+    run_scenario_inner(
         &app,
         &project_path,
         &scenario_id,
@@ -71,10 +48,7 @@ pub async fn run_scenario(
         timeout_ms,
         injected_vars.unwrap_or_default(),
     )
-    .await;
-
-    release_lock();
-    result
+    .await
 }
 
 fn status_is_expected(status: u16, expected: &[String]) -> bool {

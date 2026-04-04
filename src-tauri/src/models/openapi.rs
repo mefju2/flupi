@@ -39,7 +39,7 @@ impl OpenApiSource {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct ImportableOperation {
     pub tag: String,
     #[serde(rename = "operationId")]

@@ -15,6 +15,7 @@ fn save_and_list_function() {
     let f = ScriptFunction {
         name: "myFn".to_string(),
         body: "return 42;".to_string(),
+        params: vec![],
     };
     save_function(dir.path().to_path_buf(), f.clone()).unwrap();
     let list = list_functions(dir.path().to_path_buf()).unwrap();
@@ -29,6 +30,7 @@ fn delete_function_removes_file() {
     let f = ScriptFunction {
         name: "toDelete".to_string(),
         body: "return 1;".to_string(),
+        params: vec![],
     };
     save_function(dir.path().to_path_buf(), f).unwrap();
     delete_function(dir.path().to_path_buf(), "toDelete".to_string()).unwrap();
@@ -49,6 +51,7 @@ fn save_function_rejects_path_traversal() {
     let f = ScriptFunction {
         name: "../../etc/passwd".to_string(),
         body: "return 1;".to_string(),
+        params: vec![],
     };
     let result = save_function(dir.path().to_path_buf(), f);
     assert!(result.is_err());
@@ -60,6 +63,7 @@ fn save_function_rejects_empty_name() {
     let f = ScriptFunction {
         name: "".to_string(),
         body: "return 1;".to_string(),
+        params: vec![],
     };
     let result = save_function(dir.path().to_path_buf(), f);
     assert!(result.is_err());

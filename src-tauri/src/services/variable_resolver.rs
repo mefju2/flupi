@@ -1,11 +1,15 @@
 use regex::Regex;
 use std::collections::HashMap;
 use indexmap::IndexMap;
+use once_cell::sync::Lazy;
 pub use crate::models::variable::VariableContext;
 
+static VAR_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"\{\{([^{}]+)\}\}").unwrap()
+});
+
 pub fn resolve_string(template: &str, ctx: &VariableContext) -> String {
-    let re = Regex::new(r"\{\{([^{}]+)\}\}").unwrap();
-    re.replace_all(template, |caps: &regex::Captures| {
+    VAR_REGEX.replace_all(template, |caps: &regex::Captures| {
         let key = &caps[1];
         ctx.get(key).unwrap_or(&caps[0]).to_string()
     })
@@ -13,8 +17,7 @@ pub fn resolve_string(template: &str, ctx: &VariableContext) -> String {
 }
 
 pub fn find_unresolved(template: &str, ctx: &VariableContext) -> Vec<String> {
-    let re = Regex::new(r"\{\{([^{}]+)\}\}").unwrap();
-    re.captures_iter(template)
+    VAR_REGEX.captures_iter(template)
         .filter_map(|cap| {
             let key = cap[1].to_string();
             if ctx.get(&key).is_none() {

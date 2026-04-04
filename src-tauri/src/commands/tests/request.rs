@@ -1,6 +1,7 @@
 use super::*;
 use std::path::Path;
 use tempfile::TempDir;
+use crate::services::request_path;
 
 fn write_json_file(path: &Path, content: &str) {
     if let Some(parent) = path.parent() {
@@ -23,7 +24,7 @@ fn test_resolve_request_path_collection() {
     // Create the collection directory so resolve_request_path detects it
     std::fs::create_dir_all(root.join("collections/auth-service")).unwrap();
 
-    let path = resolve_request_path(root, "auth-service/get-token");
+    let path = request_path::resolve_request_path(root, "auth-service/get-token");
     assert_eq!(
         path,
         root.join("collections/auth-service/requests/get-token.json")
@@ -36,7 +37,7 @@ fn test_resolve_request_path_collection_nested() {
     let root = dir.path();
     std::fs::create_dir_all(root.join("collections/auth-service")).unwrap();
 
-    let path = resolve_request_path(root, "auth-service/admin/create-user");
+    let path = request_path::resolve_request_path(root, "auth-service/admin/create-user");
     assert_eq!(
         path,
         root.join("collections/auth-service/requests/admin/create-user.json")
@@ -48,7 +49,7 @@ fn test_resolve_request_path_root() {
     let dir = TempDir::new().unwrap();
     let root = dir.path();
 
-    let path = resolve_request_path(root, "health-check");
+    let path = request_path::resolve_request_path(root, "health-check");
     assert_eq!(path, root.join("requests/health-check.json"));
 }
 
@@ -57,7 +58,7 @@ fn test_resolve_request_path_root_nested() {
     let dir = TempDir::new().unwrap();
     let root = dir.path();
 
-    let path = resolve_request_path(root, "monitoring/status");
+    let path = request_path::resolve_request_path(root, "monitoring/status");
     assert_eq!(path, root.join("requests/monitoring/status.json"));
 }
 

@@ -1,9 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use serde::Serialize;
 use tauri::command;
 use crate::error::FlupiError;
 use crate::models::request::{Request, derive_request_id};
-use crate::services::file_io;
+use crate::services::{file_io, request_path};
 use crate::utils::name_to_slug;
 
 /// `Request` enriched with a derived `collection` field for the frontend.
@@ -16,53 +16,12 @@ pub struct RequestResponse {
     pub collection: Option<String>,
 }
 
-/// Resolves a request ID to an absolute file path.
-///
-/// Disambiguation strategy: if the ID contains a `/`, the first path segment is
-/// checked against `collections/{first_segment}/` on disk. If that directory
-/// exists, the request is treated as a collection request and maps to
-/// `collections/{first_segment}/requests/{rest}.json`. Otherwise (the collection
-/// directory does not exist), the entire ID is treated as a root request under
-/// `requests/{id}.json`. This assumes collection folder names never collide with
-/// root request sub-paths.
-fn resolve_request_path(project_path: &Path, request_id: &str) -> PathBuf {
-    let parts: Vec<&str> = request_id.splitn(2, '/').collect();
-    if parts.len() == 2 {
-        let first = parts[0];
-        let rest = parts[1];
-        let collection_dir = project_path.join("collections").join(first);
-        if collection_dir.exists() {
-            // It's a collection request
-            let rest_path = rest.replace('/', std::path::MAIN_SEPARATOR_STR);
-            return project_path
-                .join("collections")
-                .join(first)
-                .join("requests")
-                .join(format!("{}.json", rest_path));
-        }
-    }
-    // Root request
-    let rest_path = request_id.replace('/', std::path::MAIN_SEPARATOR_STR);
-    project_path.join("requests").join(format!("{}.json", rest_path))
-}
-
 #[command]
 pub fn get_request(project_path: PathBuf, request_id: String) -> Result<RequestResponse, FlupiError> {
-    let path = resolve_request_path(&project_path, &request_id);
+    let path = request_path::resolve_request_path(&project_path, &request_id);
     let inner: Request = file_io::read_json(&path)?;
-    let collection = collection_folder_for(&request_id, &project_path);
+    let collection = request_path::collection_folder_for(&request_id, &project_path);
     Ok(RequestResponse { inner, collection })
-}
-
-fn collection_folder_for(request_id: &str, project_path: &Path) -> Option<String> {
-    let parts: Vec<&str> = request_id.splitn(2, '/').collect();
-    if parts.len() == 2 {
-        let first = parts[0];
-        if project_path.join("collections").join(first).exists() {
-            return Some(first.to_string());
-        }
-    }
-    None
 }
 
 #[command]
@@ -71,7 +30,7 @@ pub fn save_request(
     request_id: String,
     request: Request,
 ) -> Result<(), FlupiError> {
-    let path = resolve_request_path(&project_path, &request_id);
+    let path = request_path::resolve_request_path(&project_path, &request_id);
     file_io::write_json(&path, &request)
 }
 
@@ -117,7 +76,7 @@ pub fn create_request(
 
 #[command]
 pub fn delete_request(project_path: PathBuf, request_id: String) -> Result<(), FlupiError> {
-    let path = resolve_request_path(&project_path, &request_id);
+    let path = request_path::resolve_request_path(&project_path, &request_id);
     file_io::delete_file(&path)
 }
 
@@ -127,7 +86,7 @@ pub fn rename_request(
     request_id: String,
     new_name: String,
 ) -> Result<String, FlupiError> {
-    let old_path = resolve_request_path(&project_path, &request_id);
+    let old_path = request_path::resolve_request_path(&project_path, &request_id);
     let new_slug = name_to_slug(&new_name);
 
     let parent = old_path
@@ -156,7 +115,7 @@ pub fn move_request(
     request_id: String,
     target_collection_folder: Option<String>,
 ) -> Result<String, FlupiError> {
-    let old_path = resolve_request_path(&project_path, &request_id);
+    let old_path = request_path::resolve_request_path(&project_path, &request_id);
     let file_name = old_path
         .file_name()
         .and_then(|s| s.to_str())
@@ -187,7 +146,7 @@ pub fn duplicate_request(
     project_path: PathBuf,
     request_id: String,
 ) -> Result<String, FlupiError> {
-    let old_path = resolve_request_path(&project_path, &request_id);
+    let old_path = request_path::resolve_request_path(&project_path, &request_id);
     let mut request: Request = file_io::read_json(&old_path)?;
 
     let stem = old_path

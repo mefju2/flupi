@@ -2,9 +2,9 @@ use std::path::PathBuf;
 use serde::Serialize;
 use tauri::command;
 use crate::error::{FlupiError, Result};
-use crate::models::openapi::{ImportableOperation, OpenApiSource, OpenApiSources};
+use crate::models::openapi::{ImportableOperation, OpenApiSource};
 use crate::models::request::derive_request_id;
-use crate::services::{file_io, openapi_import};
+use crate::services::{file_io, openapi_import, openapi_sources};
 use crate::AppState;
 
 /// What the frontend needs to render the drift explanation panel.
@@ -138,33 +138,6 @@ fn collect_claimed_operation_ids(
     claimed
 }
 
-const SOURCES_FILE: &str = "openapi-sources.json";
-
-fn load_sources(project_path: &std::path::Path) -> Result<OpenApiSources> {
-    let path = project_path.join(SOURCES_FILE);
-    if !path.exists() {
-        return Ok(OpenApiSources::default());
-    }
-    file_io::read_json(&path)
-}
-
-fn save_sources(project_path: &std::path::Path, sources: &OpenApiSources) -> Result<()> {
-    let path = project_path.join(SOURCES_FILE);
-    file_io::write_json(&path, sources)
-}
-
-fn add_source_to_disk(project_path: &std::path::Path, source: OpenApiSource) -> Result<()> {
-    let mut sources = load_sources(project_path)?;
-    sources.sources.push(source);
-    save_sources(project_path, &sources)
-}
-
-fn remove_source_from_disk(project_path: &std::path::Path, source_id: &str) -> Result<()> {
-    let mut sources = load_sources(project_path)?;
-    sources.sources.retain(|s| s.id() != source_id);
-    save_sources(project_path, &sources)
-}
-
 #[command]
 pub async fn add_openapi_source(
     state: tauri::State<'_, AppState>,
@@ -172,7 +145,7 @@ pub async fn add_openapi_source(
     source: OpenApiSource,
 ) -> Result<()> {
     let _guard = state.sources_lock.lock().await;
-    add_source_to_disk(&project_path, source)
+    openapi_sources::add(&project_path, source)
 }
 
 #[command]
@@ -182,12 +155,12 @@ pub async fn remove_openapi_source(
     source_id: String,
 ) -> Result<()> {
     let _guard = state.sources_lock.lock().await;
-    remove_source_from_disk(&project_path, &source_id)
+    openapi_sources::remove(&project_path, &source_id)
 }
 
 #[command]
 pub fn list_openapi_sources(project_path: PathBuf) -> Result<Vec<OpenApiSource>> {
-    let sources = load_sources(&project_path)?;
+    let sources = openapi_sources::load(&project_path)?;
     Ok(sources.sources)
 }
 
@@ -202,7 +175,7 @@ async fn get_spec_for_source(source: &OpenApiSource) -> Result<serde_json::Value
 
 #[command]
 pub async fn fetch_operations(project_path: PathBuf, source_id: String) -> Result<Vec<ImportableOperation>> {
-    let sources = load_sources(&project_path)?;
+    let sources = openapi_sources::load(&project_path)?;
     let source = sources
         .sources
         .iter()
@@ -221,7 +194,7 @@ pub async fn import_operations(
     operation_ids: Vec<String>,
     collection_folder: String,
 ) -> Result<Vec<String>> {
-    let sources = load_sources(&project_path)?;
+    let sources = openapi_sources::load(&project_path)?;
     let source = sources
         .sources
         .iter()
@@ -247,7 +220,7 @@ pub async fn refresh_source(
 ) -> Result<Vec<String>> {
     // Fetch and parse the spec outside the lock — network I/O should not hold it.
     let source = {
-        let sources = load_sources(&project_path)?;
+        let sources = openapi_sources::load(&project_path)?;
         sources
             .sources
             .into_iter()
@@ -264,7 +237,7 @@ pub async fn refresh_source(
 
     {
         let _guard = state.sources_lock.lock().await;
-        let mut sources = load_sources(&project_path)?;
+        let mut sources = openapi_sources::load(&project_path)?;
         for s in &mut sources.sources {
             if s.id() == source_id {
                 *s = match s.clone() {
@@ -281,7 +254,7 @@ pub async fn refresh_source(
                 };
             }
         }
-        save_sources(&project_path, &sources)?;
+        openapi_sources::save(&project_path, &sources)?;
     } // lock released here
 
     let drifted = crate::services::drift_detection::detect_drift(&project_path, &source_id, &ops, &spec)?;
@@ -298,7 +271,7 @@ pub async fn resolve_drift(
     // Pass None for exact-match path-change (stored operationId is still valid).
     chosen_operation_id: Option<String>,
 ) -> Result<()> {
-    let sources = load_sources(&project_path)?;
+    let sources = openapi_sources::load(&project_path)?;
     let source = sources
         .sources
         .iter()
@@ -374,7 +347,7 @@ pub async fn get_drift_details(project_path: PathBuf, request_id: String) -> Res
         .as_ref()
         .ok_or_else(|| FlupiError::Custom("Request has no templateRef".to_string()))?;
 
-    let sources = load_sources(&project_path)?;
+    let sources = openapi_sources::load(&project_path)?;
     let source = sources
         .sources
         .iter()

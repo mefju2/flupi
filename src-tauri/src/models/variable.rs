@@ -1,8 +1,19 @@
 use std::collections::HashMap;
 
+#[cfg(test)]
+#[path = "tests/variable.rs"]
+mod tests;
+
+#[derive(Debug, Clone)]
 pub struct VariableContext {
     variables: HashMap<String, String>,
     secret_keys: Vec<String>,
+}
+
+impl Default for VariableContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl VariableContext {

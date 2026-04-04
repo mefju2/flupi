@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use serde::{Deserialize, Serialize};
+use once_cell::sync::Lazy;
 use crate::error::Result;
+
+static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(reqwest::Client::new);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExecutableRequest {
@@ -40,14 +43,14 @@ const MAX_BODY_SIZE: usize = 1_048_576; // 1MB
 
 /// Builds a reqwest::Request from an ExecutableRequest (used for testing, no network call).
 pub fn build_request(req: &ExecutableRequest) -> Result<reqwest::Request> {
-    let client = reqwest::Client::new();
-    build_for_client(&client, req)
+    build_for_client(&HTTP_CLIENT, req)
 }
 
 fn build_for_client(client: &reqwest::Client, req: &ExecutableRequest) -> Result<reqwest::Request> {
     let method = reqwest::Method::from_bytes(req.method.to_uppercase().as_bytes())
         .map_err(|e| crate::error::FlupiError::Custom(format!("Invalid HTTP method: {}", e)))?;
-    let mut builder = client.request(method, &req.url);
+    let mut builder = client.request(method, &req.url)
+        .timeout(Duration::from_millis(req.timeout_ms));
 
     for (key, value) in &req.headers {
         builder = builder.header(key, value);
@@ -65,14 +68,10 @@ fn build_for_client(client: &reqwest::Client, req: &ExecutableRequest) -> Result
 }
 
 pub async fn execute_request(req: &ExecutableRequest) -> Result<HttpResponse> {
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_millis(req.timeout_ms))
-        .build()?;
-
-    let request = build_for_client(&client, req)?;
+    let request = build_for_client(&HTTP_CLIENT, req)?;
 
     let start = std::time::Instant::now();
-    let response = client.execute(request).await?;
+    let response = HTTP_CLIENT.execute(request).await?;
     let duration_ms = start.elapsed().as_millis() as u64;
 
     let status = response.status().as_u16();

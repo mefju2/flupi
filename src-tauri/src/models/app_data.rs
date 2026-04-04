@@ -11,7 +11,7 @@ pub struct RecentProject {
     pub active_environment: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct RecentProjects {
     pub projects: Vec<RecentProject>,
 }
@@ -41,7 +41,7 @@ impl RecentProjects {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Preferences {
     pub theme: String,
     #[serde(rename = "defaultTimeoutMs")]

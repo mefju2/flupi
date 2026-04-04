@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use crate::models::extraction::Extraction;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -32,7 +32,7 @@ pub struct ScenarioStep {
     #[serde(rename = "requestId")]
     pub request_id: String,
     #[serde(default)]
-    pub overrides: HashMap<String, String>,
+    pub overrides: IndexMap<String, String>,
     #[serde(default)]
     pub extract: Vec<Extraction>,
     #[serde(rename = "expectedStatus", default)]

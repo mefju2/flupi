@@ -2,6 +2,10 @@ use serde::{Deserialize, Serialize};
 use indexmap::IndexMap;
 use crate::models::request::AuthConfig;
 
+#[cfg(test)]
+#[path = "tests/collection.rs"]
+mod tests;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Collection {
     pub name: String,
