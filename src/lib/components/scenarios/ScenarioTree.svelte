@@ -9,6 +9,12 @@
   import ContextMenu from '$lib/components/shared/ContextMenu.svelte';
   import EmptyState from '$lib/components/shared/EmptyState.svelte';
 
+  interface Props {
+    onSelect?: (id: string) => void;
+  }
+
+  let { onSelect }: Props = $props();
+
   let toast = $state<string | null>(null);
   let contextMenu: { x: number; y: number; items: { label: string; action: () => void; danger?: boolean }[] } | null = $state(null);
   let pendingInput = $state<{ type: 'rename' | 'new'; id: string; value: string } | null>(null);
@@ -26,6 +32,10 @@
   onMount(reload);
 
   async function selectScenario(id: string) {
+    if (onSelect) {
+      onSelect(id);
+      return;
+    }
     if (!$project.path) return;
     activeScenarioId.set(id);
     try { activeScenario.set(await getScenario($project.path, id)); }
