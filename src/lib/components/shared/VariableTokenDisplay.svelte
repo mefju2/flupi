@@ -15,10 +15,12 @@
     multiline?: boolean;
     onTokenHover: (varName: string, anchorEl: HTMLElement) => void;
     onTokenLeave?: () => void;
+    onFunctionHover?: (fnName: string, anchorEl: HTMLElement) => void;
+    onFunctionLeave?: () => void;
     onclick: () => void;
   }
 
-  let { value, vars, secrets, fnNames = new Set(), placeholder = '', multiline = false, onTokenHover, onTokenLeave, onclick }: Props = $props();
+  let { value, vars, secrets, fnNames = new Set(), placeholder = '', multiline = false, onTokenHover, onTokenLeave, onFunctionHover, onFunctionLeave, onclick }: Props = $props();
 
   const parsedParts: Part[] = $derived.by(() => {
     const parts: Part[] = [];
@@ -67,10 +69,15 @@
         <span
           role="img"
           aria-label={part.name}
-          title={part.isFunction ? (part.found ? 'Defined' : 'Not found — create it on the Functions page') : undefined}
+          title={part.isFunction ? (part.found ? undefined : 'Not found — create it on the Functions page') : undefined}
           class="{part.isFunction ? (part.found ? 'text-cyan-400' : 'text-yellow-400') : (part.found ? 'text-green-400' : 'text-red-400')}"
-          onmouseenter={part.isFunction ? undefined : (e) => onTokenHover(part.name, e.currentTarget as HTMLElement)}
-          onmouseleave={part.isFunction ? undefined : () => onTokenLeave?.()}
+          onmouseenter={part.isFunction
+            ? (part.found ? (e) => {
+                const fnName = part.name.slice(1, part.name.indexOf('('));
+                onFunctionHover?.(fnName, e.currentTarget as HTMLElement);
+              } : undefined)
+            : (e) => onTokenHover(part.name, e.currentTarget as HTMLElement)}
+          onmouseleave={part.isFunction ? () => onFunctionLeave?.() : () => onTokenLeave?.()}
         >{part.raw}</span>
       {:else}
         <span class="text-app-text">{part.text}</span>

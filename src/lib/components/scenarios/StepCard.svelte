@@ -75,6 +75,26 @@
 
   let requestInfo = $derived(findRequest(requestTree, step.requestId));
   let methodColor = $derived(requestInfo ? getMethodColor(requestInfo.method) : 'text-app-text-4');
+
+  let statusInput = $state('');
+
+  function isValidStatusPattern(p: string) {
+    return p.length === 3 && /^[\d*]{3}$/.test(p);
+  }
+
+  function addStatus() {
+    const code = statusInput.trim();
+    if (!isValidStatusPattern(code)) return;
+    const current = step.expectedStatus ?? [];
+    if (!current.includes(code)) {
+      onUpdate({ ...step, expectedStatus: [...current, code] });
+    }
+    statusInput = '';
+  }
+
+  function removeStatus(code: string) {
+    onUpdate({ ...step, expectedStatus: (step.expectedStatus ?? []).filter((c) => c !== code) });
+  }
 </script>
 
 <div class="border border-app-border rounded bg-app-panel mb-2 {expanded ? 'border-l-2 border-l-cyan-500' : 'border-l-2 border-l-transparent'}">
@@ -155,6 +175,42 @@
           {responseSchema}
           onUpdate={(extract) => onUpdate({ ...step, extract })}
         />
+      </div>
+
+      <div>
+        <SectionHeader class="mb-2">Expected Status</SectionHeader>
+        <div class="flex flex-wrap gap-1 mb-2 min-h-[1.5rem]">
+          {#if !step.expectedStatus?.length}
+            <span class="text-xs text-app-text-4 italic">empty — any 2xx passes</span>
+          {:else}
+            {#each step.expectedStatus as code}
+              <span class="font-mono text-xs bg-app-card border border-app-border-2 rounded px-1.5 py-0.5 flex items-center gap-1">
+                {code}
+                <button
+                  type="button"
+                  class="text-app-text-4 hover:text-red-400 leading-none"
+                  onclick={() => removeStatus(code)}
+                  aria-label="Remove {code}"
+                >×</button>
+              </span>
+            {/each}
+          {/if}
+        </div>
+        <div class="flex gap-2">
+          <input
+            class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm font-mono text-app-text focus:outline-none focus:border-app-border-2"
+            value={statusInput}
+            oninput={(e) => (statusInput = e.currentTarget.value)}
+            onkeydown={(e) => e.key === 'Enter' && addStatus()}
+            placeholder="e.g. 200, 40*, 2**"
+            maxlength="3"
+          />
+          <button
+            type="button"
+            class="px-3 py-1 text-xs bg-app-card border border-app-border-2 rounded text-app-text-2 hover:text-app-text transition-colors"
+            onclick={addStatus}
+          >Add</button>
+        </div>
       </div>
     </div>
   {/if}

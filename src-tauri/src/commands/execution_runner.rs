@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::error::FlupiError;
 use crate::models::scenario::Scenario;
 use crate::models::extraction::Extraction;
-use crate::services::{file_io, http_client};
+use crate::services::{file_io, http_client, variable_resolver};
 use super::execution::{acquire_lock, release_lock, execute_single_request};
 
 #[derive(Debug, Serialize, Clone)]
@@ -77,6 +77,17 @@ pub async fn run_scenario(
     result
 }
 
+fn status_is_expected(status: u16, expected: &[String]) -> bool {
+    if expected.is_empty() {
+        return status >= 200 && status < 300;
+    }
+    let s = status.to_string();
+    expected.iter().any(|pattern| {
+        pattern.len() == s.len()
+            && pattern.chars().zip(s.chars()).all(|(p, c)| p == '*' || p == c)
+    })
+}
+
 async fn run_scenario_inner(
     app: &AppHandle,
     project_path: &Path,
@@ -110,7 +121,19 @@ async fn run_scenario_inner(
             }
         }
         let mut extra_vars = extracted.clone();
-        apply_overrides(&mut extra_vars, &regular_overrides);
+        // Resolve override values against the current context so function-call
+        // tokens like {{$randomInt(12)}} are expanded before being stored as vars.
+        let pre_ctx = variable_resolver::build_context(
+            HashMap::new(),
+            &[],
+            None,
+            Some(&extracted),
+        );
+        let resolved_overrides: HashMap<String, String> = regular_overrides
+            .iter()
+            .map(|(k, v)| (k.clone(), variable_resolver::resolve_string(v, &pre_ctx)))
+            .collect();
+        apply_overrides(&mut extra_vars, &resolved_overrides);
 
         let response = execute_single_request(
             project_path,
@@ -135,7 +158,7 @@ async fn run_scenario_inner(
                 return Err(e);
             }
             Ok(resp) => {
-                let is_success = resp.status >= 200 && resp.status < 300;
+                let is_success = status_is_expected(resp.status, &step.expected_status);
                 if !is_success {
                     let error_msg = format!("HTTP {} {}", resp.status, resp.status_text);
                     let result = StepResult {

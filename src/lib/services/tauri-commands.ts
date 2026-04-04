@@ -223,6 +223,7 @@ export interface ScenarioStep {
   requestId: string;
   overrides: Record<string, string>;
   extract: Extraction[];
+  expectedStatus?: string[];
 }
 
 export interface ScenarioData {
@@ -372,9 +373,15 @@ export async function getDriftDetails(projectPath: string, requestId: string): P
 
 // === Script Functions ===
 
+export interface FunctionParam {
+  name: string;
+  param_type: 'string' | 'number' | 'boolean';
+}
+
 export interface ScriptFunction {
   name: string;
   body: string;
+  params?: FunctionParam[];
 }
 
 export async function listFunctions(projectPath: string): Promise<ScriptFunction[]> {

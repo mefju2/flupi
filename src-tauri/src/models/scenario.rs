@@ -35,6 +35,8 @@ pub struct ScenarioStep {
     pub overrides: HashMap<String, String>,
     #[serde(default)]
     pub extract: Vec<Extraction>,
+    #[serde(rename = "expectedStatus", default)]
+    pub expected_status: Vec<String>,
 }
 
 #[cfg(test)]

@@ -8,7 +8,7 @@
   import { searchOpen, theme, type Theme } from '$lib/stores/ui';
   import { project } from '$lib/stores/project';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
-  import { listEnvironments, getPreferences, getRecentProjects, listOpenApiSources, refreshSource, listFunctions } from '$lib/services/tauri-commands';
+  import { listEnvironments, getPreferences, getRecentProjects, listOpenApiSources, refreshSource, listFunctions, getResolvedVariables } from '$lib/services/tauri-commands';
   import { openApiSources, driftedIdsBySource } from '$lib/stores/openapi';
   import { functions } from '$lib/stores/functions';
 
@@ -32,7 +32,19 @@
 
     theme.set(prefs.theme as Theme);
 
-    const envList = entries.map(([fileName, environment]) => ({ fileName, environment, secrets: {} }));
+    const secretMaps = await Promise.all(
+      entries.map(async ([fileName, environment]) => {
+        if (!environment.secrets.length) return {};
+        try {
+          const resolved = await getResolvedVariables(projectPath, fileName);
+          return Object.fromEntries(environment.secrets.map((k) => [k, resolved[k] ?? '']));
+        } catch {
+          return {};
+        }
+      })
+    );
+
+    const envList = entries.map(([fileName, environment], i) => ({ fileName, environment, secrets: secretMaps[i] }));
     environments.set(envList);
     functions.set(fnList);
     if (envList.length > 0 && $activeEnvironment === null) {

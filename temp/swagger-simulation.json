@@ -1,0 +1,265 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "WES.SimulationEngine",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "/apps/public/wes-simulation-engine"
+    }
+  ],
+  "paths": {
+    "/api/arconq/v1.0/app-lifecycle/:shut-down": {
+      "post": {
+        "tags": [
+          "App Lifecycle"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/arconq/v1.0/app-lifecycle/:ping": {
+      "get": {
+        "tags": [
+          "App Lifecycle"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/arconq/v1.0/handlers/MessageHandlerWrapper": {
+      "post": {
+        "tags": [
+          "Message Handlers"
+        ],
+        "parameters": [
+          {
+            "name": "X-Routing-Id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/System.Text.Json.Nodes.JsonNode"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/test-scenarios": {
+      "post": {
+        "tags": [
+          "TestScenario"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Requests.RunScenarioRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Requests.RunScenarioRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Requests.RunScenarioRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Responses.RunScenarioResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Responses.RunScenarioResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Responses.RunScenarioResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/test-scenarios/current": {
+      "delete": {
+        "tags": [
+          "TestScenario"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Responses.StopScenarioResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Responses.StopScenarioResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Responses.StopScenarioResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/test-scenarios/current/action": {
+      "post": {
+        "tags": [
+          "TestScenario"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Requests.ExecuteScenarioActionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Requests.ExecuteScenarioActionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/WES.SimulationEngine.Contracts.Requests.ExecuteScenarioActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "System.Text.Json.Nodes.JsonNode": {
+        "type": "object",
+        "properties": {
+          "options": {
+            "$ref": "#/components/schemas/System.Text.Json.Nodes.JsonNodeOptions"
+          },
+          "parent": {
+            "$ref": "#/components/schemas/System.Text.Json.Nodes.JsonNode"
+          },
+          "root": {
+            "$ref": "#/components/schemas/System.Text.Json.Nodes.JsonNode"
+          }
+        },
+        "additionalProperties": false
+      },
+      "System.Text.Json.Nodes.JsonNodeOptions": {
+        "type": "object",
+        "properties": {
+          "propertyNameCaseInsensitive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WES.SimulationEngine.Contracts.Requests.ExecuteScenarioActionRequest": {
+        "type": "object",
+        "properties": {
+          "actionName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actionParams": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "WES.SimulationEngine.Contracts.Requests.RunScenarioRequest": {
+        "type": "object",
+        "properties": {
+          "scenarioName": {
+            "type": "string",
+            "nullable": true
+          },
+          "scenarioParams": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "WES.SimulationEngine.Contracts.Responses.RunScenarioResponse": {
+        "type": "object",
+        "properties": {
+          "scenarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "WES.SimulationEngine.Contracts.Responses.StopScenarioResponse": {
+        "type": "object",
+        "properties": {
+          "scenarioName": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

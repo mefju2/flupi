@@ -136,9 +136,28 @@ pub async fn execute_single_request(
     // 9. Resolve body
     let body = effective.body.as_ref().and_then(|b| match b {
         BodyConfig::Json { content } => {
-            let resolved_str = variable_resolver::resolve_string(&content.to_string(), &ctx);
-            serde_json::from_str::<serde_json::Value>(&resolved_str).ok().map(|v| {
-                http_client::RequestBody::Json { content: v }
+            // content may be stored as a JSON string (editor output) or a JSON object.
+            // Extract the raw template text without re-encoding it.
+            let template = match content {
+                serde_json::Value::String(s) => s.clone(),
+                other => other.to_string(),
+            };
+            let resolved_str = variable_resolver::resolve_string(&template, &ctx);
+            serde_json::from_str::<serde_json::Value>(&resolved_str).ok().map(|mut json_val| {
+                // Apply body.* dot-path overrides from extra_vars so scenario
+                // overrides like `body.scenarioParams.error` patch the JSON object
+                // directly, regardless of whether the template uses {{...}} tokens.
+                // Run resolve_string on each value first so that any residual
+                // function tokens (e.g. {{$randomInt(12)}} that came through an
+                // input variable) are expanded using the current ctx before the
+                // value is written into the JSON body.
+                for (k, v) in extra_vars {
+                    if let Some(dot_path) = k.strip_prefix("body.") {
+                        let resolved_v = variable_resolver::resolve_string(v, &ctx);
+                        set_json_path(&mut json_val, dot_path, &resolved_v);
+                    }
+                }
+                http_client::RequestBody::Json { content: json_val }
             })
         }
         BodyConfig::Form { content, disabled_fields } => {
@@ -170,6 +189,25 @@ pub async fn execute_single_request(
         executable.url, executable.method, executable.headers, executable.body);
 
     http_client::execute_request(&executable).await
+}
+
+fn set_json_path(value: &mut serde_json::Value, path: &str, raw: &str) {
+    let new_val = serde_json::from_str::<serde_json::Value>(raw)
+        .unwrap_or_else(|_| serde_json::Value::String(raw.to_string()));
+    let (head, tail) = match path.find('.') {
+        Some(i) => (&path[..i], Some(&path[i + 1..])),
+        None => (path, None),
+    };
+    if let serde_json::Value::Object(map) = value {
+        match tail {
+            None => { map.insert(head.to_string(), new_val); }
+            Some(rest) => {
+                let entry = map.entry(head.to_string())
+                    .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
+                set_json_path(entry, rest, raw);
+            }
+        }
+    }
 }
 
 fn apply_extractions_to_env(

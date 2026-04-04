@@ -68,7 +68,7 @@ export async function evaluateFunctionCalls(
   const tokens = extractFunctionTokens(templates);
   if (tokens.length === 0) return {};
 
-  const fnMap = new Map(scriptFunctions.map((f) => [f.name, f.body]));
+  const fnMap = new Map(scriptFunctions.map((f) => [f.name, f]));
   const result: Record<string, string> = {};
 
   for (const token of tokens) {
@@ -77,13 +77,19 @@ export async function evaluateFunctionCalls(
     const argsStr = token.slice(parenIdx + 1, -1);
     const args = parseArgs(argsStr);
 
-    const body = fnMap.get(name);
-    if (body === undefined) {
+    const fn = fnMap.get(name);
+    if (fn === undefined) {
       throw new Error(`Function "${name}" is not defined. Create it on the Functions page.`);
     }
 
+    // Inject named param bindings as a preamble so bodies can use either
+    // the param name (e.g. `min`) or the positional index (e.g. `args[0]`).
+    const preamble = (fn.params ?? [])
+      .map((p, i) => `const ${p.name} = args[${i}];\n`)
+      .join('');
+
     try {
-      const value = await evalInSandbox(body, args);
+      const value = await evalInSandbox(preamble + fn.body, args);
       result[token] = value;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { functions, selectedFunctionName } from '$lib/stores/functions';
   import { saveFunction, deleteFunction } from '$lib/services/tauri-commands';
+  import type { FunctionParam } from '$lib/services/tauri-commands';
   import { project } from '$lib/stores/project';
 
   let creatingNew = $state(false);
@@ -31,7 +32,7 @@
     }
     if (!$project.path) return;
 
-    const fn = { name: trimmed, body: `// Arguments are available as args[0], args[1], ...\nreturn args[0];` };
+    const fn = { name: trimmed, body: `// Arguments are available as args[0], args[1], ...\nreturn args[0];`, params: [] as FunctionParam[] };
     creatingNew = false;
     newName = '';
     nameError = '';

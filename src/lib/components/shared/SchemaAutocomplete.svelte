@@ -81,6 +81,7 @@
     <ul
       class="absolute left-0 top-full mt-0.5 z-50 bg-app-panel border border-app-border-2 rounded shadow-lg max-h-52 overflow-y-auto min-w-full"
       role="listbox"
+      onpointerdown={(e) => e.stopPropagation()}
     >
       {#each filtered as suggestion, idx}
         <li
@@ -88,7 +89,7 @@
           aria-selected={idx === activeIndex}
           class="flex items-baseline gap-1 px-2 py-1 cursor-pointer text-sm font-mono
             {idx === activeIndex ? 'bg-app-card text-cyan-400' : 'text-app-text-2 hover:bg-app-card'}"
-          onmousedown={() => { onSelect(suggestion.path); open = false; }}
+          onmousedown={(e) => { e.preventDefault(); onSelect(suggestion.path); open = false; }}
         >
           <span>{suggestion.path}</span>
           {#if suggestion.type}

@@ -55,6 +55,7 @@ fn test_save_scenario() {
             request_id: "req/login".to_string(),
             overrides: HashMap::new(),
             extract: vec![],
+            expected_status: vec![],
         }],
     };
     save_scenario(root.clone(), "flow".to_string(), updated).unwrap();

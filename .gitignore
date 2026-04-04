@@ -1,5 +1,6 @@
 .DS_Store
 node_modules
+.ck/
 /build
 /.svelte-kit
 /package
@@ -11,3 +12,4 @@ vite.config.ts.timestamp-*
 .worktrees/
 .superpowers/*
 docs/superpowers/*
+flupi-project/*

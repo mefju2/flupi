@@ -2,6 +2,10 @@ use super::*;
 use std::collections::HashMap;
 use crate::models::extraction::Extraction;
 
+fn codes(patterns: &[&str]) -> Vec<String> {
+    patterns.iter().map(|s| s.to_string()).collect()
+}
+
 fn make_extraction(variable: &str, from: &str, path: &str) -> Extraction {
     Extraction {
         variable: variable.to_string(),
@@ -100,6 +104,49 @@ fn test_apply_overrides_overwrites_existing() {
     apply_overrides(&mut vars, &overrides);
 
     assert_eq!(vars.get("token").unwrap(), "new-token");
+}
+
+#[test]
+fn test_status_is_expected_empty_list_defaults_to_2xx() {
+    assert!(status_is_expected(200, &[]));
+    assert!(status_is_expected(201, &[]));
+    assert!(status_is_expected(299, &[]));
+    assert!(!status_is_expected(400, &[]));
+    assert!(!status_is_expected(500, &[]));
+    assert!(!status_is_expected(301, &[]));
+}
+
+#[test]
+fn test_status_is_expected_exact_match() {
+    assert!(status_is_expected(400, &codes(&["400"])));
+    assert!(!status_is_expected(200, &codes(&["400"])));
+    assert!(status_is_expected(200, &codes(&["200", "400"])));
+    assert!(status_is_expected(400, &codes(&["200", "400"])));
+    assert!(!status_is_expected(500, &codes(&["200", "400"])));
+}
+
+#[test]
+fn test_status_is_expected_wildcard_2xx() {
+    assert!(status_is_expected(200, &codes(&["2**"])));
+    assert!(status_is_expected(250, &codes(&["2**"])));
+    assert!(status_is_expected(299, &codes(&["2**"])));
+    assert!(!status_is_expected(300, &codes(&["2**"])));
+    assert!(!status_is_expected(400, &codes(&["2**"])));
+}
+
+#[test]
+fn test_status_is_expected_wildcard_4xx_partial() {
+    assert!(status_is_expected(400, &codes(&["40*"])));
+    assert!(status_is_expected(409, &codes(&["40*"])));
+    assert!(!status_is_expected(410, &codes(&["40*"])));
+    assert!(!status_is_expected(500, &codes(&["40*"])));
+}
+
+#[test]
+fn test_status_is_expected_all_wildcard() {
+    assert!(status_is_expected(200, &codes(&["***"])));
+    assert!(status_is_expected(400, &codes(&["***"])));
+    assert!(status_is_expected(500, &codes(&["***"])));
 }
 
 #[test]

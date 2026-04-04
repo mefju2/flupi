@@ -3,8 +3,10 @@
   import type { EnvironmentEntry } from '$lib/stores/environment';
   import { project } from '$lib/stores/project';
   import { functions } from '$lib/stores/functions';
+  import type { FunctionParam } from '$lib/services/tauri-commands';
   import VariableTokenDisplay from './VariableTokenDisplay.svelte';
   import VariableTooltip from './VariableTooltip.svelte';
+  import FunctionTooltip from './FunctionTooltip.svelte';
 
   interface VarItem {
     name: string;
@@ -14,6 +16,7 @@
 
   interface FnItem {
     name: string;
+    params?: FunctionParam[];
   }
 
   interface Props {
@@ -35,6 +38,8 @@
   let focused = $state(false);
   let hoveredVar = $state<string | null>(null);
   let tooltipAnchor = $state<HTMLElement | null>(null);
+  let hoveredFn = $state<string | null>(null);
+  let fnTooltipAnchor = $state<HTMLElement | null>(null);
 
   const activeEnvEntry: EnvironmentEntry | null = $derived(
     $environments.find(e => e.fileName === $activeEnvironment) ?? null
@@ -75,7 +80,9 @@
   );
 
   const filteredFns: FnItem[] = $derived(
-    $functions.filter((f) => f.name.toLowerCase().startsWith(fragment.toLowerCase()))
+    $functions
+      .filter((f) => f.name.toLowerCase().startsWith(fragment.toLowerCase()))
+      .map((f) => ({ name: f.name, params: f.params }))
   );
 
   // Flat list for keyboard navigation: vars first (when not in {{$ mode), then functions
@@ -84,7 +91,16 @@
     ...filteredFns.map(item => ({ kind: 'fn' as const, item })),
   ]);
 
-  function fnLabel(name: string) { return '{{$' + name + '()}}'; }
+  function paramDefault(p: FunctionParam): string {
+    if (p.param_type === 'number') return '0';
+    if (p.param_type === 'boolean') return 'true';
+    return '""';
+  }
+
+  function fnSignature(item: FnItem): string {
+    if (!item.params || item.params.length === 0) return `$${item.name}()`;
+    return `$${item.name}(${item.params.map((p) => `${p.name}: ${p.param_type}`).join(', ')})`;
+  }
 
   function findTriggerStart(text: string, cursor: number): { start: number; isFunction: boolean } | null {
     const before = text.slice(0, cursor);
@@ -131,20 +147,21 @@
     }, 0);
   }
 
-  function selectFn(fnName: string) {
+  function selectFn(fnItem: FnItem) {
     if (triggerStart < 0) return;
     const before = value.slice(0, triggerStart);
     const after = value.slice(triggerStart).replace(/\{\{[^}]*/, '');
-    const token = `{{$${fnName}()}}`;
+    const argsStr = (fnItem.params ?? []).map(paramDefault).join(', ');
+    const token = `{{$${fnItem.name}(${argsStr})}}`;
     const newVal = before + token + after;
     onChange(newVal);
     showDropdown = false;
     triggerStart = -1;
-    // Place cursor between the parentheses so user can type args
+    // Place cursor after the closing token
     setTimeout(() => {
       if (inputEl) {
         inputEl.focus();
-        const pos = before.length + token.length - 3; // inside ()
+        const pos = before.length + token.length;
         inputEl.setSelectionRange(pos, pos);
       }
     }, 0);
@@ -163,7 +180,7 @@
       if (active) {
         e.preventDefault();
         if (active.kind === 'var') selectVar(active.item.name);
-        else selectFn(active.item.name);
+        else selectFn(active.item);
       }
     } else if (e.key === 'Escape') {
       showDropdown = false;
@@ -191,6 +208,7 @@
     return () => {
       if (blurTimer) clearTimeout(blurTimer);
       if (tooltipCloseTimer) clearTimeout(tooltipCloseTimer);
+      if (fnTooltipCloseTimer) clearTimeout(fnTooltipCloseTimer);
     };
   });
 
@@ -219,6 +237,27 @@
     tooltipAnchor = null;
   }
 
+  let fnTooltipCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function onFunctionHover(fnName: string, anchorEl: HTMLElement) {
+    if (fnTooltipCloseTimer) { clearTimeout(fnTooltipCloseTimer); fnTooltipCloseTimer = null; }
+    hoveredFn = fnName;
+    fnTooltipAnchor = anchorEl;
+  }
+
+  function scheduleFnTooltipClose() {
+    if (fnTooltipCloseTimer) clearTimeout(fnTooltipCloseTimer);
+    fnTooltipCloseTimer = setTimeout(() => {
+      hoveredFn = null;
+      fnTooltipAnchor = null;
+      fnTooltipCloseTimer = null;
+    }, 300);
+  }
+
+  function cancelFnTooltipClose() {
+    if (fnTooltipCloseTimer) { clearTimeout(fnTooltipCloseTimer); fnTooltipCloseTimer = null; }
+  }
+
   const baseClass = 'bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2';
 
   let wrapperEl = $state<HTMLDivElement | null>(null);
@@ -243,6 +282,8 @@
         {placeholder}
         onTokenHover={onTokenHover}
         onTokenLeave={scheduleTooltipClose}
+        onFunctionHover={onFunctionHover}
+        onFunctionLeave={scheduleFnTooltipClose}
         onclick={() => (inputEl as HTMLInputElement | null)?.focus()}
       />
     {/if}
@@ -267,6 +308,8 @@
         multiline={true}
         onTokenHover={onTokenHover}
         onTokenLeave={scheduleTooltipClose}
+        onFunctionHover={onFunctionHover}
+        onFunctionLeave={scheduleFnTooltipClose}
         onclick={() => (inputEl as HTMLTextAreaElement | null)?.focus()}
       />
     {/if}
@@ -292,6 +335,19 @@
       onmouseenter={cancelTooltipClose}
       onmouseleave={scheduleTooltipClose}
     />
+  {/if}
+
+  {#if hoveredFn && fnTooltipAnchor}
+    {@const fnDef = $functions.find((f) => f.name === hoveredFn)}
+    {#if fnDef}
+      <FunctionTooltip
+        fn={fnDef}
+        anchorEl={fnTooltipAnchor}
+        onclose={() => { hoveredFn = null; fnTooltipAnchor = null; }}
+        onmouseenter={cancelFnTooltipClose}
+        onmouseleave={scheduleFnTooltipClose}
+      />
+    {/if}
   {/if}
 
   {#if showDropdown && flatItems.length > 0}
@@ -336,10 +392,9 @@
           <li>
             <button
               class="w-full text-left px-3 py-1.5 flex items-center gap-2 {flatIdx === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
-              onmousedown={(e) => { e.preventDefault(); selectFn(item.name); }}
+              onmousedown={(e) => { e.preventDefault(); selectFn(item); }}
             >
-              <span class="font-mono text-sm {flatIdx === activeIndex ? 'text-cyan-400' : 'text-app-text'}">$<span class="text-cyan-300">{item.name}</span>()</span>
-              <span class="text-app-text-3 text-xs truncate font-mono">{fnLabel(item.name)}</span>
+              <span class="font-mono text-sm {flatIdx === activeIndex ? 'text-cyan-400' : 'text-app-text'}">$<span class="text-cyan-300">{item.name}</span>{#if item.params && item.params.length > 0}({item.params.map((p) => `${p.name}: ${p.param_type}`).join(', ')}){:else}(){/if}</span>
             </button>
           </li>
         {/each}

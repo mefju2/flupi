@@ -4,31 +4,48 @@ use crate::error::Result;
 const PROJECT_DIRS: &[&str] = &["environments", "collections", "requests", "scenarios", "functions"];
 const GITIGNORE_CONTENT: &str = "*.secrets.json\n";
 
+struct BuiltinFunctionParam {
+    name: &'static str,
+    param_type: &'static str,
+}
+
 struct BuiltinFunction {
     name: &'static str,
     body: &'static str,
+    params: &'static [BuiltinFunctionParam],
 }
 
 const BUILTIN_FUNCTIONS: &[BuiltinFunction] = &[
     BuiltinFunction {
         name: "randomGuid",
         body: "// Returns a random UUID v4\nreturn crypto.randomUUID();",
+        params: &[],
     },
     BuiltinFunction {
         name: "randomInt",
-        body: "// Returns a random integer in [args[0], args[1])\nconst min = parseInt(args[0] ?? '0', 10);\nconst max = parseInt(args[1] ?? '100', 10);\nreturn String(Math.floor(Math.random() * (max - min)) + min);",
+        body: "// Returns a random integer in [min, max)\nreturn String(Math.floor(Math.random() * (max - min)) + min);",
+        params: &[
+            BuiltinFunctionParam { name: "min", param_type: "number" },
+            BuiltinFunctionParam { name: "max", param_type: "number" },
+        ],
     },
     BuiltinFunction {
         name: "randomFloat",
-        body: "// Returns a random float between args[0] and args[1]\nconst min = parseFloat(args[0] ?? '0');\nconst max = parseFloat(args[1] ?? '1');\nreturn String(Math.random() * (max - min) + min);",
+        body: "// Returns a random float between min and max\nreturn String(Math.random() * (max - min) + min);",
+        params: &[
+            BuiltinFunctionParam { name: "min", param_type: "number" },
+            BuiltinFunctionParam { name: "max", param_type: "number" },
+        ],
     },
     BuiltinFunction {
         name: "now",
         body: "// Returns the current date-time as an ISO 8601 string\nreturn new Date().toISOString();",
+        params: &[],
     },
     BuiltinFunction {
         name: "timestamp",
         body: "// Returns the current Unix timestamp in milliseconds\nreturn String(Date.now());",
+        params: &[],
     },
 ];
 
@@ -60,7 +77,10 @@ fn seed_builtin_functions(path: &Path) -> Result<()> {
     for f in BUILTIN_FUNCTIONS {
         let file_path = functions_dir.join(format!("{}.json", f.name));
         if !file_path.exists() {
-            let json = serde_json::json!({ "name": f.name, "body": f.body });
+            let params: Vec<serde_json::Value> = f.params.iter().map(|p| {
+                serde_json::json!({ "name": p.name, "param_type": p.param_type })
+            }).collect();
+            let json = serde_json::json!({ "name": f.name, "body": f.body, "params": params });
             std::fs::write(&file_path, serde_json::to_string_pretty(&json)?)?;
         }
     }
