@@ -12,9 +12,10 @@
     onUpdate: (scenario: ScenarioData) => void;
     onSave: () => void;
     onRun: () => void;
+    isDirty?: boolean;
   }
 
-  let { scenario, onUpdate, onSave, onRun }: Props = $props();
+  let { scenario, onUpdate, onSave, onRun, isDirty = false }: Props = $props();
 
   let nameDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -83,7 +84,10 @@
       placeholder="Scenario name"
     />
     <button
-      class="px-3 py-1 text-xs bg-transparent border border-app-border-2 hover:border-app-border-2 text-app-text-3 hover:text-app-text rounded transition-colors"
+      class="px-3 py-1 text-xs bg-transparent border rounded transition-colors
+        {isDirty
+          ? 'border-cyan-500 text-cyan-400 hover:border-cyan-400 hover:text-cyan-300'
+          : 'border-app-border-2 text-app-text-3 hover:border-app-border-2 hover:text-app-text'}"
       onclick={onSave}
     >Save</button>
     <button
