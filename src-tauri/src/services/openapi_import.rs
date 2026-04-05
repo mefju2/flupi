@@ -4,7 +4,7 @@ use sha2::{Sha256, Digest};
 use once_cell::sync::Lazy;
 use crate::error::{FlupiError, Result};
 use crate::models::openapi::ImportableOperation;
-use crate::models::request::{BodyConfig, Request, TemplateRef};
+use crate::models::request::{BodyConfig, RawFormat, Request, TemplateRef};
 use crate::services::{file_io, schema_defaults};
 
 const HTTP_METHODS: &[&str] = &["get", "post", "put", "delete", "patch", "head", "options", "trace"];
@@ -174,7 +174,8 @@ pub fn import_operations(
             None
         } else {
             let content = schema_defaults::generate_default_body(&request_schema, &import_timestamp);
-            Some(BodyConfig::Json { content })
+            let content_str = serde_json::to_string_pretty(&content).unwrap_or_default();
+            Some(BodyConfig::Raw { format: RawFormat::Json, content: content_str })
         };
 
         let request = Request {

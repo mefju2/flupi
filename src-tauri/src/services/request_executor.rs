@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 use crate::error::FlupiError;
-use crate::models::request::{AuthConfig, BodyConfig};
+use crate::models::request::{AuthConfig, BodyConfig, RawFormat};
 use crate::models::collection::Collection;
 use crate::models::extraction::Extraction;
 use crate::models::environment::Environment;
@@ -117,14 +117,8 @@ pub async fn execute_single_request(
 
     // 9. Resolve body
     let body = effective.body.as_ref().and_then(|b| match b {
-        BodyConfig::Json { content } => {
-            // content may be stored as a JSON string (editor output) or a JSON object.
-            // Extract the raw template text without re-encoding it.
-            let template = match content {
-                serde_json::Value::String(s) => s.clone(),
-                other => other.to_string(),
-            };
-            let resolved_str = variable_resolver::resolve_string(&template, &ctx);
+        BodyConfig::Raw { format: RawFormat::Json, content } => {
+            let resolved_str = variable_resolver::resolve_string(content, &ctx);
             serde_json::from_str::<serde_json::Value>(&resolved_str).ok().map(|mut json_val| {
                 // Apply body.* dot-path overrides from extra_vars so scenario
                 // overrides like `body.scenarioParams.error` patch the JSON object
@@ -142,7 +136,7 @@ pub async fn execute_single_request(
                 http_client::RequestBody::Json { content: json_val }
             })
         }
-        BodyConfig::Form { content, disabled_fields } => {
+        BodyConfig::FormUrlEncoded { content, disabled_fields } => {
             let resolved: HashMap<String, String> = content
                 .iter()
                 .filter(|(k, _)| !disabled_fields.contains(*k))
@@ -150,7 +144,7 @@ pub async fn execute_single_request(
                 .collect();
             Some(http_client::RequestBody::Form { content: resolved })
         }
-        BodyConfig::Raw { content } => {
+        BodyConfig::Raw { format: RawFormat::Xml | RawFormat::Text, content } => {
             Some(http_client::RequestBody::Raw {
                 content: variable_resolver::resolve_string(content, &ctx),
             })
