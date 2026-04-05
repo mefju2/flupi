@@ -97,7 +97,7 @@
             {#each extractedEntries as [key, value]}
               {@const parsedVal = tryParseJson(value)}
               {@const isJson = parsedVal !== null && typeof parsedVal === 'object'}
-              <div class="flex gap-2 items-start">
+              <div class="flex gap-2 items-start min-w-0">
                 <span class="font-mono text-xs text-app-text-3 min-w-24 shrink-0 pt-0.5">{key}</span>
                 {#if isJson}
                   <div class="flex-1 min-w-0">
@@ -117,7 +117,7 @@
                     {/if}
                   </div>
                 {:else}
-                  <span class="font-mono text-xs text-app-text">{value}</span>
+                  <span class="font-mono text-xs text-app-text truncate min-w-0">{value}</span>
                 {/if}
               </div>
             {/each}

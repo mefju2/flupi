@@ -13,3 +13,4 @@ vite.config.ts.timestamp-*
 .superpowers/*
 docs/superpowers/*
 flupi-project/*
+temp/*

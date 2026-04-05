@@ -8,9 +8,11 @@
   import { searchOpen, theme, type Theme } from '$lib/stores/ui';
   import { project } from '$lib/stores/project';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
-  import { listEnvironments, getPreferences, getRecentProjects, listOpenApiSources, refreshSource, listFunctions, getResolvedVariables } from '$lib/services/tauri-commands';
+  import { listEnvironments, getPreferences, getRecentProjects, listOpenApiSources, refreshSource, listFunctions, getResolvedVariables, loadRequestTree, loadScenarioTree } from '$lib/services/tauri-commands';
   import { openApiSources, driftedIdsBySource } from '$lib/stores/openapi';
   import { functions } from '$lib/stores/functions';
+  import { requestTree } from '$lib/stores/requests';
+  import { scenarioTree } from '$lib/stores/scenarios';
 
   let driftScanCancelled = false;
 
@@ -24,11 +26,15 @@
     // even if the store changes before the async work completes.
     const projectPath = $project.path!;
 
-    const [prefs, entries, fnList] = await Promise.all([
+    const [prefs, entries, fnList, reqTree, scTree] = await Promise.all([
       getPreferences(),
       listEnvironments(projectPath),
       listFunctions(projectPath),
+      loadRequestTree(projectPath),
+      loadScenarioTree(projectPath),
     ]);
+    requestTree.set(reqTree);
+    scenarioTree.set(scTree);
 
     theme.set(prefs.theme as Theme);
 

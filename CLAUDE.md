@@ -1,8 +1,17 @@
 # Flupi — Project Guidelines
 
+## Session Start
+
+At the start of every session:
+1. Run `ToolSearch` with query `"serena"` to load Serena MCP tool schemas.
+2. Call `mcp__serena__initial_instructions` to load the Serena usage manual.
+3. Call `mcp__serena__check_onboarding_performed` to confirm project memories are ready.
+
+Do all three before any code search or file reading.
+
 ## General
 
-Prioritize using serena and ck for gathering context, searching files and text across the repository
+Prioritize using serena and ck for gathering context, searching files and text across the repository. Always prefer `mcp__serena__find_symbol`, `mcp__serena__get_symbols_overview`, or `mcp__serena__search_for_pattern` over `Read` or `Grep` when exploring the codebase.
 
 ## Hybrid Code Search with ck
 

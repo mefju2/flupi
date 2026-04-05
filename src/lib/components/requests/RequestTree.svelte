@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import { project } from '$lib/stores/project';
   import { requestTree, activeRequestId, activeRequest, activeCollectionFolder, activeCollection } from '$lib/stores/requests';
@@ -19,6 +18,7 @@
   import ContextMenu from '$lib/components/shared/ContextMenu.svelte';
 
   let dndItems = $state<DndItems>({});
+  $effect(() => { dndItems = rebuildDndItems($requestTree); });
   let collectionExpanded = $state<Record<string, boolean>>({});
   let toast = $state<string | null>(null);
   let contextMenu: { x: number; y: number; items: { label: string; action: () => void; danger?: boolean }[] } | null = $state(null);
@@ -38,11 +38,12 @@
 
   async function reload() {
     if (!$project.path) return;
-    try { requestTree.set(await loadRequestTree($project.path)); dndItems = rebuildDndItems($requestTree); }
+    try { requestTree.set(await loadRequestTree($project.path)); }
     catch (e) { console.error('Failed to load request tree:', e); }
   }
 
-  onMount(reload);
+  // Trees are loaded by +layout.svelte on project open; reload() is called
+  // explicitly after create/rename/delete/move mutations.
 
   function handleConsider(e: CustomEvent<{ items: DndItem[] }>, key: string) {
     dndItems = { ...dndItems, [key]: e.detail.items };

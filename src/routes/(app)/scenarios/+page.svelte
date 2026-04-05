@@ -4,10 +4,9 @@
   import { project } from '$lib/stores/project';
   import { activeScenario, activeScenarioId, scenarioTree } from '$lib/stores/scenarios';
   import { activeEnvironment } from '$lib/stores/environment';
-  import { loadRequestTree } from '$lib/services/tauri-commands';
   import { requestTree } from '$lib/stores/requests';
   import {
-    loadScenarioTree, saveScenario, runScenario, getScenario, type ScenarioData,
+    saveScenario, runScenario, getScenario, type ScenarioData,
   } from '$lib/services/tauri-commands';
   import { evaluateFunctionCalls } from '$lib/services/function-evaluator';
   import { functions } from '$lib/stores/functions';
@@ -32,20 +31,6 @@
 
   $effect(() => {
     if ($activeScenarioId) view = 'editor';
-  });
-
-  onMount(async () => {
-    if (!$project.path) return;
-    try {
-      const [tree, reqTree] = await Promise.all([
-        loadScenarioTree($project.path),
-        loadRequestTree($project.path),
-      ]);
-      scenarioTree.set(tree);
-      requestTree.set(reqTree);
-    } catch (e) {
-      console.error('Failed to load scenario/request trees:', e);
-    }
   });
 
   onMount(() => {

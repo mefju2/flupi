@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { project } from '$lib/stores/project';
   import { scenarioTree, activeScenarioId, activeScenario } from '$lib/stores/scenarios';
   import {
@@ -29,7 +28,8 @@
     catch (e) { console.error('Failed to load scenario tree:', e); }
   }
 
-  onMount(reload);
+  // Trees are loaded by +layout.svelte on project open; reload() is called
+  // explicitly after create/rename/delete/duplicate mutations.
 
   async function selectScenario(id: string) {
     if (onSelect) {
