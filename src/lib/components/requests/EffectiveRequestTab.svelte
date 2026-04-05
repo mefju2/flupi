@@ -212,16 +212,14 @@
 
     <!-- Body -->
     {#if req.body && req.body.type !== 'none'}
+      {@const bodyLabel = req.body.type === 'raw' ? `raw/${req.body.format}` : req.body.type}
       <section>
-        <SectionHeader class="mb-2">Body ({req.body.type})</SectionHeader>
+        <SectionHeader class="mb-2">Body ({bodyLabel})</SectionHeader>
         <div class="bg-app-panel border border-app-border rounded px-3 py-2 font-mono text-app-text text-xs whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
-          {#if req.body.type === 'json'}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html resolveAndHighlight(typeof req.body.content === 'string' ? req.body.content : JSON.stringify(req.body.content, null, 2))}
-          {:else if req.body.type === 'raw'}
+          {#if req.body.type === 'raw'}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html resolveAndHighlight(req.body.content)}
-          {:else if req.body.type === 'form'}
+          {:else if req.body.type === 'form-urlencoded'}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html resolveAndHighlight(Object.entries(req.body.content).map(([k, v]) => `${k}=${v}`).join('\n'))}
           {/if}
