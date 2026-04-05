@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import { project } from '$lib/stores/project';
   import { requestTree, activeRequestId, activeRequest, activeCollectionFolder, activeCollection } from '$lib/stores/requests';
@@ -27,6 +28,14 @@
     id: string; value: string;
   } | null>(null);
   let pendingDelete = $state<{ type: 'request' | 'collection'; id: string; label: string } | null>(null);
+
+  onMount(() => {
+    const handler = () => {
+      pendingInput = { type: 'new-request', id: '', value: 'New Request' };
+    };
+    window.addEventListener('flupi:new-request', handler);
+    return () => window.removeEventListener('flupi:new-request', handler);
+  });
 
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   function showToast(msg: string) {
