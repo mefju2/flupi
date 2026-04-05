@@ -17,6 +17,7 @@
   import { scenarioTree, activeScenarioId } from '$lib/stores/scenarios';
 
   let driftScanCancelled = false;
+  let cleanupShortcuts: (() => void) | undefined;
 
   onMount(async () => {
     if (!$project.isOpen) { goto('/'); return; }
@@ -127,6 +128,7 @@
           const envs = get(environments);
           if (envs.length < 2) return;
           const current = get(activeEnvironment);
+          if (!current) return;
           const idx = envs.findIndex((e) => e.fileName === current);
           const next = envs[(idx + 1) % envs.length];
           activeEnvironment.set(next.fileName);
@@ -138,7 +140,6 @@
     ]);
   });
 
-  let cleanupShortcuts: (() => void) | undefined;
   onDestroy(() => {
     driftScanCancelled = true;
     cleanupShortcuts?.();
