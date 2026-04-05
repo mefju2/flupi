@@ -77,18 +77,19 @@
     });
   }
 
-  // Stable URI for the body model — only one JsonEditor is visible at a time
-  const MODEL_URI = monaco.Uri.parse('inmemory://flupi/body.json');
-
   interface Props {
     value: string;
     onChange: (v: string) => void;
     placeholder?: string;
     readonly?: boolean;
     schema?: unknown;
+    language?: 'json' | 'xml' | 'plaintext';
   }
 
-  let { value, onChange, placeholder = '{}', readonly = false, schema = undefined }: Props = $props();
+  let { value, onChange, placeholder = '{}', readonly = false, schema = undefined, language = 'json' }: Props = $props();
+
+  // Tracks the URI of the currently active model so the schema effect can reference it
+  let _currentUriStr = $state('');
 
   let container = $state<HTMLDivElement | undefined>(undefined);
   let editor: monaco.editor.IStandaloneCodeEditor | undefined;
@@ -98,6 +99,7 @@
   $effect(() => {
     if (!container) return;
 
+    const lang = language; // tracked — editor recreates when language changes
     const initialValue = untrack(() => value);
     const initialReadonly = untrack(() => readonly);
 
@@ -105,9 +107,10 @@
     registerThemes();
 
     const isDark = document.documentElement.classList.contains('dark');
+    const modelUri = monaco.Uri.parse(`inmemory://flupi/body.${lang}`);
+    _currentUriStr = modelUri.toString();
 
-    // H-3: Always create a fresh model — reuse was dead code (model.dispose() in cleanup)
-    const model = monaco.editor.createModel(initialValue, 'json', MODEL_URI);
+    const model = monaco.editor.createModel(initialValue, lang, modelUri);
 
     editor = monaco.editor.create(container, {
       model,
@@ -129,11 +132,11 @@
       if (!ignoreChange) onChange(editor!.getValue());
     });
 
-    // M-3: Suppress markers that *overlap* any {{variable}} template span
-    // (full-containment wasn't enough: JSON error spans often start at the outer quote)
+    // Suppress markers that overlap any {{variable}} template span (JSON only)
     const markerDispose = monaco.editor.onDidChangeMarkers((uris) => {
-      if (!uris.some((u) => u.toString() === MODEL_URI.toString())) return;
-      const markers = monaco.editor.getModelMarkers({ resource: MODEL_URI });
+      const uriStr = modelUri.toString();
+      if (!uris.some((u) => u.toString() === uriStr)) return;
+      const markers = monaco.editor.getModelMarkers({ resource: modelUri });
       const text = model.getValue();
       const tmplRe = /\{\{[^}]*\}\}/g;
       const ranges: Array<[number, number]> = [];
@@ -146,7 +149,7 @@
         return !ranges.some(([rs, re]) => rs < e && re > s);
       });
       if (filtered.length !== markers.length) {
-        monaco.editor.setModelMarkers(model, 'json', filtered);
+        monaco.editor.setModelMarkers(model, lang, filtered);
       }
     });
 
@@ -155,8 +158,7 @@
       markerDispose.dispose();
       editor?.dispose();
       editor = undefined;
-      // Clear schema association so it doesn't linger after unmount
-      applySchema(undefined);
+      if (lang === 'json') applySchema(undefined);
       model.dispose();
     };
   });
@@ -180,15 +182,13 @@
   // Cleanup calls applySchema(undefined) before this effect fires for a new mount,
   // so there is no race between unmount clearing and remount setting the schema.
   $effect(() => {
-    applySchema(schema);
+    if (language === 'json') applySchema(schema);
   });
 
   function applySchema(s: unknown) {
-    const uriStr = MODEL_URI.toString();
-    // M-5: Runtime type guard — if backend serialises schema as a string instead of an object,
-    // skip schema registration rather than silently passing a string to Monaco.
+    const uriStr = _currentUriStr;
+    if (!uriStr) return;
     const schemaObj = s != null && typeof s === 'object' ? s : undefined;
-    // monaco.json is the top-level namespace in Monaco 0.55+ (monaco.languages.json is deprecated)
     monaco.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
       enableSchemaRequest: false,
