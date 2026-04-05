@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import type { RequestTreeNode, ScenarioTreeNode } from '$lib/services/tauri-commands';
   import { getRequest, getScenario } from '$lib/services/tauri-commands';
@@ -38,7 +37,8 @@
       if (node.type === 'Scenario') {
         result.push({ kind: 'scenario', id: node.id, name: node.name, groupPath });
       } else if (node.type === 'Group') {
-        result.push(...flattenScenarios(node.children, node.name));
+        const childPath = groupPath ? `${groupPath} / ${node.name}` : node.name;
+        result.push(...flattenScenarios(node.children, childPath));
       }
     }
     return result;
@@ -88,6 +88,7 @@
   async function select(result: SearchResult) {
     const projectPath = $project?.path;
     if (!projectPath) return;
+    close();
     if (result.kind === 'request') {
       activeRequestId.set(result.id);
       activeRequest.set(await getRequest(projectPath, result.id));
@@ -100,7 +101,6 @@
       selectedFunctionName.set(result.name);
       await goto('/functions');
     }
-    close();
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -130,13 +130,6 @@
     }
   });
 
-  onMount(() => {
-    function onGlobalKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && $searchOpen) close();
-    }
-    window.addEventListener('keydown', onGlobalKeydown);
-    return () => window.removeEventListener('keydown', onGlobalKeydown);
-  });
 </script>
 
 {#if $searchOpen}
@@ -169,12 +162,13 @@
           {#if filteredRequests.length > 0}
             <li class="px-4 py-1.5 text-xs font-medium text-app-text-4 uppercase tracking-wide">Requests</li>
             {#each filteredRequests as req, i}
+              {@const idx = i}
               <li>
                 <button
                   type="button"
-                  class="w-full text-left px-4 py-2 flex items-center gap-3 {i === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
+                  class="w-full text-left px-4 py-2 flex items-center gap-3 {idx === activeIndex ? 'bg-app-card' : 'hover:bg-app-card'}"
                   onclick={() => select(req)}
-                  onmouseenter={() => (activeIndex = i)}
+                  onmouseenter={() => (activeIndex = idx)}
                 >
                   <span class="font-mono text-xs {getMethodColor(req.method)} w-16 shrink-0">{req.method}</span>
                   <span class="text-sm text-app-text truncate flex-1">{req.name}</span>
