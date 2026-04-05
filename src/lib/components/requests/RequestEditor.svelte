@@ -108,6 +108,46 @@
     debouncedSave.trigger();
   }
 
+  const MANAGED_CONTENT_TYPES = new Set([
+    'application/json',
+    'application/xml',
+    'text/plain',
+    'application/x-www-form-urlencoded',
+  ]);
+
+  function contentTypeForBody(b: BodyConfig): string | null {
+    if (b.type === 'none') return null;
+    if (b.type === 'form-urlencoded') return 'application/x-www-form-urlencoded';
+    if (b.type === 'raw') {
+      if (b.format === 'json') return 'application/json';
+      if (b.format === 'xml') return 'application/xml';
+      if (b.format === 'text') return 'text/plain';
+    }
+    return null;
+  }
+
+  function updateBody(newBody: BodyConfig) {
+    const req = $activeRequest;
+    if (!req) return;
+    const newCT = contentTypeForBody(newBody);
+    const headers = { ...req.headers };
+    const ctKey = Object.keys(headers).find((k) => k.toLowerCase() === 'content-type');
+
+    if (newCT === null) {
+      // No body — remove Content-Type only if it's a managed value
+      if (ctKey && MANAGED_CONTENT_TYPES.has(headers[ctKey])) {
+        delete headers[ctKey];
+      }
+    } else if (!ctKey) {
+      headers['Content-Type'] = newCT;
+    } else if (MANAGED_CONTENT_TYPES.has(headers[ctKey])) {
+      headers[ctKey] = newCT;
+    }
+    // Custom Content-Type (not in MANAGED_CONTENT_TYPES) — leave it alone
+
+    updateRequest({ body: newBody, headers });
+  }
+
   async function handleSend() {
     const id = $activeRequestId;
     const path = $project.path;
@@ -130,9 +170,8 @@
       ...Object.values(req.pathParams ?? {}),
       ...Object.values(req.headers ?? {}),
       ...authTemplates,
-      req.body?.type === 'json' ? JSON.stringify(req.body.content) : '',
       req.body?.type === 'raw' ? req.body.content : '',
-      req.body?.type === 'form' ? Object.values(req.body.content ?? {}).join('\n') : '',
+      req.body?.type === 'form-urlencoded' ? Object.values(req.body.content ?? {}).join('\n') : '',
     ] : [];
 
     let injectedVars: Record<string, string> | undefined;
@@ -258,7 +297,7 @@
       {:else if activeTab === 'Body'}
         <BodyTab
           body={$activeRequest.body}
-          onUpdate={(b: BodyConfig) => updateRequest({ body: b })}
+          onUpdate={(b: BodyConfig) => updateBody(b)}
           requestSchema={$activeRequest.templateRef?.requestSchema}
         />
       {:else if activeTab === 'Extractions'}
