@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { project } from '$lib/stores/project';
   import { scenarioTree, activeScenarioId, activeScenario } from '$lib/stores/scenarios';
   import {
@@ -18,6 +19,14 @@
   let contextMenu: { x: number; y: number; items: { label: string; action: () => void; danger?: boolean }[] } | null = $state(null);
   let pendingInput = $state<{ type: 'rename' | 'new'; id: string; value: string } | null>(null);
   let expandedGroups = $state<Set<string>>(new Set());
+
+  onMount(() => {
+    const handler = () => {
+      pendingInput = { type: 'new', id: '', value: 'New Scenario' };
+    };
+    window.addEventListener('flupi:new-scenario', handler);
+    return () => window.removeEventListener('flupi:new-scenario', handler);
+  });
 
   function showToast(msg: string) { toast = msg; setTimeout(() => (toast = null), 3000); }
   function focusOnMount(el: HTMLElement) { el.focus(); if (el instanceof HTMLInputElement) el.select(); }
