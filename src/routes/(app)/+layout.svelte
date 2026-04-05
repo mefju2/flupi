@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import TopBar from '$lib/components/layout/TopBar.svelte';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
@@ -8,11 +10,11 @@
   import { searchOpen, theme, type Theme } from '$lib/stores/ui';
   import { project } from '$lib/stores/project';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
-  import { listEnvironments, getPreferences, getRecentProjects, listOpenApiSources, refreshSource, listFunctions, getResolvedVariables, loadRequestTree, loadScenarioTree } from '$lib/services/tauri-commands';
+  import { listEnvironments, getPreferences, getRecentProjects, listOpenApiSources, refreshSource, listFunctions, getResolvedVariables, loadRequestTree, loadScenarioTree, setProjectActiveEnvironment } from '$lib/services/tauri-commands';
   import { openApiSources, driftedIdsBySource } from '$lib/stores/openapi';
   import { functions } from '$lib/stores/functions';
   import { requestTree } from '$lib/stores/requests';
-  import { scenarioTree } from '$lib/stores/scenarios';
+  import { scenarioTree, activeScenarioId } from '$lib/stores/scenarios';
 
   let driftScanCancelled = false;
 
@@ -88,12 +90,51 @@
     })();
 
     cleanupShortcuts = registerShortcuts([
-      { key: 'Enter', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:send-request')) },
-      { key: 's', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:save')) },
-      { key: 'n', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:new-request')) },
+      {
+        key: 'n', ctrl: true,
+        handler: () => {
+          const path = get(page).url.pathname;
+          if (path === '/requests') window.dispatchEvent(new CustomEvent('flupi:new-request'));
+          else if (path === '/scenarios') window.dispatchEvent(new CustomEvent('flupi:new-scenario'));
+          else if (path === '/functions') window.dispatchEvent(new CustomEvent('flupi:new-function'));
+          else if (path === '/openapi') window.dispatchEvent(new CustomEvent('flupi:new-openapi-source'));
+        },
+      },
+      {
+        key: 's', ctrl: true,
+        handler: () => {
+          if (get(page).url.pathname === '/scenarios') {
+            window.dispatchEvent(new CustomEvent('flupi:save'));
+          }
+        },
+      },
       { key: 'p', ctrl: true, handler: () => searchOpen.set(true) },
-      { key: 'e', ctrl: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:switch-environment')) },
-      { key: 'Enter', ctrl: true, shift: true, handler: () => window.dispatchEvent(new CustomEvent('flupi:run-scenario')) },
+      {
+        key: 'Enter', ctrl: true,
+        handler: () => {
+          const path = get(page).url.pathname;
+          if (path === '/requests') window.dispatchEvent(new CustomEvent('flupi:send-request'));
+          else if (path === '/scenarios' && get(activeScenarioId) !== null) {
+            window.dispatchEvent(new CustomEvent('flupi:run-scenario'));
+          } else if (path === '/openapi') {
+            window.dispatchEvent(new CustomEvent('flupi:sync-all'));
+          }
+        },
+      },
+      {
+        key: 'e', ctrl: true,
+        handler: () => {
+          const envs = get(environments);
+          if (envs.length < 2) return;
+          const current = get(activeEnvironment);
+          const idx = envs.findIndex((e) => e.fileName === current);
+          const next = envs[(idx + 1) % envs.length];
+          activeEnvironment.set(next.fileName);
+          selectedEnvironmentFile.set(next.fileName);
+          const projectPath = get(project).path;
+          if (projectPath) setProjectActiveEnvironment(projectPath, next.fileName);
+        },
+      },
     ]);
   });
 
