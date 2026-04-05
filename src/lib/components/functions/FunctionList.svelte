@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { functions, selectedFunctionName } from '$lib/stores/functions';
   import { saveFunction, deleteFunction } from '$lib/services/tauri-commands';
   import type { FunctionParam } from '$lib/services/tauri-commands';
@@ -18,6 +19,12 @@
     nameError = '';
     setTimeout(() => inputEl?.focus(), 0);
   }
+
+  onMount(() => {
+    const handler = () => startCreating();
+    window.addEventListener('flupi:new-function', handler);
+    return () => window.removeEventListener('flupi:new-function', handler);
+  });
 
   async function confirmCreate() {
     const trimmed = newName.trim();
