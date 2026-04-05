@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { project } from '$lib/stores/project';
-  import { openApiSources } from '$lib/stores/openapi';
-  import { listOpenApiSources } from '$lib/services/tauri-commands';
+  import { openApiSources, driftedIdsBySource } from '$lib/stores/openapi';
+  import { listOpenApiSources, refreshSource } from '$lib/services/tauri-commands';
   import SourceList from '$lib/components/openapi/SourceList.svelte';
   import AddSourceForm from '$lib/components/openapi/AddSourceForm.svelte';
   import ImportWizard from '$lib/components/openapi/ImportWizard.svelte';
@@ -16,6 +16,35 @@
     if (!$project.path) return;
     try { openApiSources.set(await listOpenApiSources($project.path)); }
     catch (e) { console.error('Failed to load OpenAPI sources:', e); }
+  });
+
+  onMount(() => {
+    const onNewSource = () => { showAddForm = true; };
+    const onSyncAll = async () => {
+      const projectPath = $project.path;
+      if (!projectPath) return;
+      const sources = $openApiSources;
+      await Promise.all(
+        sources.map(async (source) => {
+          try {
+            const drifted = await refreshSource(projectPath, source.id);
+            driftedIdsBySource.update((prev) => {
+              const next = new Map(prev);
+              next.set(source.id, drifted);
+              return next;
+            });
+          } catch {
+            // individual source failures don't block others
+          }
+        }),
+      );
+    };
+    window.addEventListener('flupi:new-openapi-source', onNewSource);
+    window.addEventListener('flupi:sync-all', onSyncAll);
+    return () => {
+      window.removeEventListener('flupi:new-openapi-source', onNewSource);
+      window.removeEventListener('flupi:sync-all', onSyncAll);
+    };
   });
 
   function handleAddSource() { showAddForm = true; }
