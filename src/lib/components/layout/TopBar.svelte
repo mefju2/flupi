@@ -15,12 +15,11 @@
   let showShortcuts = $state(false);
 
   const shortcuts = [
-    { keys: 'Ctrl+P', action: 'Search requests' },
-    { keys: 'Ctrl+N', action: 'New request' },
-    { keys: 'Ctrl+S', action: 'Save request' },
-    { keys: 'Ctrl+Enter', action: 'Send request' },
-    { keys: 'Ctrl+E', action: 'Switch environment' },
-    { keys: 'Ctrl+Shift+Enter', action: 'Run scenario' },
+    { keys: 'Ctrl+P', action: 'Search everything' },
+    { keys: 'Ctrl+N', action: 'New (request / scenario / function / source)' },
+    { keys: 'Ctrl+Enter', action: 'Send / Run / Sync' },
+    { keys: 'Ctrl+S', action: 'Save (scenarios page)' },
+    { keys: 'Ctrl+E', action: 'Next environment' },
   ];
 </script>
 
