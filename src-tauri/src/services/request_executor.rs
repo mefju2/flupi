@@ -139,12 +139,12 @@ pub async fn execute_single_request(
         BodyConfig::FormUrlEncoded { content, disabled_fields } => {
             let resolved: HashMap<String, String> = content
                 .iter()
-                .filter(|(k, _): &(&String, &String)| !disabled_fields.contains(*k))
+                .filter(|(k, _)| !disabled_fields.contains(*k))
                 .map(|(k, v)| (k.clone(), variable_resolver::resolve_string(v, &ctx)))
                 .collect();
             Some(http_client::RequestBody::Form { content: resolved })
         }
-        BodyConfig::Raw { format: _, content } => {
+        BodyConfig::Raw { format: RawFormat::Xml | RawFormat::Text, content } => {
             Some(http_client::RequestBody::Raw {
                 content: variable_resolver::resolve_string(content, &ctx),
             })
