@@ -43,21 +43,84 @@ pub enum AuthConfig {
     Custom { headers: IndexMap<String, String> },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum BodyConfig {
-    #[serde(rename = "json")]
-    Json { content: serde_json::Value },
-    #[serde(rename = "form")]
-    Form {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "form-urlencoded")]
+    FormUrlEncoded {
         content: IndexMap<String, String>,
         #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "disabledFields")]
         disabled_fields: Vec<String>,
     },
     #[serde(rename = "raw")]
-    Raw { content: String },
-    #[serde(rename = "none")]
-    None,
+    Raw {
+        format: RawFormat,
+        content: String,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum RawFormat {
+    Json,
+    Xml,
+    Text,
+}
+
+impl<'de> serde::Deserialize<'de> for BodyConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(tag = "type")]
+        enum Helper {
+            #[serde(rename = "none")]
+            None,
+            #[serde(rename = "form-urlencoded")]
+            FormUrlEncoded {
+                content: IndexMap<String, String>,
+                #[serde(default, rename = "disabledFields")]
+                disabled_fields: Vec<String>,
+            },
+            #[serde(rename = "raw")]
+            Raw {
+                #[serde(default)]
+                format: Option<RawFormat>,
+                content: String,
+            },
+            #[serde(rename = "json")]
+            LegacyJson { content: serde_json::Value },
+            #[serde(rename = "form")]
+            LegacyForm {
+                content: IndexMap<String, String>,
+                #[serde(default, rename = "disabledFields")]
+                disabled_fields: Vec<String>,
+            },
+        }
+
+        Ok(match Helper::deserialize(deserializer)? {
+            Helper::None => BodyConfig::None,
+            Helper::FormUrlEncoded { content, disabled_fields } => {
+                BodyConfig::FormUrlEncoded { content, disabled_fields }
+            }
+            Helper::Raw { format, content } => {
+                BodyConfig::Raw { format: format.unwrap_or(RawFormat::Text), content }
+            }
+            Helper::LegacyJson { content } => {
+                let s = match &content {
+                    serde_json::Value::String(s) => s.clone(),
+                    v => serde_json::to_string_pretty(v).unwrap_or_default(),
+                };
+                BodyConfig::Raw { format: RawFormat::Json, content: s }
+            }
+            Helper::LegacyForm { content, disabled_fields } => {
+                BodyConfig::FormUrlEncoded { content, disabled_fields }
+            }
+        })
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

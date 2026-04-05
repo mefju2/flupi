@@ -47,8 +47,12 @@ fn test_import_operations_sets_json_body_for_post_with_schema() {
     ).unwrap();
     let req: serde_json::Value = serde_json::from_str(&content).unwrap();
 
-    assert_eq!(req["body"]["type"], "json");
-    assert_eq!(req["body"]["content"]["name"], "string");
+    assert_eq!(req["body"]["type"], "raw");
+    assert_eq!(req["body"]["format"], "json");
+    // content is now a JSON string; verify it contains the expected field
+    let content_str = req["body"]["content"].as_str().unwrap();
+    let content_val: serde_json::Value = serde_json::from_str(content_str).unwrap();
+    assert_eq!(content_val["name"], "string");
 }
 
 #[test]

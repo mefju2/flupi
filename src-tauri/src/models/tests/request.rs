@@ -82,20 +82,136 @@ fn test_disabled_headers_omitted_when_empty() {
 
 #[test]
 fn test_body_form_disabled_fields_round_trip() {
+    // Old format (legacy "form") — must still deserialize
     let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"form","content":{"key":"val"},"disabledFields":["key"]}}"#;
     let req: Request = serde_json::from_str(json).unwrap();
     match req.body.unwrap() {
-        BodyConfig::Form { content: _, disabled_fields } => {
+        BodyConfig::FormUrlEncoded { content: _, disabled_fields } => {
             assert_eq!(disabled_fields, vec!["key"]);
         }
-        _ => panic!("expected form body"),
+        _ => panic!("expected form-urlencoded body"),
     }
 }
 
 #[test]
 fn test_body_form_disabled_fields_omitted_when_empty() {
-    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"form","content":{"key":"val"}}}"#;
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"form-urlencoded","content":{"key":"val"}}}"#;
     let req: Request = serde_json::from_str(json).unwrap();
     let out = serde_json::to_string(&req).unwrap();
+    assert!(!out.contains("disabledFields"));
+}
+
+// --- New model: forward tests ---
+
+#[test]
+fn test_body_raw_json_round_trip() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"raw","format":"json","content":"{\"a\":1}"}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    match req.body.unwrap() {
+        BodyConfig::Raw { format: RawFormat::Json, content } => {
+            assert_eq!(content, "{\"a\":1}");
+        }
+        _ => panic!("expected raw/json body"),
+    }
+}
+
+#[test]
+fn test_body_raw_xml_round_trip() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"raw","format":"xml","content":"<root/>"}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    match req.body.unwrap() {
+        BodyConfig::Raw { format: RawFormat::Xml, content } => {
+            assert_eq!(content, "<root/>");
+        }
+        _ => panic!("expected raw/xml body"),
+    }
+}
+
+#[test]
+fn test_body_form_urlencoded_round_trip() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"form-urlencoded","content":{"key":"val"},"disabledFields":["key"]}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    match req.body.unwrap() {
+        BodyConfig::FormUrlEncoded { content: _, disabled_fields } => {
+            assert_eq!(disabled_fields, vec!["key"]);
+        }
+        _ => panic!("expected form-urlencoded body"),
+    }
+}
+
+#[test]
+fn test_legacy_json_body_migrates_to_raw_json() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"json","content":{"key":"value"}}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    match req.body.unwrap() {
+        BodyConfig::Raw { format: RawFormat::Json, content } => {
+            assert!(content.contains("key"));
+            assert!(content.contains("value"));
+        }
+        _ => panic!("expected legacy json to become raw/json"),
+    }
+}
+
+#[test]
+fn test_legacy_json_body_string_content_preserved() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"json","content":"{\"x\":1}"}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    match req.body.unwrap() {
+        BodyConfig::Raw { format: RawFormat::Json, content } => {
+            assert_eq!(content, "{\"x\":1}");
+        }
+        _ => panic!("expected legacy json to become raw/json"),
+    }
+}
+
+#[test]
+fn test_legacy_form_body_migrates_to_form_urlencoded() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"form","content":{"k":"v"},"disabledFields":["k"]}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    match req.body.unwrap() {
+        BodyConfig::FormUrlEncoded { content, disabled_fields } => {
+            assert_eq!(content.get("k").unwrap(), "v");
+            assert_eq!(disabled_fields, vec!["k"]);
+        }
+        _ => panic!("expected legacy form to become form-urlencoded"),
+    }
+}
+
+#[test]
+fn test_legacy_raw_body_migrates_to_raw_text() {
+    let json = r#"{"name":"r","method":"POST","path":"/","headers":{},"body":{"type":"raw","content":"hello world"}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    match req.body.unwrap() {
+        BodyConfig::Raw { format: RawFormat::Text, content } => {
+            assert_eq!(content, "hello world");
+        }
+        _ => panic!("expected legacy raw to become raw/text"),
+    }
+}
+
+#[test]
+fn test_body_none_round_trip() {
+    let json = r#"{"name":"r","method":"GET","path":"/","headers":{},"body":{"type":"none"}}"#;
+    let req: Request = serde_json::from_str(json).unwrap();
+    assert_eq!(req.body.unwrap(), BodyConfig::None);
+}
+
+#[test]
+fn test_new_raw_serializes_with_format_field() {
+    let mut req: Request = serde_json::from_str(r#"{"name":"r","method":"POST","path":"/","headers":{}}"#).unwrap();
+    req.body = Some(BodyConfig::Raw { format: RawFormat::Json, content: "{}".to_string() });
+    let out = serde_json::to_string(&req).unwrap();
+    assert!(out.contains(r#""type":"raw""#));
+    assert!(out.contains(r#""format":"json""#));
+}
+
+#[test]
+fn test_new_form_urlencoded_serializes_correctly() {
+    let mut req: Request = serde_json::from_str(r#"{"name":"r","method":"POST","path":"/","headers":{}}"#).unwrap();
+    let mut content = indexmap::IndexMap::new();
+    content.insert("k".to_string(), "v".to_string());
+    req.body = Some(BodyConfig::FormUrlEncoded { content, disabled_fields: vec![] });
+    let out = serde_json::to_string(&req).unwrap();
+    assert!(out.contains(r#""type":"form-urlencoded""#));
     assert!(!out.contains("disabledFields"));
 }
