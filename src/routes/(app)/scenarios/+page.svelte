@@ -35,8 +35,13 @@
 
   onMount(() => {
     const onRunShortcut = () => { if ($activeScenario) handleRunGuard(); };
+    const onSave = () => handleSave();
     window.addEventListener('flupi:run-scenario', onRunShortcut);
-    return () => window.removeEventListener('flupi:run-scenario', onRunShortcut);
+    window.addEventListener('flupi:save', onSave);
+    return () => {
+      window.removeEventListener('flupi:run-scenario', onRunShortcut);
+      window.removeEventListener('flupi:save', onSave);
+    };
   });
 
   beforeNavigate(({ cancel, to }) => {
