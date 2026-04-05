@@ -90,11 +90,12 @@ export type AuthConfig =
   | { type: 'apiKey'; header: string; value: string }
   | { type: 'custom'; headers: Record<string, string> };
 
+export type RawFormat = 'json' | 'xml' | 'text';
+
 export type BodyConfig =
   | { type: 'none' }
-  | { type: 'json'; content: unknown }
-  | { type: 'form'; content: Record<string, string>; disabledFields?: string[] }
-  | { type: 'raw'; content: string };
+  | { type: 'form-urlencoded'; content: Record<string, string>; disabledFields?: string[] }
+  | { type: 'raw'; format: RawFormat; content: string };
 
 export interface TemplateRef {
   sourceId: string;
