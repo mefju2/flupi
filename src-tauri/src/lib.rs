@@ -1,7 +1,7 @@
-pub mod error;
-pub mod services;
 pub mod commands;
+pub mod error;
 pub mod models;
+pub mod services;
 pub mod utils;
 
 use std::sync::Arc;
@@ -53,6 +53,8 @@ pub fn run() {
             commands::environment::save_secrets,
             commands::environment::get_resolved_variables,
             commands::environment::delete_environment,
+            commands::environment::duplicate_environment,
+            commands::environment::rename_environment,
             commands::request_tree::load_request_tree,
             commands::request::get_request,
             commands::request::save_request,
@@ -84,6 +86,7 @@ pub fn run() {
             commands::openapi::refresh_source,
             commands::openapi::resolve_drift,
             commands::openapi::get_drift_details,
+            commands::openapi::generate_body_from_schema,
             commands::functions::list_functions,
             commands::functions::save_function,
             commands::functions::delete_function,

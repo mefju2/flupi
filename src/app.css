@@ -228,3 +228,9 @@
 		display: none;
 	}
 }
+
+/* Monaco inline decorations for {{variable}} and {{$fn()}} tokens */
+.flupi-var-found   { color: #4ade80 !important; }
+.flupi-var-missing { color: #f87171 !important; }
+.flupi-fn-found    { color: #22d3ee !important; }
+.flupi-fn-missing  { color: #facc15 !important; }

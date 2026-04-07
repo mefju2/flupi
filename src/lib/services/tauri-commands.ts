@@ -75,6 +75,14 @@ export async function deleteEnvironment(projectPath: string, fileName: string): 
   return invoke('delete_environment', { projectPath, fileName });
 }
 
+export async function duplicateEnvironment(projectPath: string, fileName: string): Promise<string> {
+  return invoke('duplicate_environment', { projectPath, fileName });
+}
+
+export async function renameEnvironment(projectPath: string, fileName: string, newName: string): Promise<string> {
+  return invoke('rename_environment', { projectPath, fileName, newName });
+}
+
 // === Request Library Types ===
 
 export type RequestTreeNode =
@@ -370,6 +378,10 @@ export interface DriftDetails {
 
 export async function getDriftDetails(projectPath: string, requestId: string): Promise<DriftDetails> {
   return invoke('get_drift_details', { projectPath, requestId });
+}
+
+export async function generateBodyFromSchema(schema: unknown): Promise<string> {
+  return invoke('generate_body_from_schema', { schema });
 }
 
 // === Script Functions ===

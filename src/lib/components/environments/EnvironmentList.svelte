@@ -1,13 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { environments, activeEnvironment, selectedEnvironmentFile } from '$lib/stores/environment';
-  import { listEnvironments, saveEnvironment, deleteEnvironment, getRecentProjects, setProjectActiveEnvironment, getResolvedVariables } from '$lib/services/tauri-commands';
+  import { listEnvironments, saveEnvironment, deleteEnvironment, getRecentProjects, setProjectActiveEnvironment, getResolvedVariables, duplicateEnvironment, renameEnvironment } from '$lib/services/tauri-commands';
   import EmptyState from '$lib/components/shared/EmptyState.svelte';
   import { project } from '$lib/stores/project';
 
   let creatingNew = false;
   let newName = '';
   let inputEl: HTMLInputElement;
+
+  let renamingFileName: string | null = null;
+  let renameValue = '';
+  let renameInputEl: HTMLInputElement;
 
   onMount(async () => {
     if ($project.path) {
@@ -98,6 +102,57 @@
       console.error('Failed to delete environment:', e);
     }
   }
+
+  async function duplicateEnv(fileName: string) {
+    if (!$project.path) return;
+    try {
+      const newFileName = await duplicateEnvironment($project.path, fileName);
+      const entries = await listEnvironments($project.path);
+      environments.set(
+        entries.map(([fn, environment]) => {
+          const existing = $environments.find((e) => e.fileName === fn);
+          return { fileName: fn, environment, secrets: existing?.secrets ?? {} };
+        })
+      );
+      selectedEnvironmentFile.set(newFileName);
+    } catch (e) {
+      console.error('Failed to duplicate environment:', e);
+    }
+  }
+
+  function startRenaming(fileName: string, currentName: string) {
+    renamingFileName = fileName;
+    renameValue = currentName;
+    setTimeout(() => renameInputEl?.focus(), 0);
+  }
+
+  async function confirmRename() {
+    if (!$project.path || !renamingFileName || !renameValue.trim()) { cancelRename(); return; }
+
+    const oldFileName = renamingFileName;
+    const trimmed = renameValue.trim();
+    renamingFileName = null;
+
+    try {
+      const newFileName = await renameEnvironment($project.path, oldFileName, trimmed);
+      environments.update((list) =>
+        list.map((e) =>
+          e.fileName === oldFileName
+            ? { ...e, fileName: newFileName, environment: { ...e.environment, name: trimmed } }
+            : e
+        )
+      );
+      if ($selectedEnvironmentFile === oldFileName) selectedEnvironmentFile.set(newFileName);
+      if ($activeEnvironment === oldFileName) activeEnvironment.set(newFileName);
+    } catch (e) {
+      console.error('Failed to rename environment:', e);
+    }
+  }
+
+  function cancelRename() {
+    renamingFileName = null;
+    renameValue = '';
+  }
 </script>
 
 <div class="flex flex-col h-full bg-app-panel">
@@ -117,12 +172,27 @@
         onclick={() => selectedEnvironmentFile.set(entry.fileName)}
         onkeydown={(e) => e.key === 'Enter' && selectedEnvironmentFile.set(entry.fileName)}
       >
-        <span class="truncate">{entry.environment.name}</span>
+        {#if renamingFileName === entry.fileName}
+          <input
+            bind:this={renameInputEl}
+            bind:value={renameValue}
+            class="flex-1 min-w-0 bg-app-card text-app-text text-xs px-1 py-0.5 rounded outline-none border border-app-border-2 focus:border-cyan-500 font-mono"
+            onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => { e.stopPropagation(); if (e.key === 'Enter') confirmRename(); else if (e.key === 'Escape') cancelRename(); }}
+            onblur={confirmRename}
+          />
+        {:else}
+          <span
+            class="truncate"
+            ondblclick={(e) => { e.stopPropagation(); startRenaming(entry.fileName, entry.environment.name); }}
+            title="Double-click to rename"
+          >{entry.environment.name}</span>
+        {/if}
         <div class="flex items-center gap-1 shrink-0 ml-2">
           <button
-            class="text-xs px-1 rounded transition-colors {$activeEnvironment === entry.fileName
+            class="text-sm w-5 h-5 flex items-center justify-center rounded transition-colors {$activeEnvironment === entry.fileName
               ? 'text-cyan-400'
-              : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-app-text-4 hover:text-cyan-400'}"
+              : 'opacity-0 group-hover:opacity-100 hover:text-cyan-400 text-app-text-2'}"
             onclick={(e) => {
                 e.stopPropagation();
                 activeEnvironment.set(entry.fileName);
@@ -134,7 +204,13 @@
             aria-label="Set as active environment"
           >✓</button>
           <button
-            class="opacity-0 group-hover:opacity-30 hover:!opacity-100 text-app-text-4 hover:text-red-400 transition-opacity text-base leading-none"
+            class="opacity-0 group-hover:opacity-100 text-app-text-2 hover:text-cyan-400 transition-opacity text-sm w-5 h-5 flex items-center justify-center"
+            onclick={(e) => { e.stopPropagation(); duplicateEnv(entry.fileName); }}
+            title="Duplicate environment"
+            aria-label="Duplicate environment"
+          >⧉</button>
+          <button
+            class="opacity-0 group-hover:opacity-100 text-app-text-2 hover:text-red-400 transition-opacity text-base w-6 h-6 flex items-center justify-center"
             onclick={(e) => { e.stopPropagation(); removeEnvironment(entry.fileName); }}
             aria-label="Delete environment"
           >×</button>

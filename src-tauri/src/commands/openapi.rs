@@ -1,11 +1,11 @@
-use std::path::PathBuf;
-use serde::Serialize;
-use tauri::command;
 use crate::error::{FlupiError, Result};
 use crate::models::openapi::{ImportableOperation, OpenApiSource};
 use crate::models::request::derive_request_id;
-use crate::services::{file_io, openapi_import, openapi_sources};
+use crate::services::{file_io, openapi_import, openapi_sources, schema_defaults};
 use crate::AppState;
+use serde::Serialize;
+use std::path::PathBuf;
+use tauri::command;
 
 /// What the frontend needs to render the drift explanation panel.
 #[derive(Debug, Serialize)]
@@ -33,9 +33,15 @@ pub struct DriftDetails {
     /// truly removed.
     pub candidates: Vec<PathCandidate>,
     /// Schema snapshots — only populated when `schema_changed` is true (exact-match case).
-    #[serde(rename = "storedRequestSchema", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "storedRequestSchema",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub stored_request_schema: Option<serde_json::Value>,
-    #[serde(rename = "storedResponseSchema", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "storedResponseSchema",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub stored_response_schema: Option<serde_json::Value>,
     #[serde(rename = "newRequestSchema", skip_serializing_if = "Option::is_none")]
     pub new_request_schema: Option<serde_json::Value>,
@@ -75,8 +81,7 @@ fn find_candidate_operations(
     let mut scored: Vec<(u32, PathCandidate)> = operations
         .iter()
         .filter(|(op, _)| {
-            op.method.to_uppercase() == method_up
-                && !excluded_ids.contains(&op.operation_id)
+            op.method.to_uppercase() == method_up && !excluded_ids.contains(&op.operation_id)
         })
         .filter_map(|(op, _)| {
             let b_len = op.path.chars().count();
@@ -87,12 +92,15 @@ fn find_candidate_operations(
                 2.0 * common_prefix_len(stored_path, &op.path) as f64 / denom as f64
             };
             if score >= MIN_SCORE {
-                Some(((score * 1_000_000.0) as u32, PathCandidate {
-                    operation_id: op.operation_id.clone(),
-                    path: op.path.clone(),
-                    method: op.method.clone(),
-                    summary: op.summary.clone(),
-                }))
+                Some((
+                    (score * 1_000_000.0) as u32,
+                    PathCandidate {
+                        operation_id: op.operation_id.clone(),
+                        path: op.path.clone(),
+                        method: op.method.clone(),
+                        summary: op.summary.clone(),
+                    },
+                ))
             } else {
                 None
             }
@@ -174,7 +182,10 @@ async fn get_spec_for_source(source: &OpenApiSource) -> Result<serde_json::Value
 }
 
 #[command]
-pub async fn fetch_operations(project_path: PathBuf, source_id: String) -> Result<Vec<ImportableOperation>> {
+pub async fn fetch_operations(
+    project_path: PathBuf,
+    source_id: String,
+) -> Result<Vec<ImportableOperation>> {
     let sources = openapi_sources::load(&project_path)?;
     let source = sources
         .sources
@@ -209,7 +220,13 @@ pub async fn import_operations(
         .filter(|(op, _)| operation_ids.contains(&op.operation_id))
         .collect();
 
-    openapi_import::import_operations(&project_path, &source_id, &filtered, &collection_folder, &spec)
+    openapi_import::import_operations(
+        &project_path,
+        &source_id,
+        &filtered,
+        &collection_folder,
+        &spec,
+    )
 }
 
 #[command]
@@ -242,12 +259,16 @@ pub async fn refresh_source(
             if s.id() == source_id {
                 *s = match s.clone() {
                     OpenApiSource::Url { id, name, url, .. } => OpenApiSource::Url {
-                        id, name, url,
+                        id,
+                        name,
+                        url,
                         last_fetched_at: Some(now.clone()),
                         last_hash: Some(new_hash.clone()),
                     },
                     OpenApiSource::File { id, name, path, .. } => OpenApiSource::File {
-                        id, name, path,
+                        id,
+                        name,
+                        path,
                         last_fetched_at: Some(now.clone()),
                         last_hash: Some(new_hash.clone()),
                     },
@@ -257,7 +278,8 @@ pub async fn refresh_source(
         openapi_sources::save(&project_path, &sources)?;
     } // lock released here
 
-    let drifted = crate::services::drift_detection::detect_drift(&project_path, &source_id, &ops, &spec)?;
+    let drifted =
+        crate::services::drift_detection::detect_drift(&project_path, &source_id, &ops, &spec)?;
     Ok(drifted)
 }
 
@@ -306,10 +328,12 @@ pub async fn resolve_drift(
     let (current_op, op_json) = ops
         .iter()
         .find(|(op, _)| op.operation_id == lookup_id)
-        .ok_or_else(|| FlupiError::Custom(format!(
-            "Operation '{}' not found in current spec",
-            lookup_id
-        )))?;
+        .ok_or_else(|| {
+            FlupiError::Custom(format!(
+                "Operation '{}' not found in current spec",
+                lookup_id
+            ))
+        })?;
 
     // Compute all new values before any mutation (avoids borrow conflict).
     let new_path = current_op.path.clone();
@@ -352,23 +376,25 @@ pub async fn get_drift_details(project_path: PathBuf, request_id: String) -> Res
         .sources
         .iter()
         .find(|s| s.id() == template_ref.source_id)
-        .ok_or_else(|| FlupiError::Custom(format!("Source '{}' not found", template_ref.source_id)))?;
+        .ok_or_else(|| {
+            FlupiError::Custom(format!("Source '{}' not found", template_ref.source_id))
+        })?;
 
     let spec = get_spec_for_source(source).await?;
     let ops = openapi_import::parse_operations(&spec)?;
 
-    let found = ops.iter().find(|(op, _)| op.operation_id == template_ref.operation_id);
+    let found = ops
+        .iter()
+        .find(|(op, _)| op.operation_id == template_ref.operation_id);
 
     match found {
         None => {
             // Exact operationId not found — build a ranked list of rename candidates,
             // filtered to exclude operations already claimed by other requests.
-            let claimed = collect_claimed_operation_ids(
-                &project_path, &template_ref.source_id, &request_id,
-            );
-            let candidates = find_candidate_operations(
-                &request.method, &request.path, &ops, &claimed,
-            );
+            let claimed =
+                collect_claimed_operation_ids(&project_path, &template_ref.source_id, &request_id);
+            let candidates =
+                find_candidate_operations(&request.method, &request.path, &ops, &claimed);
             Ok(DriftDetails {
                 source_id: template_ref.source_id.clone(),
                 operation_id: template_ref.operation_id.clone(),
@@ -416,6 +442,15 @@ pub async fn get_drift_details(project_path: PathBuf, request_id: String) -> Res
             })
         }
     }
+}
+
+/// Generates a sample JSON body string from a fully-resolved request schema.
+/// Reuses the same logic as OpenAPI import so the shape is consistent.
+#[command]
+pub fn generate_body_from_schema(schema: serde_json::Value) -> Result<String> {
+    let now = chrono::Utc::now().to_rfc3339();
+    let value = schema_defaults::generate_default_body(&schema, &now);
+    Ok(serde_json::to_string_pretty(&value)?)
 }
 
 #[cfg(test)]
