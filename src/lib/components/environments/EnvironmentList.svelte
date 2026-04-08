@@ -18,13 +18,13 @@
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import { project } from "$lib/stores/project";
 
-  let creatingNew = false;
-  let newName = "";
-  let inputEl: HTMLInputElement;
+  let creatingNew = $state(false);
+  let newName = $state("");
+  let inputEl = $state<HTMLInputElement | undefined>(undefined);
 
-  let renamingFileName: string | null = null;
-  let renameValue = "";
-  let renameInputEl: HTMLInputElement;
+  let renamingFileName = $state<string | null>(null);
+  let renameValue = $state("");
+  let renameInputEl = $state<HTMLInputElement | undefined>(undefined);
 
   onMount(async () => {
     if ($project.path) {
