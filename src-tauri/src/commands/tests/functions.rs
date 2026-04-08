@@ -76,7 +76,6 @@ fn delete_function_rejects_path_traversal() {
     assert!(result.is_err());
 }
 
-
 #[test]
 fn rename_function_leaves_no_duplicate() {
     let dir = tempdir().unwrap();
