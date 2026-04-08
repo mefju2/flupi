@@ -69,6 +69,32 @@ pub fn delete_function(project_path: PathBuf, name: String) -> Result<(), FlupiE
     Ok(())
 }
 
+#[command]
+pub fn rename_function(project_path: PathBuf, old_name: String, new_name: String) -> Result<usize, FlupiError> {
+    validate_fn_name(&old_name)?;
+    validate_fn_name(&new_name)?;
+    if old_name == new_name {
+        return Ok(0);
+    }
+    let dir = functions_dir(&project_path);
+    let old_path = dir.join(format!("{}.json", old_name));
+    let new_path = dir.join(format!("{}.json", new_name));
+    if !old_path.exists() {
+        return Err(FlupiError::Custom(format!("Function '{}' not found", old_name)));
+    }
+    if new_path.exists() {
+        return Err(FlupiError::Custom(format!("A function named '{}' already exists", new_name)));
+    }
+    let mut func: crate::models::script_function::ScriptFunction = crate::services::file_io::read_json(&old_path)?;
+    func.name = new_name.clone();
+    crate::services::file_io::write_json(&new_path, &func)?;
+    std::fs::remove_file(&old_path)?;
+    let search = format!("{{{{${old_name}(");
+    let replace = format!("{{{{${new_name}(");
+    let updated = crate::services::template_refs::update_template_references(&project_path, &search, &replace)?;
+    Ok(updated)
+}
+
 #[cfg(test)]
 #[path = "tests/functions.rs"]
 mod tests;

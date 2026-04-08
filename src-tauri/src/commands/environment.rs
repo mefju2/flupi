@@ -1,6 +1,7 @@
 use crate::error::FlupiError;
 use crate::models::environment::{self, Environment};
 use crate::services::file_io;
+use crate::services::template_refs;
 use crate::utils::name_to_slug;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -142,4 +143,18 @@ pub fn rename_environment(
     }
 
     Ok(new_file_name)
+}
+
+#[command]
+pub fn rename_variable_key(
+    project_path: PathBuf,
+    old_key: String,
+    new_key: String,
+) -> Result<usize, FlupiError> {
+    if old_key.is_empty() || new_key.is_empty() || old_key == new_key {
+        return Ok(0);
+    }
+    let search = format!("{{{{{old_key}}}}}");
+    let replace = format!("{{{{{new_key}}}}}");
+    template_refs::update_template_references(&project_path, &search, &replace)
 }

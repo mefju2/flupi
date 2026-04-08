@@ -90,6 +90,10 @@ pub fn run() {
             commands::functions::list_functions,
             commands::functions::save_function,
             commands::functions::delete_function,
+            commands::functions::rename_function,
+            commands::environment::rename_variable_key,
+            commands::openapi::rename_openapi_source,
+            commands::openapi::list_requests_by_source,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

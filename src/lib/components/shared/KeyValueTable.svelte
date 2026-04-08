@@ -1,6 +1,6 @@
 <script lang="ts">
-  import VariableAutocomplete from './VariableAutocomplete.svelte';
-  import SecretValue from './SecretValue.svelte';
+  import VariableAutocomplete from "./VariableAutocomplete.svelte";
+  import SecretValue from "./SecretValue.svelte";
 
   interface Row {
     id: string;
@@ -16,9 +16,17 @@
     showEnabled?: boolean;
     readOnlyKeys?: string[];
     onUpdate: (rows: Row[]) => void;
+    onKeyRenamed?: (oldKey: string, newKey: string) => void;
   }
 
-  let { rows, showSecretToggle = false, showEnabled = false, readOnlyKeys = [], onUpdate }: Props = $props();
+  let {
+    rows,
+    showSecretToggle = false,
+    showEnabled = false,
+    readOnlyKeys = [],
+    onUpdate,
+    onKeyRenamed,
+  }: Props = $props();
 
   function removeRow(index: number) {
     onUpdate(rows.filter((_, i) => i !== index));
@@ -31,24 +39,27 @@
   }
 
   // Draft row state — never passed to onUpdate until committed
-  let draftKey = $state('');
-  let draftValue = $state('');
+  let draftKey = $state("");
+  let draftValue = $state("");
   let draftId = $state(crypto.randomUUID());
   let draftContainer: HTMLDivElement | undefined;
 
   // Reset draft when the rows source changes (e.g. switching to a different request)
   $effect(() => {
     void rows;
-    draftKey = '';
-    draftValue = '';
+    draftKey = "";
+    draftValue = "";
     draftId = crypto.randomUUID();
   });
 
   function commitDraft() {
     if (!draftKey) return;
-    onUpdate([...rows, { id: draftId, key: draftKey, value: draftValue, enabled: true }]);
-    draftKey = '';
-    draftValue = '';
+    onUpdate([
+      ...rows,
+      { id: draftId, key: draftKey, value: draftValue, enabled: true },
+    ]);
+    draftKey = "";
+    draftValue = "";
     draftId = crypto.randomUUID();
   }
 
@@ -66,19 +77,29 @@
   }
 
   function onDraftKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Enter') { e.preventDefault(); commitDraft(); }
-    if (e.key === 'Escape') { draftKey = ''; draftValue = ''; }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitDraft();
+    }
+    if (e.key === "Escape") {
+      draftKey = "";
+      draftValue = "";
+    }
   }
 </script>
 
 <div class="space-y-1">
   {#each rows as row, i (row.id)}
-    <div class="flex gap-2 items-center {row.enabled === false ? 'opacity-40' : ''}">
+    <div
+      class="flex gap-2 items-center {row.enabled === false
+        ? 'opacity-40'
+        : ''}"
+    >
       {#if showEnabled}
         <input
           type="checkbox"
           checked={row.enabled !== false}
-          onchange={(e) => updateRow(i, 'enabled', e.currentTarget.checked)}
+          onchange={(e) => updateRow(i, "enabled", e.currentTarget.checked)}
           class="accent-cyan-500 shrink-0"
           aria-label="Enable row"
         />
@@ -87,25 +108,42 @@
         class="flex-1 min-w-0 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
         value={row.key}
         readonly={readOnlyKeys.includes(row.key)}
-        oninput={(e) => updateRow(i, 'key', e.currentTarget.value)}
+        onfocus={(e) => {
+          (e.currentTarget as HTMLInputElement).dataset.prevKey = (
+            e.currentTarget as HTMLInputElement
+          ).value;
+        }}
+        oninput={(e) => updateRow(i, "key", e.currentTarget.value)}
+        onblur={(e) => {
+          const prev =
+            (e.currentTarget as HTMLInputElement).dataset.prevKey ?? "";
+          const next = (e.currentTarget as HTMLInputElement).value;
+          if (onKeyRenamed && prev && prev !== next) onKeyRenamed(prev, next);
+        }}
         placeholder="Key"
       />
       {#if row.isSecret}
-        <SecretValue class="flex-1 min-w-0" value={row.value} onchange={(v) => updateRow(i, 'value', v)} />
+        <SecretValue
+          class="flex-1 min-w-0"
+          value={row.value}
+          onchange={(v) => updateRow(i, "value", v)}
+        />
       {:else}
         <VariableAutocomplete
           class="flex-1 min-w-0"
           value={row.value}
           placeholder="Value"
-          onChange={(v) => updateRow(i, 'value', v)}
+          onChange={(v) => updateRow(i, "value", v)}
         />
       {/if}
       {#if showSecretToggle}
-        <label class="flex items-center gap-1 text-xs text-app-text-3 whitespace-nowrap cursor-pointer w-14 shrink-0">
+        <label
+          class="flex items-center gap-1 text-xs text-app-text-3 whitespace-nowrap cursor-pointer w-14 shrink-0"
+        >
           <input
             type="checkbox"
             checked={row.isSecret}
-            onchange={(e) => updateRow(i, 'isSecret', e.currentTarget.checked)}
+            onchange={(e) => updateRow(i, "isSecret", e.currentTarget.checked)}
             class="accent-cyan-500"
           />
           Secret
@@ -114,8 +152,8 @@
       <button
         class="opacity-30 hover:opacity-100 text-app-text-4 hover:text-red-400 transition-opacity text-lg leading-none"
         onclick={() => removeRow(i)}
-        aria-label="Remove row"
-      >×</button>
+        aria-label="Remove row">×</button
+      >
     </div>
   {/each}
 
@@ -126,12 +164,19 @@
     onfocusout={onDraftFocusOut}
   >
     {#if showEnabled}
-      <input type="checkbox" disabled class="accent-cyan-500 shrink-0 opacity-30" aria-label="Enable row" />
+      <input
+        type="checkbox"
+        disabled
+        class="accent-cyan-500 shrink-0 opacity-30"
+        aria-label="Enable row"
+      />
     {/if}
     <input
       class="flex-1 min-w-0 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-hover"
       value={draftKey}
-      oninput={(e) => { draftKey = e.currentTarget.value; }}
+      oninput={(e) => {
+        draftKey = e.currentTarget.value;
+      }}
       onkeydown={onDraftKeyDown}
       placeholder="Key"
     />
@@ -139,11 +184,17 @@
       class="flex-1 min-w-0"
       value={draftValue}
       placeholder="Value"
-      onChange={(v) => { draftValue = v; }}
+      onChange={(v) => {
+        draftValue = v;
+      }}
     />
     {#if showSecretToggle}
       <div class="w-14 shrink-0"></div>
     {/if}
-    <button disabled aria-hidden="true" class="opacity-0 text-lg leading-none pointer-events-none">×</button>
+    <button
+      disabled
+      aria-hidden="true"
+      class="opacity-0 text-lg leading-none pointer-events-none">×</button
+    >
   </div>
 </div>

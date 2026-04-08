@@ -1,62 +1,152 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { functions, selectedFunctionName } from '$lib/stores/functions';
-  import { saveFunction, deleteFunction } from '$lib/services/tauri-commands';
-  import type { FunctionParam } from '$lib/services/tauri-commands';
-  import { project } from '$lib/stores/project';
+  import { onMount } from "svelte";
+  import { functions, selectedFunctionName } from "$lib/stores/functions";
+  import {
+    saveFunction,
+    deleteFunction,
+    renameFunction,
+  } from "$lib/services/tauri-commands";
+  import type { FunctionParam } from "$lib/services/tauri-commands";
+  import { project } from "$lib/stores/project";
 
   let creatingNew = $state(false);
-  let newName = $state('');
+  let newName = $state("");
   let inputEl = $state<HTMLInputElement | undefined>(undefined);
-  let nameError = $state('');
+  let nameError = $state("");
   let pendingDelete = $state<string | null>(null);
+
+  let renamingFunctionName = $state<string | null>(null);
+  let renameValue = $state("");
+  let renameError = $state("");
+  let renameInputEl = $state<HTMLInputElement | undefined>(undefined);
+  let renameToast = $state<string | null>(null);
 
   const JS_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
 
   function startCreating() {
     creatingNew = true;
-    newName = '';
-    nameError = '';
+    newName = "";
+    nameError = "";
     setTimeout(() => inputEl?.focus(), 0);
+  }
+
+  function startRenaming(name: string) {
+    renamingFunctionName = name;
+    renameValue = name;
+    renameError = "";
+    setTimeout(() => renameInputEl?.focus(), 0);
+  }
+
+  function cancelRename() {
+    renamingFunctionName = null;
+    renameValue = "";
+    renameError = "";
+  }
+
+  async function confirmRename() {
+    if (!renamingFunctionName || !$project.path) {
+      cancelRename();
+      return;
+    }
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      cancelRename();
+      return;
+    }
+    if (!JS_IDENTIFIER.test(trimmed)) {
+      renameError = "Must be a valid JS identifier";
+      return;
+    }
+    if (trimmed === renamingFunctionName) {
+      cancelRename();
+      return;
+    }
+    if ($functions.some((f) => f.name === trimmed)) {
+      renameError = "A function with that name already exists";
+      return;
+    }
+    const oldName = renamingFunctionName;
+    renamingFunctionName = null;
+    try {
+      const updatedCount = await renameFunction(
+        $project.path,
+        oldName,
+        trimmed,
+      );
+      functions.update((list) =>
+        list
+          .map((f) => (f.name === oldName ? { ...f, name: trimmed } : f))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      if ($selectedFunctionName === oldName) selectedFunctionName.set(trimmed);
+      if (updatedCount > 0) {
+        renameToast = `Updated ${updatedCount} file${updatedCount === 1 ? "" : "s"}`;
+        setTimeout(() => {
+          renameToast = null;
+        }, 3000);
+      }
+    } catch (e) {
+      console.error("Failed to rename function:", e);
+    }
   }
 
   onMount(() => {
     const handler = () => startCreating();
-    window.addEventListener('flupi:new-function', handler);
-    return () => window.removeEventListener('flupi:new-function', handler);
+    window.addEventListener("flupi:new-function", handler);
+
+    const renameHandler = () => {
+      const name = $selectedFunctionName;
+      if (name) startRenaming(name);
+    };
+    window.addEventListener("flupi:rename-active", renameHandler);
+
+    return () => {
+      window.removeEventListener("flupi:new-function", handler);
+      window.removeEventListener("flupi:rename-active", renameHandler);
+    };
   });
 
   async function confirmCreate() {
     const trimmed = newName.trim();
-    if (!trimmed) { cancelCreate(); return; }
+    if (!trimmed) {
+      cancelCreate();
+      return;
+    }
     if (!JS_IDENTIFIER.test(trimmed)) {
-      nameError = 'Must be a valid JS identifier (no spaces or special characters)';
+      nameError =
+        "Must be a valid JS identifier (no spaces or special characters)";
       return;
     }
     if ($functions.some((f) => f.name === trimmed)) {
-      nameError = 'A function with that name already exists';
+      nameError = "A function with that name already exists";
       return;
     }
     if (!$project.path) return;
 
-    const fn = { name: trimmed, body: `// Arguments are available as args[0], args[1], ...\nreturn args[0];`, params: [] as FunctionParam[] };
+    const fn = {
+      name: trimmed,
+      body: `// Arguments are available as args[0], args[1], ...\nreturn args[0];`,
+      params: [] as FunctionParam[],
+    };
     creatingNew = false;
-    newName = '';
-    nameError = '';
+    newName = "";
+    nameError = "";
 
     try {
       await saveFunction($project.path, fn);
-      functions.update((list) => [...list, fn].sort((a, b) => a.name.localeCompare(b.name)));
+      functions.update((list) =>
+        [...list, fn].sort((a, b) => a.name.localeCompare(b.name)),
+      );
       selectedFunctionName.set(fn.name);
     } catch (e) {
-      console.error('Failed to create function:', e);
+      console.error("Failed to create function:", e);
     }
   }
 
   function cancelCreate() {
     creatingNew = false;
-    newName = '';
-    nameError = '';
+    newName = "";
+    nameError = "";
   }
 
   async function remove(name: string) {
@@ -69,15 +159,18 @@
     try {
       await deleteFunction($project.path, name);
       functions.update((list) => list.filter((f) => f.name !== name));
-      if ($selectedFunctionName === name) selectedFunctionName.set($functions[0]?.name ?? null);
+      if ($selectedFunctionName === name)
+        selectedFunctionName.set($functions[0]?.name ?? null);
     } catch (e) {
-      console.error('Failed to delete function:', e);
+      console.error("Failed to delete function:", e);
     }
   }
 </script>
 
 <div class="flex flex-col h-full bg-app-panel">
-  <div class="px-3 py-2 text-xs text-app-text-3 uppercase tracking-wider border-b border-app-border">
+  <div
+    class="px-3 py-2 text-xs text-app-text-3 uppercase tracking-wider border-b border-app-border"
+  >
     Functions
   </div>
 
@@ -86,34 +179,71 @@
       <div
         class="group flex items-center justify-between px-3 py-2 text-sm cursor-pointer select-none
           {$selectedFunctionName === fn.name
-            ? 'border-l-2 border-cyan-500 bg-app-card text-app-text'
-            : 'border-l-2 border-transparent text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
+          ? 'border-l-2 border-cyan-500 bg-app-card text-app-text'
+          : 'border-l-2 border-transparent text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
         role="button"
         tabindex="0"
         onclick={() => selectedFunctionName.set(fn.name)}
-        onkeydown={(e) => e.key === 'Enter' && selectedFunctionName.set(fn.name)}
+        onkeydown={(e) =>
+          e.key === "Enter" && selectedFunctionName.set(fn.name)}
+        ondblclick={(e) => {
+          e.stopPropagation();
+          startRenaming(fn.name);
+        }}
       >
-        <span class="truncate font-mono text-xs">{fn.name}</span>
-        {#if pendingDelete === fn.name}
-          <span class="flex items-center gap-1 shrink-0 ml-2">
-            <span class="text-xs text-app-text-3">Delete?</span>
-            <button
-              class="text-red-400 hover:text-red-300 text-base leading-none"
-              onclick={(e) => { e.stopPropagation(); confirmDelete(fn.name); }}
-              aria-label="Confirm delete"
-            >×</button>
-            <button
-              class="text-xs text-app-text-4 hover:text-app-text-2"
-              onclick={(e) => { e.stopPropagation(); pendingDelete = null; }}
-              aria-label="Cancel delete"
-            >cancel</button>
-          </span>
+        {#if renamingFunctionName === fn.name}
+          <input
+            bind:this={renameInputEl}
+            bind:value={renameValue}
+            class="flex-1 min-w-0 bg-app-card text-app-text text-xs px-1 py-0.5 rounded outline-none border
+              {renameError
+              ? 'border-red-500'
+              : 'border-app-border-2 focus:border-cyan-500'} font-mono"
+            onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") confirmRename();
+              else if (e.key === "Escape") cancelRename();
+            }}
+            onblur={() => {
+              if (!renameError) confirmRename();
+            }}
+          />
+          {#if renameError}
+            <p class="mt-1 text-xs text-red-400">{renameError}</p>
+          {/if}
         {:else}
-          <button
-            class="opacity-0 group-hover:opacity-30 hover:opacity-100! text-app-text-4 hover:text-red-400 transition-opacity text-base leading-none shrink-0 ml-2"
-            onclick={(e) => { e.stopPropagation(); remove(fn.name); }}
-            aria-label="Delete function"
-          >×</button>
+          <span class="truncate font-mono text-xs">{fn.name}</span>
+          {#if pendingDelete === fn.name}
+            <span class="flex items-center gap-1 shrink-0 ml-2">
+              <span class="text-xs text-app-text-3">Delete?</span>
+              <button
+                class="text-red-400 hover:text-red-300 text-base leading-none"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  confirmDelete(fn.name);
+                }}
+                aria-label="Confirm delete">×</button
+              >
+              <button
+                class="text-xs text-app-text-4 hover:text-app-text-2"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  pendingDelete = null;
+                }}
+                aria-label="Cancel delete">cancel</button
+              >
+            </span>
+          {:else}
+            <button
+              class="opacity-0 group-hover:opacity-30 hover:opacity-100! text-app-text-4 hover:text-red-400 transition-opacity text-base leading-none shrink-0 ml-2"
+              onclick={(e) => {
+                e.stopPropagation();
+                remove(fn.name);
+              }}
+              aria-label="Delete function">×</button
+            >
+          {/if}
         {/if}
       </div>
     {/each}
@@ -123,16 +253,31 @@
     {/if}
   </div>
 
+  {#if renameToast}
+    <div
+      class="px-3 py-2 text-xs text-cyan-400 bg-app-card border-t border-app-border-2 animate-pulse"
+    >
+      {renameToast}
+    </div>
+  {/if}
+
   <div class="border-t border-app-border px-3 py-2">
     {#if creatingNew}
       <input
         bind:this={inputEl}
         bind:value={newName}
         class="w-full bg-app-card text-app-text text-xs px-2 py-1 rounded outline-none border
-          {nameError ? 'border-red-500' : 'border-app-border-2 focus:border-cyan-500'} font-mono"
+          {nameError
+          ? 'border-red-500'
+          : 'border-app-border-2 focus:border-cyan-500'} font-mono"
         placeholder="functionName"
-        onkeydown={(e) => { if (e.key === 'Enter') confirmCreate(); else if (e.key === 'Escape') cancelCreate(); }}
-        onblur={() => { if (!nameError) confirmCreate(); }}
+        onkeydown={(e) => {
+          if (e.key === "Enter") confirmCreate();
+          else if (e.key === "Escape") cancelCreate();
+        }}
+        onblur={() => {
+          if (!nameError) confirmCreate();
+        }}
       />
       {#if nameError}
         <p class="mt-1 text-xs text-red-400">{nameError}</p>
@@ -140,8 +285,8 @@
     {:else}
       <button
         class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors"
-        onclick={startCreating}
-      >+ New Function</button>
+        onclick={startCreating}>+ New Function</button
+      >
     {/if}
   </div>
 </div>

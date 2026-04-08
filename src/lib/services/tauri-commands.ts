@@ -399,6 +399,21 @@ export async function getDriftDetails(projectPath: string, requestId: string): P
   return invoke('get_drift_details', { projectPath, requestId });
 }
 
+export async function renameOpenApiSource(projectPath: string, sourceId: string, newName: string): Promise<void> {
+  return invoke('rename_openapi_source', { projectPath, sourceId, newName });
+}
+
+export interface SourceRequest {
+  id: string;
+  name: string;
+  method: string;
+  path: string;
+}
+
+export async function listRequestsBySource(projectPath: string, sourceId: string): Promise<SourceRequest[]> {
+  return invoke('list_requests_by_source', { projectPath, sourceId });
+}
+
 export async function generateBodyFromSchema(schema: unknown): Promise<string> {
   return invoke('generate_body_from_schema', { schema });
 }
@@ -427,3 +442,15 @@ export async function saveFunction(projectPath: string, fn: ScriptFunction): Pro
 export async function deleteFunction(projectPath: string, name: string): Promise<void> {
   return invoke('delete_function', { projectPath, name });
 }
+
+export async function renameFunction(projectPath: string, oldName: string, newName: string): Promise<number> {
+  return invoke('rename_function', { projectPath, oldName, newName });
+}
+
+// === Environment Variable Keys ===
+
+export async function renameVariableKey(projectPath: string, oldKey: string, newKey: string): Promise<number> {
+  return invoke('rename_variable_key', { projectPath, oldKey, newKey });
+}
+
+// === OpenAPI ===

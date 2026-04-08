@@ -1,0 +1,69 @@
+use std::path::Path;
+use crate::error::Result;
+
+/// Performs a raw substring find-and-replace across all request and scenario files
+/// in a project. Returns the number of files that were modified.
+///
+/// `search` and `replace` are literal strings (no regex). Each file is read as UTF-8,
+/// all occurrences are replaced, and the file is written back only if the content changed.
+pub fn update_template_references(project_path: &Path, search: &str, replace: &str) -> Result<usize> {
+    if search == replace {
+        return Ok(0);
+    }
+
+    let mut modified = 0;
+
+    // Walk request files: requests/**/*.json and collections/*/requests/**/*.json
+    let request_files = collect_all_request_files(project_path)?;
+    for path in request_files {
+        if apply_replacement(&path, search, replace)? {
+            modified += 1;
+        }
+    }
+
+    // Walk scenario files: scenarios/**/*.json
+    let scenarios_dir = project_path.join("scenarios");
+    if scenarios_dir.exists() {
+        let scenario_files = crate::services::file_io::list_json_files(&scenarios_dir)?;
+        for path in scenario_files {
+            if apply_replacement(&path, search, replace)? {
+                modified += 1;
+            }
+        }
+    }
+
+    Ok(modified)
+}
+
+fn apply_replacement(path: &Path, search: &str, replace: &str) -> Result<bool> {
+    let original = std::fs::read_to_string(path)?;
+    if !original.contains(search) {
+        return Ok(false);
+    }
+    let updated = original.replace(search, replace);
+    std::fs::write(path, updated.as_bytes())?;
+    Ok(true)
+}
+
+fn collect_all_request_files(project_path: &Path) -> Result<Vec<std::path::PathBuf>> {
+    let mut files = Vec::new();
+
+    let collections_dir = project_path.join("collections");
+    if collections_dir.exists() {
+        for entry in std::fs::read_dir(&collections_dir)? {
+            let entry = entry?;
+            let col_path = entry.path();
+            if col_path.is_dir() {
+                let requests_dir = col_path.join("requests");
+                let mut col_files = crate::services::file_io::list_json_files(&requests_dir)?;
+                files.append(&mut col_files);
+            }
+        }
+    }
+
+    let root_requests = project_path.join("requests");
+    let mut root_files = crate::services::file_io::list_json_files(&root_requests)?;
+    files.append(&mut root_files);
+
+    Ok(files)
+}

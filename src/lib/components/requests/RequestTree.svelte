@@ -70,7 +70,46 @@
       pendingInput = { type: "new-request", id: "", value: "New Request" };
     };
     window.addEventListener("flupi:new-request", handler);
-    return () => window.removeEventListener("flupi:new-request", handler);
+
+    const renameHandler = () => {
+      const reqId = $activeRequestId;
+      const colFolder = $activeCollectionFolder;
+      if (reqId) {
+        // Find name from tree
+        function findRequestName(
+          nodes: RequestTreeNode[],
+          id: string,
+        ): string | null {
+          for (const n of nodes) {
+            if (n.type === "Request" && n.id === id) return n.name;
+            if (n.type === "Collection" || n.type === "Folder") {
+              const found = findRequestName(n.children, id);
+              if (found) return found;
+            }
+          }
+          return null;
+        }
+        const name = findRequestName($requestTree, reqId) ?? reqId;
+        pendingInput = { type: "rename-request", id: reqId, value: name };
+      } else if (colFolder) {
+        const col = $requestTree.find(
+          (n): n is RequestTreeNode & { type: "Collection" } =>
+            n.type === "Collection" && n.folder_name === colFolder,
+        );
+        if (col)
+          pendingInput = {
+            type: "rename-collection",
+            id: colFolder,
+            value: col.name,
+          };
+      }
+    };
+    window.addEventListener("flupi:rename-active", renameHandler);
+
+    return () => {
+      window.removeEventListener("flupi:new-request", handler);
+      window.removeEventListener("flupi:rename-active", renameHandler);
+    };
   });
 
   let toastTimer: ReturnType<typeof setTimeout> | null = null;

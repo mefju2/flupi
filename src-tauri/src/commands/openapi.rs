@@ -453,6 +453,63 @@ pub fn generate_body_from_schema(schema: serde_json::Value) -> Result<String> {
     Ok(serde_json::to_string_pretty(&value)?)
 }
 
+/// Information about a single request imported from an OpenAPI source.
+#[derive(Debug, Serialize)]
+pub struct SourceRequest {
+    pub id: String,
+    pub name: String,
+    pub method: String,
+    pub path: String,
+}
+
+#[command]
+pub async fn rename_openapi_source(
+    state: tauri::State<'_, AppState>,
+    project_path: PathBuf,
+    source_id: String,
+    new_name: String,
+) -> Result<()> {
+    let _guard = state.sources_lock.lock().await;
+    let mut sources = openapi_sources::load(&project_path)?;
+    let source = sources
+        .sources
+        .iter_mut()
+        .find(|s| s.id() == source_id)
+        .ok_or_else(|| FlupiError::Custom(format!("Source '{}' not found", source_id)))?;
+    match source {
+        OpenApiSource::Url { name, .. } => *name = new_name,
+        OpenApiSource::File { name, .. } => *name = new_name,
+    }
+    openapi_sources::save(&project_path, &sources)
+}
+
+#[command]
+pub fn list_requests_by_source(
+    project_path: PathBuf,
+    source_id: String,
+) -> Result<Vec<SourceRequest>> {
+    let request_files = crate::services::drift_detection::collect_request_files(&project_path)?;
+    let mut result = Vec::new();
+    for file_path in &request_files {
+        let req: crate::models::request::Request = match file_io::read_json(file_path) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        if let Some(tr) = &req.template_ref {
+            if tr.source_id == source_id {
+                let id = derive_request_id(&project_path, file_path)?;
+                result.push(SourceRequest {
+                    id,
+                    name: req.name,
+                    method: req.method,
+                    path: req.path,
+                });
+            }
+        }
+    }
+    Ok(result)
+}
+
 #[cfg(test)]
 #[path = "tests/openapi.rs"]
 mod tests;

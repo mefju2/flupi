@@ -1,13 +1,22 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { project } from '$lib/stores/project';
-  import { scenarioTree, activeScenarioId, activeScenario } from '$lib/stores/scenarios';
+  import { onMount } from "svelte";
+  import { project } from "$lib/stores/project";
   import {
-    loadScenarioTree, getScenario, createScenario, deleteScenario,
-    renameScenario, duplicateScenario, type ScenarioTreeNode,
-  } from '$lib/services/tauri-commands';
-  import ContextMenu from '$lib/components/shared/ContextMenu.svelte';
-  import EmptyState from '$lib/components/shared/EmptyState.svelte';
+    scenarioTree,
+    activeScenarioId,
+    activeScenario,
+  } from "$lib/stores/scenarios";
+  import {
+    loadScenarioTree,
+    getScenario,
+    createScenario,
+    deleteScenario,
+    renameScenario,
+    duplicateScenario,
+    type ScenarioTreeNode,
+  } from "$lib/services/tauri-commands";
+  import ContextMenu from "$lib/components/shared/ContextMenu.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
 
   interface Props {
     onSelect?: (id: string) => void;
@@ -16,25 +25,67 @@
   let { onSelect }: Props = $props();
 
   let toast = $state<string | null>(null);
-  let contextMenu: { x: number; y: number; items: { label: string; action: () => void; danger?: boolean }[] } | null = $state(null);
-  let pendingInput = $state<{ type: 'rename' | 'new'; id: string; value: string } | null>(null);
+  let contextMenu: {
+    x: number;
+    y: number;
+    items: { label: string; action: () => void; danger?: boolean }[];
+  } | null = $state(null);
+  let pendingInput = $state<{
+    type: "rename" | "new";
+    id: string;
+    value: string;
+  } | null>(null);
   let expandedGroups = $state<Set<string>>(new Set());
 
   onMount(() => {
     const handler = () => {
-      pendingInput = { type: 'new', id: '', value: 'New Scenario' };
+      pendingInput = { type: "new", id: "", value: "New Scenario" };
     };
-    window.addEventListener('flupi:new-scenario', handler);
-    return () => window.removeEventListener('flupi:new-scenario', handler);
+    window.addEventListener("flupi:new-scenario", handler);
+
+    const renameHandler = () => {
+      const id = $activeScenarioId;
+      if (!id) return;
+      function findScenarioName(
+        nodes: ScenarioTreeNode[],
+        targetId: string,
+      ): string | null {
+        for (const n of nodes) {
+          if (n.type === "Scenario" && n.id === targetId) return n.name;
+          if (n.type === "Group") {
+            const found = findScenarioName(n.children, targetId);
+            if (found) return found;
+          }
+        }
+        return null;
+      }
+      const name = findScenarioName($scenarioTree, id) ?? id;
+      pendingInput = { type: "rename", id, value: name };
+    };
+    window.addEventListener("flupi:rename-active", renameHandler);
+
+    return () => {
+      window.removeEventListener("flupi:new-scenario", handler);
+      window.removeEventListener("flupi:rename-active", renameHandler);
+    };
   });
 
-  function showToast(msg: string) { toast = msg; setTimeout(() => (toast = null), 3000); }
-  function focusOnMount(el: HTMLElement) { el.focus(); if (el instanceof HTMLInputElement) el.select(); }
+  function showToast(msg: string) {
+    toast = msg;
+    setTimeout(() => (toast = null), 3000);
+  }
+  function focusOnMount(el: HTMLElement) {
+    el.focus();
+    if (el instanceof HTMLInputElement) el.select();
+  }
 
   async function reload() {
     if (!$project.path) return;
-    try { scenarioTree.set(await loadScenarioTree($project.path)); }
-    catch (e) { console.error('Failed to load scenario tree:', e); }
+    try {
+      scenarioTree.set(await loadScenarioTree($project.path));
+    } catch (e) {
+      console.error("Failed to load scenario tree:", e);
+    }
   }
 
   // Trees are loaded by +layout.svelte on project open; reload() is called
@@ -47,28 +98,58 @@
     }
     if (!$project.path) return;
     activeScenarioId.set(id);
-    try { activeScenario.set(await getScenario($project.path, id)); }
-    catch (e) { console.error('Failed to load scenario:', e); }
+    try {
+      activeScenario.set(await getScenario($project.path, id));
+    } catch (e) {
+      console.error("Failed to load scenario:", e);
+    }
   }
 
   function openContextMenu(e: MouseEvent, node: ScenarioTreeNode) {
     const items: { label: string; action: () => void; danger?: boolean }[] = [];
-    if (node.type === 'Scenario') {
-      items.push({ label: 'Rename', action: () => { pendingInput = { type: 'rename', id: node.id, value: node.name }; } });
-      items.push({ label: 'Duplicate', action: async () => {
-        if (!$project.path) return;
-        try { await duplicateScenario($project.path, node.id); await reload(); } catch (err) { console.error(err); }
-      }});
-      items.push({ label: 'Delete', danger: true, action: async () => {
-        if (!$project.path || !confirm('Delete this scenario?')) return;
-        try {
-          await deleteScenario($project.path, node.id);
-          if ($activeScenarioId === node.id) { activeScenarioId.set(null); activeScenario.set(null); }
-          await reload();
-        } catch (err) { console.error(err); }
-      }});
-    } else if (node.type === 'Group') {
-      items.push({ label: 'New Scenario in Group', action: () => { pendingInput = { type: 'new', id: node.name, value: 'New Scenario' }; } });
+    if (node.type === "Scenario") {
+      items.push({
+        label: "Rename",
+        action: () => {
+          pendingInput = { type: "rename", id: node.id, value: node.name };
+        },
+      });
+      items.push({
+        label: "Duplicate",
+        action: async () => {
+          if (!$project.path) return;
+          try {
+            await duplicateScenario($project.path, node.id);
+            await reload();
+          } catch (err) {
+            console.error(err);
+          }
+        },
+      });
+      items.push({
+        label: "Delete",
+        danger: true,
+        action: async () => {
+          if (!$project.path || !confirm("Delete this scenario?")) return;
+          try {
+            await deleteScenario($project.path, node.id);
+            if ($activeScenarioId === node.id) {
+              activeScenarioId.set(null);
+              activeScenario.set(null);
+            }
+            await reload();
+          } catch (err) {
+            console.error(err);
+          }
+        },
+      });
+    } else if (node.type === "Group") {
+      items.push({
+        label: "New Scenario in Group",
+        action: () => {
+          pendingInput = { type: "new", id: node.name, value: "New Scenario" };
+        },
+      });
     }
     contextMenu = { x: e.clientX, y: e.clientY, items };
   }
@@ -77,39 +158,53 @@
     if (!pendingInput || !$project.path) return;
     const { type, id, value } = pendingInput;
     const trimmed = value.trim();
-    if (!trimmed) { pendingInput = null; return; }
+    if (!trimmed) {
+      pendingInput = null;
+      return;
+    }
     pendingInput = null;
     try {
-      if (type === 'new') await createScenario($project.path, id || null, trimmed);
-      else if (type === 'rename') { await renameScenario($project.path, id, trimmed); showToast('Renamed.'); }
+      if (type === "new")
+        await createScenario($project.path, id || null, trimmed);
+      else if (type === "rename") {
+        await renameScenario($project.path, id, trimmed);
+        showToast("Renamed.");
+      }
       await reload();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   function handleKey(e: KeyboardEvent) {
-    if (e.key === 'Enter') confirmPendingInput();
-    if (e.key === 'Escape') pendingInput = null;
+    if (e.key === "Enter") confirmPendingInput();
+    if (e.key === "Escape") pendingInput = null;
   }
 
   function toggleGroup(name: string) {
     const next = new Set(expandedGroups);
-    if (next.has(name)) next.delete(name); else next.add(name);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
     expandedGroups = next;
   }
 
   const { groups, rootScenarios } = $derived.by(() => {
-    const groups: (ScenarioTreeNode & { type: 'Group' })[] = [];
-    const rootScenarios: (ScenarioTreeNode & { type: 'Scenario' })[] = [];
+    const groups: (ScenarioTreeNode & { type: "Group" })[] = [];
+    const rootScenarios: (ScenarioTreeNode & { type: "Scenario" })[] = [];
     for (const n of $scenarioTree) {
-      if (n.type === 'Group') groups.push(n as ScenarioTreeNode & { type: 'Group' });
-      else if (n.type === 'Scenario') rootScenarios.push(n as ScenarioTreeNode & { type: 'Scenario' });
+      if (n.type === "Group")
+        groups.push(n as ScenarioTreeNode & { type: "Group" });
+      else if (n.type === "Scenario")
+        rootScenarios.push(n as ScenarioTreeNode & { type: "Scenario" });
     }
     return { groups, rootScenarios };
   });
 </script>
 
 <div class="flex flex-col h-full bg-app-panel">
-  <div class="px-3 py-2 text-xs text-app-text-3 uppercase tracking-wider border-b border-app-border">
+  <div
+    class="px-3 py-2 text-xs text-app-text-3 uppercase tracking-wider border-b border-app-border"
+  >
     Scenarios
   </div>
 
@@ -118,26 +213,39 @@
       <div>
         <div
           class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none text-app-text-2 hover:bg-app-card/50 hover:text-app-text rounded"
-          role="button" tabindex="0"
+          role="button"
+          tabindex="0"
           onclick={() => toggleGroup(group.name)}
-          onkeydown={(e) => e.key === 'Enter' && toggleGroup(group.name)}
-          oncontextmenu={(e) => { e.preventDefault(); openContextMenu(e, group); }}
+          onkeydown={(e) => e.key === "Enter" && toggleGroup(group.name)}
+          oncontextmenu={(e) => {
+            e.preventDefault();
+            openContextMenu(e, group);
+          }}
         >
-          <span class="text-app-text-3 text-xs">{expandedGroups.has(group.name) ? '▾' : '▸'}</span>
+          <span class="text-app-text-3 text-xs"
+            >{expandedGroups.has(group.name) ? "▾" : "▸"}</span
+          >
           <span class="text-app-text-3 text-xs">📁</span>
           <span class="truncate">{group.name}</span>
         </div>
         {#if expandedGroups.has(group.name)}
           <div class="ml-3 border-l border-app-border pl-1">
             {#each group.children as child}
-              {#if child.type === 'Scenario'}
+              {#if child.type === "Scenario"}
                 <div
                   class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none rounded
-                    {$activeScenarioId === child.id ? 'bg-app-card text-app-text' : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
-                  role="button" tabindex="0"
+                    {$activeScenarioId === child.id
+                    ? 'bg-app-card text-app-text'
+                    : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
+                  role="button"
+                  tabindex="0"
                   onclick={() => selectScenario(child.id)}
-                  onkeydown={(e) => e.key === 'Enter' && selectScenario(child.id)}
-                  oncontextmenu={(e) => { e.preventDefault(); openContextMenu(e, child); }}
+                  onkeydown={(e) =>
+                    e.key === "Enter" && selectScenario(child.id)}
+                  oncontextmenu={(e) => {
+                    e.preventDefault();
+                    openContextMenu(e, child);
+                  }}
                 >
                   <span class="text-app-text-3 text-xs">⚡</span>
                   <span class="truncate">{child.name}</span>
@@ -155,11 +263,17 @@
     {#each rootScenarios as scenario (scenario.id)}
       <div
         class="flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none rounded
-          {$activeScenarioId === scenario.id ? 'bg-app-card text-app-text' : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
-        role="button" tabindex="0"
+          {$activeScenarioId === scenario.id
+          ? 'bg-app-card text-app-text'
+          : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
+        role="button"
+        tabindex="0"
         onclick={() => selectScenario(scenario.id)}
-        onkeydown={(e) => e.key === 'Enter' && selectScenario(scenario.id)}
-        oncontextmenu={(e) => { e.preventDefault(); openContextMenu(e, scenario); }}
+        onkeydown={(e) => e.key === "Enter" && selectScenario(scenario.id)}
+        oncontextmenu={(e) => {
+          e.preventDefault();
+          openContextMenu(e, scenario);
+        }}
       >
         <span class="text-app-text-3 text-xs">⚡</span>
         <span class="truncate">{scenario.name}</span>
@@ -167,24 +281,39 @@
     {/each}
 
     {#if $scenarioTree.length === 0}
-      <EmptyState message="No scenarios yet. Create one to chain requests together." />
+      <EmptyState
+        message="No scenarios yet. Create one to chain requests together."
+      />
     {/if}
   </div>
 
   {#if toast}
-    <div class="px-3 py-2 text-xs text-cyan-400 bg-app-card border-t border-app-border-2 animate-pulse">{toast}</div>
+    <div
+      class="px-3 py-2 text-xs text-cyan-400 bg-app-card border-t border-app-border-2 animate-pulse"
+    >
+      {toast}
+    </div>
   {/if}
 
   {#if pendingInput}
     <div class="px-3 py-2 border-t border-app-border">
-      <p class="text-xs text-app-text-3 mb-1">{pendingInput.type === 'new' ? 'Create:' : 'Rename to:'}</p>
+      <p class="text-xs text-app-text-3 mb-1">
+        {pendingInput.type === "new" ? "Create:" : "Rename to:"}
+      </p>
       <input
         class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono focus:outline-none focus:border-cyan-600"
-        bind:value={pendingInput.value} onkeydown={handleKey} use:focusOnMount
+        bind:value={pendingInput.value}
+        onkeydown={handleKey}
+        use:focusOnMount
       />
       <div class="flex gap-2 mt-1">
-        <button class="text-xs text-cyan-500" onclick={confirmPendingInput}>OK</button>
-        <button class="text-xs text-app-text-3" onclick={() => pendingInput = null}>Cancel</button>
+        <button class="text-xs text-cyan-500" onclick={confirmPendingInput}
+          >OK</button
+        >
+        <button
+          class="text-xs text-app-text-3"
+          onclick={() => (pendingInput = null)}>Cancel</button
+        >
       </div>
     </div>
   {/if}
@@ -192,11 +321,18 @@
   <div class="border-t border-app-border px-3 py-2">
     <button
       class="text-xs text-cyan-500 hover:text-cyan-400 transition-colors"
-      onclick={() => { pendingInput = { type: 'new', id: '', value: 'New Scenario' }; }}
-    >+ New Scenario</button>
+      onclick={() => {
+        pendingInput = { type: "new", id: "", value: "New Scenario" };
+      }}>+ New Scenario</button
+    >
   </div>
 </div>
 
 {#if contextMenu}
-  <ContextMenu x={contextMenu.x} y={contextMenu.y} items={contextMenu.items} onClose={() => contextMenu = null} />
+  <ContextMenu
+    x={contextMenu.x}
+    y={contextMenu.y}
+    items={contextMenu.items}
+    onClose={() => (contextMenu = null)}
+  />
 {/if}
