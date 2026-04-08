@@ -46,6 +46,10 @@
     return () => {
       window.removeEventListener('flupi:new-openapi-source', onNewSource);
       window.removeEventListener('flupi:sync-all', onSyncAll);
+      if (newlyAddedTimer) {
+        clearTimeout(newlyAddedTimer);
+        newlyAddedTimer = null;
+      }
     };
   });
 
