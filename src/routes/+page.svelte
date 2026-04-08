@@ -7,6 +7,7 @@
     createProject,
     openProject,
     addRecentProject,
+    removeRecentProject,
     pickFolder,
   } from '$lib/services/tauri-commands';
   import { project } from '$lib/stores/project';
@@ -67,6 +68,11 @@
       recentProjects = recentProjects.filter((rp) => rp.path !== p.path);
     }
   }
+
+  async function handleRemoveRecent(p: RecentProject) {
+    recentProjects = recentProjects.filter((rp) => rp.path !== p.path);
+    await removeRecentProject(p.path);
+  }
 </script>
 
 <div class="flex flex-col items-center justify-center h-screen bg-app-bg text-app-text">
@@ -99,7 +105,7 @@
   {#if !loaded}
     <p class="text-xs text-app-text-3">Loading…</p>
   {:else if recentProjects.length > 0}
-    <RecentProjectList projects={recentProjects} onSelect={handleSelectRecent} />
+    <RecentProjectList projects={recentProjects} onSelect={handleSelectRecent} onRemove={handleRemoveRecent} />
   {:else}
     <p class="text-app-text-4 text-sm">No recent projects yet</p>
     <p class="text-xs text-app-text-3 mt-1">Create a project or open an existing folder to get started</p>
