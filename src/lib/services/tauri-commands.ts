@@ -25,6 +25,10 @@ export async function addRecentProject(name: string, path: string): Promise<void
   return invoke('add_recent_project', { name, path });
 }
 
+export async function removeRecentProject(path: string): Promise<void> {
+  return invoke('remove_recent_project', { path });
+}
+
 export async function setProjectActiveEnvironment(path: string, envFileName: string | null): Promise<void> {
   return invoke('set_project_active_environment', { path, envFileName });
 }
