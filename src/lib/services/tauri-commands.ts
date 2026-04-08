@@ -452,5 +452,3 @@ export async function renameFunction(projectPath: string, oldName: string, newNa
 export async function renameVariableKey(projectPath: string, oldKey: string, newKey: string): Promise<number> {
   return invoke('rename_variable_key', { projectPath, oldKey, newKey });
 }
-
-// === OpenAPI ===
