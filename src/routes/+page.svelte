@@ -71,7 +71,11 @@
 
   async function handleRemoveRecent(p: RecentProject) {
     recentProjects = recentProjects.filter((rp) => rp.path !== p.path);
-    await removeRecentProject(p.path);
+    try {
+      await removeRecentProject(p.path);
+    } catch (e) {
+      error = String(e);
+    }
   }
 </script>
 
