@@ -1,12 +1,19 @@
 <script lang="ts">
-  import EnvironmentList from '$lib/components/environments/EnvironmentList.svelte';
-  import EnvironmentEditor from '$lib/components/environments/EnvironmentEditor.svelte';
+  import EnvironmentList from "$lib/components/environments/EnvironmentList.svelte";
+  import EnvironmentEditor from "$lib/components/environments/EnvironmentEditor.svelte";
+  import ResizablePanel from "$lib/components/shared/ResizablePanel.svelte";
 </script>
 
 <div class="flex h-full">
-  <div class="w-56 shrink-0 border-r border-app-border overflow-y-auto">
+  <ResizablePanel
+    defaultWidth={224}
+    minWidth={140}
+    maxWidth={420}
+    side="right"
+    storageKey="flupi:sidebar-environments"
+  >
     <EnvironmentList />
-  </div>
+  </ResizablePanel>
   <div class="flex-1 overflow-auto">
     <EnvironmentEditor />
   </div>
