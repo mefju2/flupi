@@ -75,20 +75,6 @@
       const reqId = $activeRequestId;
       const colFolder = $activeCollectionFolder;
       if (reqId) {
-        // Find name from tree
-        function findRequestName(
-          nodes: RequestTreeNode[],
-          id: string,
-        ): string | null {
-          for (const n of nodes) {
-            if (n.type === "Request" && n.id === id) return n.name;
-            if (n.type === "Collection" || n.type === "Folder") {
-              const found = findRequestName(n.children, id);
-              if (found) return found;
-            }
-          }
-          return null;
-        }
         const name = findRequestName($requestTree, reqId) ?? reqId;
         pendingInput = { type: "rename-request", id: reqId, value: name };
       } else if (colFolder) {
@@ -111,6 +97,17 @@
       window.removeEventListener("flupi:rename-active", renameHandler);
     };
   });
+
+  function findRequestName(nodes: RequestTreeNode[], id: string): string | null {
+    for (const n of nodes) {
+      if (n.type === "Request" && n.id === id) return n.name;
+      if (n.type === "Collection" || n.type === "Folder") {
+        const found = findRequestName(n.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
 
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   function showToast(msg: string) {
