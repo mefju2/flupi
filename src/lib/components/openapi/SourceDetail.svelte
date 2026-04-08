@@ -50,9 +50,7 @@
         console.error("Failed to load requests for source:", e);
       }
     } finally {
-      if (!isCancelled()) {
-        loadingRequests = false;
-      }
+      loadingRequests = false;
     }
   }
 

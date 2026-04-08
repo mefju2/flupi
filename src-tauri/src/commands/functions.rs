@@ -85,12 +85,15 @@ pub fn rename_function(project_path: PathBuf, old_name: String, new_name: String
     if new_path.exists() {
         return Err(FlupiError::Custom(format!("A function named '{}' already exists", new_name)));
     }
-    // Atomic file rename first — if this succeeds, the old path no longer exists.
-    // Then patch the name field in the now-renamed file.
-    std::fs::rename(&old_path, &new_path)?;
-    let mut func: crate::models::script_function::ScriptFunction = crate::services::file_io::read_json(&new_path)?;
+    // Write updated content to a temp file, then rename it into place (atomic),
+    // then remove the old file. If write_json fails, old_path is untouched.
+    // If remove_file fails, old_path survives with correct JSON inside it — no corruption.
+    let tmp_path = new_path.with_extension("json.tmp");
+    let mut func: crate::models::script_function::ScriptFunction = crate::services::file_io::read_json(&old_path)?;
     func.name = new_name.clone();
-    crate::services::file_io::write_json(&new_path, &func)?;
+    crate::services::file_io::write_json(&tmp_path, &func)?;
+    std::fs::rename(&tmp_path, &new_path)?;
+    std::fs::remove_file(&old_path)?;
     let search = format!("{{{{${old_name}(");
     let replace = format!("{{{{${new_name}(");
     let updated = crate::services::template_refs::update_template_references(&project_path, &search, &replace)?;
