@@ -236,19 +236,19 @@ pub fn apply_extractions_to_env(
 
     for extraction in extractions
         .iter()
-        .filter(|e| !e.variable.is_empty() && !e.path.is_empty())
+        .filter(|e| !e.variable.is_empty() && !e.path.is_empty() && e.scope != "scenario")
     {
         let value = match apply_extraction(extraction, &response.body, &response.headers) {
             Ok(v) => v,
             Err(_) => continue,
         };
-        if env.variables.contains_key(&extraction.variable) {
-            env.variables.insert(extraction.variable.clone(), value);
-            env_dirty = true;
-        } else if env.secrets.contains(&extraction.variable) {
+        if env.secrets.contains(&extraction.variable) {
             let s = secrets.get_or_insert_with(HashMap::new);
             s.insert(extraction.variable.clone(), value);
             secrets_dirty = true;
+        } else {
+            env.variables.insert(extraction.variable.clone(), value);
+            env_dirty = true;
         }
     }
 

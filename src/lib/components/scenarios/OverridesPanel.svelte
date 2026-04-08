@@ -3,17 +3,33 @@
   import VariableAutocomplete from '$lib/components/shared/VariableAutocomplete.svelte';
   import { buildOverrideSuggestions } from '$lib/utils/schema-paths';
 
+  interface VarMeta {
+    name: string;
+    kind: 'input' | 'local';
+    description?: string;
+    defaultValue?: string;
+  }
+
   interface Props {
     overrides: Record<string, string>;
     onUpdate: (overrides: Record<string, string>) => void;
     requestSchema?: unknown;
     requestPath?: string;
-    extractedVars?: string[];
+    extractedVars?: VarMeta[];
+    onInputEdit?: (name: string, value: string) => void;
   }
 
-  let { overrides, onUpdate, requestSchema = null, requestPath, extractedVars = [] }: Props = $props();
+  let { overrides, onUpdate, requestSchema = null, requestPath, extractedVars = [], onInputEdit }: Props = $props();
 
-  let extraVarItems = $derived(extractedVars.map((name) => ({ name, value: '(extracted)' })));
+  let extraVarItems = $derived(
+    extractedVars.map((v) => ({
+      name: v.name,
+      value: v.kind === 'input' ? (v.defaultValue ?? '(input)') : '(extracted)',
+      kind: v.kind as 'input' | 'local',
+      description: v.description,
+      defaultValue: v.defaultValue,
+    }))
+  );
 
   let rows = $derived(Object.entries(overrides));
   let suggestions = $derived(buildOverrideSuggestions(requestSchema, requestPath));
@@ -69,8 +85,7 @@
         value={value}
         onChange={(v) => updateValue(key, v)}
         placeholder={"{{variable}} or literal"}
-        extraVars={extraVarItems}
-      />
+        extraVars={extraVarItems}        onExtraVarEdit={onInputEdit}      />
       <button
         class="text-app-text-4 hover:text-red-400 transition-colors text-lg leading-none"
         onclick={() => removeRow(key)}

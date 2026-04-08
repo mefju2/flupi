@@ -6,12 +6,17 @@
   import type { FunctionParam } from '$lib/services/tauri-commands';
   import VariableTokenDisplay from './VariableTokenDisplay.svelte';
   import VariableTooltip from './VariableTooltip.svelte';
+  import LocalVarTooltip from './LocalVarTooltip.svelte';
+  import ScenarioInputTooltip from './ScenarioInputTooltip.svelte';
   import FunctionTooltip from './FunctionTooltip.svelte';
 
   interface VarItem {
     name: string;
     value: string;
     masked?: boolean;
+    kind?: 'env' | 'local' | 'input';
+    description?: string;
+    defaultValue?: string;
   }
 
   interface FnItem {
@@ -26,9 +31,10 @@
     multiline?: boolean;
     class?: string;
     extraVars?: VarItem[];
+    onExtraVarEdit?: (name: string, value: string) => void;
   }
 
-  let { value, onChange, placeholder = '', multiline = false, class: className = '', extraVars = [] }: Props = $props();
+  let { value, onChange, placeholder = '', multiline = false, class: className = '', extraVars = [], onExtraVarEdit }: Props = $props();
 
   let inputEl = $state<HTMLInputElement | HTMLTextAreaElement | null>(null);
   let showDropdown = $state(false);
@@ -37,6 +43,9 @@
   let triggerIsFunction = $state(false);
   let focused = $state(false);
   let hoveredVar = $state<string | null>(null);
+  let hoveredVarKind = $state<'env' | 'local' | 'input' | undefined>(undefined);
+  let hoveredVarDescription = $state<string | undefined>(undefined);
+  let hoveredVarDefaultValue = $state<string>('');
   let tooltipAnchor = $state<HTMLElement | null>(null);
   let hoveredFn = $state<string | null>(null);
   let fnTooltipAnchor = $state<HTMLElement | null>(null);
@@ -214,7 +223,11 @@
 
   function onTokenHover(varName: string, anchorEl: HTMLElement) {
     if (tooltipCloseTimer) { clearTimeout(tooltipCloseTimer); tooltipCloseTimer = null; }
+    const meta = allVars.find((v) => v.name === varName);
     hoveredVar = varName;
+    hoveredVarKind = meta?.kind;
+    hoveredVarDescription = meta?.description;
+    hoveredVarDefaultValue = meta?.defaultValue ?? '';
     tooltipAnchor = anchorEl;
   }
 
@@ -234,6 +247,9 @@
   function closeTooltip() {
     if (tooltipCloseTimer) { clearTimeout(tooltipCloseTimer); tooltipCloseTimer = null; }
     hoveredVar = null;
+    hoveredVarKind = undefined;
+    hoveredVarDescription = undefined;
+    hoveredVarDefaultValue = '';
     tooltipAnchor = null;
   }
 
@@ -325,16 +341,37 @@
     ></textarea>
   {/if}
 
-  {#if hoveredVar && tooltipAnchor && $project.path}
-    <VariableTooltip
-      varName={hoveredVar}
-      anchorEl={tooltipAnchor}
-      envEntry={activeEnvEntry}
-      projectPath={$project.path}
-      onclose={closeTooltip}
-      onmouseenter={cancelTooltipClose}
-      onmouseleave={scheduleTooltipClose}
-    />
+  {#if hoveredVar && tooltipAnchor}
+    {#if hoveredVarKind === 'local'}
+      <LocalVarTooltip
+        varName={hoveredVar}
+        anchorEl={tooltipAnchor}
+        onclose={closeTooltip}
+        onmouseenter={cancelTooltipClose}
+        onmouseleave={scheduleTooltipClose}
+      />
+    {:else if hoveredVarKind === 'input'}
+      <ScenarioInputTooltip
+        varName={hoveredVar}
+        anchorEl={tooltipAnchor}
+        description={hoveredVarDescription}
+        defaultValue={hoveredVarDefaultValue}
+        onSave={(v) => onExtraVarEdit?.(hoveredVar!, v)}
+        onclose={closeTooltip}
+        onmouseenter={cancelTooltipClose}
+        onmouseleave={scheduleTooltipClose}
+      />
+    {:else if $project.path}
+      <VariableTooltip
+        varName={hoveredVar}
+        anchorEl={tooltipAnchor}
+        envEntry={activeEnvEntry}
+        projectPath={$project.path}
+        onclose={closeTooltip}
+        onmouseenter={cancelTooltipClose}
+        onmouseleave={scheduleTooltipClose}
+      />
+    {/if}
   {/if}
 
   {#if hoveredFn && fnTooltipAnchor}

@@ -12,16 +12,26 @@
   import RequestPicker from './RequestPicker.svelte';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
 
+  interface VarMeta {
+    name: string;
+    kind: 'input' | 'local';
+    description?: string;
+    defaultValue?: string;
+  }
+
   interface Props {
     step: ScenarioStep;
     requestTree: RequestTreeNode[];
     index: number;
-    extractedVars?: string[];
+    extractedVars?: VarMeta[];
     onUpdate: (step: ScenarioStep) => void;
     onDelete: () => void;
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
+    onInputEdit?: (name: string, value: string) => void;
   }
 
-  let { step, requestTree, index, extractedVars = [], onUpdate, onDelete }: Props = $props();
+  let { step, requestTree, index, extractedVars = [], onUpdate, onDelete, onMoveUp, onMoveDown, onInputEdit }: Props = $props();
 
   let expanded = $state(false);
   let requestSchema = $state<unknown>(null);
@@ -102,13 +112,22 @@
     onclick={() => expanded = !expanded}
     onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)}
   >
-    <button
-      type="button"
-      tabindex="-1"
-      aria-label="Drag to reorder"
-      class="drag-handle text-app-text-4 hover:text-app-text-3 cursor-grab active:cursor-grabbing text-xs shrink-0 bg-transparent border-0 p-0"
-      onclick={(e) => e.stopPropagation()}
-    >⠿</button>
+    <div class="flex flex-col gap-0.5 shrink-0" onclick={(e) => e.stopPropagation()} role="none">
+      <button
+        type="button"
+        aria-label="Move step up"
+        class="text-app-text-4 hover:text-app-text-3 transition-colors bg-transparent border-0 p-0 leading-none text-[10px] {onMoveUp ? '' : 'opacity-40 cursor-not-allowed'}"
+        disabled={!onMoveUp}
+        onclick={() => onMoveUp?.()}
+      >▲</button>
+      <button
+        type="button"
+        aria-label="Move step down"
+        class="text-app-text-4 hover:text-app-text-3 transition-colors bg-transparent border-0 p-0 leading-none text-[10px] {onMoveDown ? '' : 'opacity-40 cursor-not-allowed'}"
+        disabled={!onMoveDown}
+        onclick={() => onMoveDown?.()}
+      >▼</button>
+    </div>
     <span class="text-xs text-app-text-3 w-5 shrink-0">{index + 1}</span>
 
     <div class="flex-1 flex items-center gap-2 min-w-0">
@@ -164,6 +183,7 @@
           {requestSchema}
           requestPath={requestPath ?? undefined}
           {extractedVars}
+          onInputEdit={onInputEdit}
           onUpdate={(overrides) => onUpdate({ ...step, overrides })}
         />
       </div>
@@ -173,6 +193,7 @@
         <ExtractionsPanel
           extractions={step.extract}
           {responseSchema}
+          mode="scenario"
           onUpdate={(extract) => onUpdate({ ...step, extract })}
         />
       </div>

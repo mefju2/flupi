@@ -171,6 +171,19 @@ async fn run_scenario_inner(
                     }
                 }
 
+                // Persist env-scoped extractions to the environment file
+                let env_exts: Vec<_> = step.extract.iter()
+                    .filter(|e| e.scope != "scenario")
+                    .cloned()
+                    .collect();
+                if !env_exts.is_empty() {
+                    if let Err(e) = request_executor::apply_extractions_to_env(
+                        project_path, env_file_name, &env_exts, &resp,
+                    ) {
+                        eprintln!("[flupi] scenario extraction write failed: {e}");
+                    }
+                }
+
                 let result = StepResult {
                     step_id: step.id.clone(),
                     status: "success".to_string(),

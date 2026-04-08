@@ -200,7 +200,7 @@
             const updatedSecrets = { ...entry.secrets };
             for (const [k, v] of Object.entries(resolved)) {
               if (secretKeys.has(k)) updatedSecrets[k] = v;
-              else if (k in updatedVars) updatedVars[k] = v;
+              else updatedVars[k] = v;
             }
             return {
               ...entry,

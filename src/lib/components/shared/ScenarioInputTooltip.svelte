@@ -1,0 +1,119 @@
+<script lang="ts">
+  import { onMount, tick } from 'svelte';
+
+  interface Props {
+    varName: string;
+    anchorEl: HTMLElement;
+    description?: string;
+    defaultValue: string;
+    onSave: (value: string) => void;
+    onclose: () => void;
+    onmouseenter?: () => void;
+    onmouseleave?: () => void;
+  }
+
+  let {
+    varName,
+    anchorEl,
+    description,
+    defaultValue,
+    onSave,
+    onclose,
+    onmouseenter,
+    onmouseleave,
+  }: Props = $props();
+
+  let tooltipEl = $state<HTMLElement | null>(null);
+  let style = $state('position: fixed; opacity: 0; top: 0; left: 0;');
+  let inputEl = $state<HTMLInputElement | null>(null);
+  let inputFocused = $state(false);
+  let currentValue = $state('');
+  let debounceId: ReturnType<typeof setTimeout> | null = null;
+
+  onMount(() => {
+    currentValue = defaultValue;
+
+    tick().then(() => {
+      const rect = anchorEl.getBoundingClientRect();
+      const tipHeight = tooltipEl?.offsetHeight ?? 100;
+      const tipWidth = tooltipEl?.offsetWidth ?? 256;
+
+      const top =
+        rect.top - tipHeight - 6 > 0 ? rect.top - tipHeight - 6 : rect.bottom + 6;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - tipWidth - 8));
+      style = `position: fixed; top: ${top}px; left: ${left}px;`;
+      inputEl?.focus();
+    });
+
+    let skipFirst = true;
+    function handleClickOutside(e: PointerEvent) {
+      if (skipFirst) { skipFirst = false; return; }
+      if (tooltipEl && !tooltipEl.contains(e.target as Node)) {
+        onclose();
+      }
+    }
+
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => {
+      document.removeEventListener('pointerdown', handleClickOutside);
+      if (debounceId) clearTimeout(debounceId);
+    };
+  });
+
+  function handleInput(e: Event) {
+    const newValue = (e.target as HTMLInputElement).value;
+    currentValue = newValue;
+    if (debounceId) clearTimeout(debounceId);
+    debounceId = setTimeout(() => {
+      onSave(newValue);
+      debounceId = null;
+    }, 400);
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onclose();
+    }
+  }
+</script>
+
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  bind:this={tooltipEl}
+  {style}
+  class="w-64 bg-app-panel border border-app-border-2 rounded shadow-lg p-3 text-sm z-50"
+  onkeydown={handleKeydown}
+  onmouseenter={() => { if (!inputFocused) onmouseenter?.(); }}
+  onmouseleave={() => { if (!inputFocused) onmouseleave?.(); }}
+>
+  <div class="flex items-center justify-between mb-2">
+    <span class="font-mono text-app-text-3 text-xs">{`{{${varName}}}`}</span>
+    <div class="flex items-center gap-2">
+      <span class="text-xs px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
+        Input
+      </span>
+      <button
+        class="text-app-text-4 hover:text-app-text leading-none"
+        onclick={onclose}
+        aria-label="Close"
+      >×</button>
+    </div>
+  </div>
+
+  {#if description}
+    <p class="text-app-text-4 text-xs mb-2">{description}</p>
+  {/if}
+
+  <label class="block text-xs text-app-text-3 mb-1">Default value</label>
+  <input
+    bind:this={inputEl}
+    type="text"
+    value={currentValue}
+    oninput={handleInput}
+    onfocus={() => (inputFocused = true)}
+    onblur={() => (inputFocused = false)}
+    class="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-500"
+    placeholder="(empty)"
+  />
+</div>

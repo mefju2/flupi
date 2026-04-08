@@ -1,11 +1,17 @@
 <script lang="ts">
   import type { ScenarioData, ScenarioStep } from '$lib/services/tauri-commands';
   import { requestTree } from '$lib/stores/requests';
-  import { dndzone } from 'svelte-dnd-action';
   import InputsList from './InputsList.svelte';
   import StepCard from './StepCard.svelte';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
   import ToolBar from '$lib/components/shared/ToolBar.svelte';
+
+  interface VarMeta {
+    name: string;
+    kind: 'input' | 'local';
+    description?: string;
+    defaultValue?: string;
+  }
 
   interface Props {
     scenario: ScenarioData;
@@ -54,23 +60,38 @@
     onUpdate({ ...scenario, steps: scenario.steps.filter((_, i) => i !== index) });
   }
 
-  function handleDndConsider(e: CustomEvent<{ items: ScenarioStep[] }>) {
-    onUpdate({ ...scenario, steps: e.detail.items });
+  function moveStep(index: number, dir: 'up' | 'down') {
+    const steps = [...scenario.steps];
+    const target = dir === 'up' ? index - 1 : index + 1;
+    [steps[index], steps[target]] = [steps[target], steps[index]];
+    onUpdate({ ...scenario, steps });
   }
 
-  function handleDndFinalize(e: CustomEvent<{ items: ScenarioStep[] }>) {
-    onUpdate({ ...scenario, steps: e.detail.items });
+  function updateInputDefault(name: string, value: string) {
+    const inputs = scenario.inputs.map((inp) =>
+      inp.name === name ? { ...inp, default: value } : inp
+    );
+    onUpdate({ ...scenario, inputs });
   }
 
   // Variables available to step N: scenario inputs + variables extracted by steps 0..N-1
-  function extractedVarsBefore(index: number): string[] {
-    const names: string[] = scenario.inputs.map((inp) => inp.name);
+  function extractedVarsBefore(index: number): VarMeta[] {
+    const result: VarMeta[] = scenario.inputs.map((inp) => ({
+      name: inp.name,
+      kind: 'input',
+      description: inp.description || undefined,
+      defaultValue: inp.default,
+    }));
+    const seen = new Set(result.map((v) => v.name));
     for (let i = 0; i < index; i++) {
       for (const ext of scenario.steps[i].extract) {
-        if (ext.variable && !names.includes(ext.variable)) names.push(ext.variable);
+        if (ext.variable && !seen.has(ext.variable)) {
+          result.push({ name: ext.variable, kind: 'local' });
+          seen.add(ext.variable);
+        }
       }
     }
-    return names;
+    return result;
   }
 </script>
 
@@ -111,11 +132,7 @@
     <!-- Steps section -->
     <section>
       <SectionHeader class="mb-3">Steps</SectionHeader>
-      <div
-        use:dndzone={{ items: scenario.steps, dropTargetStyle: {} }}
-        onconsider={handleDndConsider}
-        onfinalize={handleDndFinalize}
-      >
+      <div class="space-y-0">
         {#each scenario.steps as step, i (step.id)}
           <StepCard
             {step}
@@ -124,6 +141,9 @@
             extractedVars={extractedVarsBefore(i)}
             onUpdate={(s) => updateStep(i, s)}
             onDelete={() => deleteStep(i)}
+            onMoveUp={i > 0 ? () => moveStep(i, 'up') : undefined}
+            onMoveDown={i < scenario.steps.length - 1 ? () => moveStep(i, 'down') : undefined}
+            onInputEdit={(name, val) => updateInputDefault(name, val)}
           />
         {/each}
       </div>

@@ -228,6 +228,7 @@ export interface Extraction {
   variable: string;
   from: string; // "response.body" | "response.headers"
   path: string;
+  scope?: 'env' | 'scenario';
 }
 
 export interface ScenarioStep {
