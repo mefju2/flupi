@@ -75,3 +75,19 @@ fn delete_function_rejects_path_traversal() {
     let result = delete_function(dir.path().to_path_buf(), "../evil".to_string());
     assert!(result.is_err());
 }
+
+
+#[test]
+fn rename_function_leaves_no_duplicate() {
+    let dir = tempdir().unwrap();
+    let f = ScriptFunction {
+        name: "oldName".to_string(),
+        body: "return 1;".to_string(),
+        params: vec![],
+    };
+    save_function(dir.path().to_path_buf(), f).unwrap();
+    rename_function(dir.path().to_path_buf(), "oldName".to_string(), "newName".to_string()).unwrap();
+    let list = list_functions(dir.path().to_path_buf()).unwrap();
+    assert_eq!(list.len(), 1, "expected exactly one function after rename, found {}", list.len());
+    assert_eq!(list[0].name, "newName");
+}
