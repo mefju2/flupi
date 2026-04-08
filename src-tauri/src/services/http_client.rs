@@ -6,7 +6,7 @@ use crate::error::Result;
 
 static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(reqwest::Client::new);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExecutableRequest {
     pub method: String,
     pub url: String,
@@ -15,7 +15,7 @@ pub struct ExecutableRequest {
     pub timeout_ms: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum RequestBody {
     #[serde(rename = "json")]

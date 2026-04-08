@@ -1,12 +1,12 @@
+use crate::error::FlupiError;
+use crate::models::collection::Collection;
+use crate::models::environment;
+use crate::models::environment::Environment;
+use crate::models::extraction::Extraction;
+use crate::models::request::{AuthConfig, BodyConfig, RawFormat};
+use crate::services::{file_io, http_client, inheritance, request_path, variable_resolver};
 use std::collections::HashMap;
 use std::path::Path;
-use crate::error::FlupiError;
-use crate::models::request::{AuthConfig, BodyConfig, RawFormat};
-use crate::models::collection::Collection;
-use crate::models::extraction::Extraction;
-use crate::models::environment::Environment;
-use crate::services::{http_client, inheritance, variable_resolver, file_io, request_path};
-use crate::models::environment;
 
 /// Extracts a single value from an HTTP response according to the extraction rule.
 pub fn apply_extraction(
@@ -16,10 +16,10 @@ pub fn apply_extraction(
 ) -> Result<String, String> {
     if extraction.from == "response.body" {
         let json: serde_json::Value = serde_json::from_str(body).map_err(|e| e.to_string())?;
-        let path = serde_json_path::JsonPath::parse(&extraction.path)
-            .map_err(|e| e.to_string())?;
+        let path = serde_json_path::JsonPath::parse(&extraction.path).map_err(|e| e.to_string())?;
         let nodes = path.query(&json);
-        nodes.first()
+        nodes
+            .first()
             .map(|v| match v {
                 serde_json::Value::String(s) => s.clone(),
                 other => other.to_string(),
@@ -41,18 +41,21 @@ pub async fn execute_single_request(
     timeout_ms: u64,
     extra_vars: &HashMap<String, String>,
     path_param_overrides: &HashMap<String, String>,
-) -> Result<http_client::HttpResponse, FlupiError> {
-    use base64::Engine as _;
+) -> Result<(http_client::ExecutableRequest, http_client::HttpResponse), FlupiError> {
     use base64::engine::general_purpose::STANDARD;
+    use base64::Engine as _;
 
     // 1. Load request
     let req_path = request_path::resolve_request_path(project_path, request_id);
     let request = file_io::read_json::<crate::models::request::Request>(&req_path)?;
 
     // 2. Find parent collection
-    let collection: Option<Collection> = request_path::collection_folder_for(request_id, project_path)
-        .and_then(|folder| {
-            let col_path = project_path.join("collections").join(&folder).join("collection.json");
+    let collection: Option<Collection> =
+        request_path::collection_folder_for(request_id, project_path).and_then(|folder| {
+            let col_path = project_path
+                .join("collections")
+                .join(&folder)
+                .join("collection.json");
             file_io::read_json::<Collection>(&col_path).ok()
         });
 
@@ -65,7 +68,9 @@ pub async fn execute_single_request(
     }
 
     // 4. Load env variables
-    let env_path = project_path.join("environments").join(format!("{}.json", env_file_name));
+    let env_path = project_path
+        .join("environments")
+        .join(format!("{}.json", env_file_name));
     let env_vars = if env_path.exists() {
         environment::resolve_env_variables(&env_path)?
     } else {
@@ -77,15 +82,13 @@ pub async fn execute_single_request(
 
     // 6. Resolve variables in method and path
     let method = variable_resolver::resolve_string(&effective.method, &ctx);
-    let path_resolved = variable_resolver::resolve_path_params(
-        &effective.path,
-        &effective.path_params,
-        &ctx,
-    );
+    let path_resolved =
+        variable_resolver::resolve_path_params(&effective.path, &effective.path_params, &ctx);
     let url = variable_resolver::resolve_string(&path_resolved, &ctx);
 
     // 7. Resolve headers
-    let mut headers: HashMap<String, String> = effective.headers
+    let mut headers: HashMap<String, String> = effective
+        .headers
         .iter()
         .map(|(k, v)| (k.clone(), variable_resolver::resolve_string(v, &ctx)))
         .collect();
@@ -107,7 +110,9 @@ pub async fn execute_single_request(
             let v = variable_resolver::resolve_string(value, &ctx);
             headers.insert(h, v);
         }
-        Some(AuthConfig::Custom { headers: custom_headers }) => {
+        Some(AuthConfig::Custom {
+            headers: custom_headers,
+        }) => {
             for (k, v) in custom_headers {
                 headers.insert(k.clone(), variable_resolver::resolve_string(v, &ctx));
             }
@@ -117,26 +122,34 @@ pub async fn execute_single_request(
 
     // 9. Resolve body
     let body = effective.body.as_ref().and_then(|b| match b {
-        BodyConfig::Raw { format: RawFormat::Json, content } => {
+        BodyConfig::Raw {
+            format: RawFormat::Json,
+            content,
+        } => {
             let resolved_str = variable_resolver::resolve_string(content, &ctx);
-            serde_json::from_str::<serde_json::Value>(&resolved_str).ok().map(|mut json_val| {
-                // Apply body.* dot-path overrides from extra_vars so scenario
-                // overrides like `body.scenarioParams.error` patch the JSON object
-                // directly, regardless of whether the template uses {{...}} tokens.
-                // Run resolve_string on each value first so that any residual
-                // function tokens (e.g. {{$randomInt(12)}} that came through an
-                // input variable) are expanded using the current ctx before the
-                // value is written into the JSON body.
-                for (k, v) in extra_vars {
-                    if let Some(dot_path) = k.strip_prefix("body.") {
-                        let resolved_v = variable_resolver::resolve_string(v, &ctx);
-                        set_json_path(&mut json_val, dot_path, &resolved_v);
+            serde_json::from_str::<serde_json::Value>(&resolved_str)
+                .ok()
+                .map(|mut json_val| {
+                    // Apply body.* dot-path overrides from extra_vars so scenario
+                    // overrides like `body.scenarioParams.error` patch the JSON object
+                    // directly, regardless of whether the template uses {{...}} tokens.
+                    // Run resolve_string on each value first so that any residual
+                    // function tokens (e.g. {{$randomInt(12)}} that came through an
+                    // input variable) are expanded using the current ctx before the
+                    // value is written into the JSON body.
+                    for (k, v) in extra_vars {
+                        if let Some(dot_path) = k.strip_prefix("body.") {
+                            let resolved_v = variable_resolver::resolve_string(v, &ctx);
+                            set_json_path(&mut json_val, dot_path, &resolved_v);
+                        }
                     }
-                }
-                http_client::RequestBody::Json { content: json_val }
-            })
+                    http_client::RequestBody::Json { content: json_val }
+                })
         }
-        BodyConfig::FormUrlEncoded { content, disabled_fields } => {
+        BodyConfig::FormUrlEncoded {
+            content,
+            disabled_fields,
+        } => {
             let resolved: HashMap<String, String> = content
                 .iter()
                 .filter(|(k, _)| !disabled_fields.contains(*k))
@@ -144,11 +157,12 @@ pub async fn execute_single_request(
                 .collect();
             Some(http_client::RequestBody::Form { content: resolved })
         }
-        BodyConfig::Raw { format: RawFormat::Xml | RawFormat::Text, content } => {
-            Some(http_client::RequestBody::Raw {
-                content: variable_resolver::resolve_string(content, &ctx),
-            })
-        }
+        BodyConfig::Raw {
+            format: RawFormat::Xml | RawFormat::Text,
+            content,
+        } => Some(http_client::RequestBody::Raw {
+            content: variable_resolver::resolve_string(content, &ctx),
+        }),
         BodyConfig::None => None,
     });
 
@@ -162,10 +176,13 @@ pub async fn execute_single_request(
     };
 
     #[cfg(feature = "debug-logging")]
-    eprintln!("[flupi] sending request:\n  url:     {}\n  method:  {}\n  headers: {:?}\n  body:    {:?}",
-        executable.url, executable.method, executable.headers, executable.body);
+    eprintln!(
+        "[flupi] sending request:\n  url:     {}\n  method:  {}\n  headers: {:?}\n  body:    {:?}",
+        executable.url, executable.method, executable.headers, executable.body
+    );
 
-    http_client::execute_request(&executable).await
+    let response = http_client::execute_request(&executable).await?;
+    Ok((executable, response))
 }
 
 fn set_json_path(value: &mut serde_json::Value, path: &str, raw: &str) {
@@ -177,9 +194,12 @@ fn set_json_path(value: &mut serde_json::Value, path: &str, raw: &str) {
     };
     if let serde_json::Value::Object(map) = value {
         match tail {
-            None => { map.insert(head.to_string(), new_val); }
+            None => {
+                map.insert(head.to_string(), new_val);
+            }
             Some(rest) => {
-                let entry = map.entry(head.to_string())
+                let entry = map
+                    .entry(head.to_string())
                     .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
                 set_json_path(entry, rest, raw);
             }
@@ -194,13 +214,17 @@ pub fn apply_extractions_to_env(
     extractions: &[Extraction],
     response: &http_client::HttpResponse,
 ) -> Result<(), FlupiError> {
-    let env_path = project_path.join("environments").join(format!("{}.json", env_file_name));
+    let env_path = project_path
+        .join("environments")
+        .join(format!("{}.json", env_file_name));
     if !env_path.exists() {
         return Ok(());
     }
 
     let mut env: Environment = file_io::read_json(&env_path)?;
-    let secrets_path = project_path.join("environments").join(format!("{}.secrets.json", env_file_name));
+    let secrets_path = project_path
+        .join("environments")
+        .join(format!("{}.secrets.json", env_file_name));
     let mut secrets: Option<HashMap<String, String>> = if secrets_path.exists() {
         Some(file_io::read_json(&secrets_path)?)
     } else {
@@ -210,7 +234,10 @@ pub fn apply_extractions_to_env(
     let mut env_dirty = false;
     let mut secrets_dirty = false;
 
-    for extraction in extractions.iter().filter(|e| !e.variable.is_empty() && !e.path.is_empty()) {
+    for extraction in extractions
+        .iter()
+        .filter(|e| !e.variable.is_empty() && !e.path.is_empty())
+    {
         let value = match apply_extraction(extraction, &response.body, &response.headers) {
             Ok(v) => v,
             Err(_) => continue,

@@ -1,9 +1,9 @@
+use crate::error::FlupiError;
+use crate::services::{file_io, http_client, request_executor, request_path};
+use crate::AppState;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tauri::command;
-use crate::AppState;
-use crate::error::FlupiError;
-use crate::services::{http_client, file_io, request_path, request_executor};
 
 pub use request_executor::execute_single_request;
 
@@ -26,11 +26,25 @@ pub async fn send_request(
     let extra_vars: HashMap<String, String> = injected_vars.unwrap_or_default();
 
     let _guard = state.execution_lock.lock().await;
-    let result = execute_single_request(&project_path, &request_id, &env_file_name, timeout_ms, &extra_vars, &HashMap::new()).await;
+    let result = execute_single_request(
+        &project_path,
+        &request_id,
+        &env_file_name,
+        timeout_ms,
+        &extra_vars,
+        &HashMap::new(),
+    )
+    .await
+    .map(|(_, response)| response);
 
     if let Ok(ref response) = result {
         if !extractions.is_empty() {
-            if let Err(e) = request_executor::apply_extractions_to_env(&project_path, &env_file_name, &extractions, response) {
+            if let Err(e) = request_executor::apply_extractions_to_env(
+                &project_path,
+                &env_file_name,
+                &extractions,
+                response,
+            ) {
                 eprintln!("[flupi] extraction write failed: {e}");
             }
         }

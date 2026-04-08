@@ -283,6 +283,25 @@ export interface StepResult {
   response?: HttpResponse;
   error?: string;
   extracted: Record<string, string>;
+  sent_request?: SentRequest | null;
+}
+
+export interface SentRequestBody {
+  type: 'json' | 'form' | 'raw';
+  content: unknown;
+}
+
+export type SentRequestBodyTyped =
+  | { type: 'json'; content: unknown }
+  | { type: 'form'; content: Record<string, string> }
+  | { type: 'raw'; content: string };
+
+export interface SentRequest {
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  body?: SentRequestBodyTyped | null;
+  timeout_ms: number;
 }
 
 export async function runScenario(

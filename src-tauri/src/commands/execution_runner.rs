@@ -16,6 +16,7 @@ pub struct StepResult {
     pub response: Option<http_client::HttpResponse>,
     pub error: Option<String>,
     pub extracted: HashMap<String, String>,
+    pub sent_request: Option<http_client::ExecutableRequest>,
 }
 
 pub fn apply_overrides(
@@ -127,11 +128,12 @@ async fn run_scenario_inner(
                     response: None,
                     error: Some(e.to_string()),
                     extracted: HashMap::new(),
+                    sent_request: None,
                 };
                 let _ = app.emit("scenario-step-result", &result);
                 return Err(e);
             }
-            Ok(resp) => {
+            Ok((sent_req, resp)) => {
                 let is_success = status_is_expected(resp.status, &step.expected_status);
                 if !is_success {
                     let error_msg = format!("HTTP {} {}", resp.status, resp.status_text);
@@ -141,6 +143,7 @@ async fn run_scenario_inner(
                         response: Some(resp),
                         error: Some(error_msg.clone()),
                         extracted: HashMap::new(),
+                        sent_request: Some(sent_req),
                     };
                     let _ = app.emit("scenario-step-result", &result);
                     return Err(FlupiError::Custom(error_msg));
@@ -160,6 +163,7 @@ async fn run_scenario_inner(
                                 response: Some(resp),
                                 error: Some(e.clone()),
                                 extracted: HashMap::new(),
+                                sent_request: Some(sent_req),
                             };
                             let _ = app.emit("scenario-step-result", &result);
                             return Err(FlupiError::Custom(e));
@@ -173,6 +177,7 @@ async fn run_scenario_inner(
                     response: Some(resp),
                     error: None,
                     extracted: step_extracted,
+                    sent_request: Some(sent_req),
                 };
                 let _ = app.emit("scenario-step-result", &result);
             }

@@ -1,6 +1,7 @@
 use super::*;
-use std::collections::HashMap;
 use crate::models::extraction::Extraction;
+use crate::services::http_client::{ExecutableRequest, HttpResponse};
+use std::collections::HashMap;
 
 fn codes(patterns: &[&str]) -> Vec<String> {
     patterns.iter().map(|s| s.to_string()).collect()
@@ -74,7 +75,9 @@ fn test_apply_extraction_header_not_found() {
 
     let result = apply_extraction(&ext, body, &headers);
     assert!(result.is_err());
-    assert!(result.unwrap_err().contains("Header X-Missing-Header not found"));
+    assert!(result
+        .unwrap_err()
+        .contains("Header X-Missing-Header not found"));
 }
 
 #[test]
@@ -158,4 +161,103 @@ fn test_apply_overrides_empty() {
 
     assert_eq!(vars.len(), 1);
     assert_eq!(vars.get("key").unwrap(), "value");
+}
+
+#[test]
+fn test_step_result_sent_request_some_serializes_correctly() {
+    let sent = ExecutableRequest {
+        method: "POST".to_string(),
+        url: "https://example.com/api/login".to_string(),
+        headers: HashMap::from([
+            ("Authorization".to_string(), "Bearer tok".to_string()),
+            ("Content-Type".to_string(), "application/json".to_string()),
+        ]),
+        body: None,
+        timeout_ms: 30000,
+    };
+    let response = HttpResponse {
+        status: 200,
+        status_text: "OK".to_string(),
+        headers: HashMap::new(),
+        body: r#"{"ok":true}"#.to_string(),
+        duration_ms: 42,
+        body_truncated: false,
+    };
+    let result = StepResult {
+        step_id: "step-1".to_string(),
+        status: "success".to_string(),
+        response: Some(response),
+        error: None,
+        extracted: HashMap::new(),
+        sent_request: Some(sent),
+    };
+
+    let json = serde_json::to_string(&result).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+    assert!(parsed["sent_request"].is_object());
+    assert_eq!(parsed["sent_request"]["method"], "POST");
+    assert_eq!(
+        parsed["sent_request"]["url"],
+        "https://example.com/api/login"
+    );
+    assert!(parsed["sent_request"]["headers"].is_object());
+    assert_eq!(
+        parsed["sent_request"]["headers"]["Authorization"],
+        "Bearer tok"
+    );
+    assert!(parsed["sent_request"]["body"].is_null());
+}
+
+#[test]
+fn test_step_result_sent_request_none_on_execution_error() {
+    let result = StepResult {
+        step_id: "step-2".to_string(),
+        status: "error".to_string(),
+        response: None,
+        error: Some("connection refused".to_string()),
+        extracted: HashMap::new(),
+        sent_request: None,
+    };
+
+    let json = serde_json::to_string(&result).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+    assert!(parsed["sent_request"].is_null());
+    assert_eq!(parsed["status"], "error");
+    assert_eq!(parsed["error"], "connection refused");
+}
+
+#[test]
+fn test_step_result_sent_request_included_on_status_error() {
+    let sent = ExecutableRequest {
+        method: "GET".to_string(),
+        url: "https://example.com/protected".to_string(),
+        headers: HashMap::new(),
+        body: None,
+        timeout_ms: 5000,
+    };
+    let response = HttpResponse {
+        status: 403,
+        status_text: "Forbidden".to_string(),
+        headers: HashMap::new(),
+        body: String::new(),
+        duration_ms: 10,
+        body_truncated: false,
+    };
+    let result = StepResult {
+        step_id: "step-3".to_string(),
+        status: "error".to_string(),
+        response: Some(response),
+        error: Some("HTTP 403 Forbidden".to_string()),
+        extracted: HashMap::new(),
+        sent_request: Some(sent),
+    };
+
+    let json = serde_json::to_string(&result).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+    assert!(parsed["sent_request"].is_object());
+    assert_eq!(parsed["sent_request"]["method"], "GET");
+    assert_eq!(parsed["response"]["status"], 403);
 }
