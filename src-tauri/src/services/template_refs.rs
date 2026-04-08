@@ -46,24 +46,6 @@ fn apply_replacement(path: &Path, search: &str, replace: &str) -> Result<bool> {
 }
 
 fn collect_all_request_files(project_path: &Path) -> Result<Vec<std::path::PathBuf>> {
-    let mut files = Vec::new();
-
-    let collections_dir = project_path.join("collections");
-    if collections_dir.exists() {
-        for entry in std::fs::read_dir(&collections_dir)? {
-            let entry = entry?;
-            let col_path = entry.path();
-            if col_path.is_dir() {
-                let requests_dir = col_path.join("requests");
-                let mut col_files = crate::services::file_io::list_json_files(&requests_dir)?;
-                files.append(&mut col_files);
-            }
-        }
-    }
-
-    let root_requests = project_path.join("requests");
-    let mut root_files = crate::services::file_io::list_json_files(&root_requests)?;
-    files.append(&mut root_files);
-
-    Ok(files)
+    // Delegate to drift_detection for request files (collections + root requests).
+    crate::services::drift_detection::collect_request_files(project_path)
 }
