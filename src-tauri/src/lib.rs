@@ -45,6 +45,7 @@ pub fn run() {
             commands::project::open_project,
             commands::app_data::get_recent_projects,
             commands::app_data::add_recent_project,
+            commands::app_data::remove_recent_project,
             commands::app_data::get_preferences,
             commands::app_data::save_preferences,
             commands::app_data::set_project_active_environment,
