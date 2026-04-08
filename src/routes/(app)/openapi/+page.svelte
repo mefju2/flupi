@@ -71,7 +71,7 @@
 <div class="flex flex-col h-full bg-app-bg overflow-hidden">
   <div class="px-6 py-4 border-b border-app-border shrink-0">
     <h1 class="text-base font-semibold text-app-text">OpenAPI Sources</h1>
-    <p class="text-xs text-app-text-3 mt-0.5">Import API operations from OpenAPI 3.0 specifications.</p>
+    <p class="text-xs text-app-text-3 mt-0.5">Connect API specs to import endpoints as requests.</p>
   </div>
 
   <div class="flex flex-1 min-h-0">
@@ -92,10 +92,11 @@
     <!-- Right column: detail panel -->
     <div class="flex-1 min-w-0 overflow-y-auto">
       {#if selectedSourceId}
-        <SourceDetail sourceId={selectedSourceId} />
+        <SourceDetail sourceId={selectedSourceId} onDeleted={() => { selectedSourceId = null; }} />
       {:else}
-        <div class="flex items-center justify-center h-full">
-          <p class="text-app-text-4 text-sm">Select a source to view details and imported requests.</p>
+        <div class="flex flex-col items-center justify-center h-full gap-1.5 text-center px-8">
+          <p class="text-sm text-app-text-3">Select a source</p>
+          <p class="text-xs text-app-text-4 max-w-48">Choose a source from the list to view its imported requests and details.</p>
         </div>
       {/if}
     </div>

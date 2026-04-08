@@ -94,7 +94,10 @@
       bind:value={name}
       placeholder="My API"
     />
-    <p class="text-xs text-app-text-4 font-mono">ID: {generatedId}</p>
+    <p
+      class="text-xs text-app-text-4 font-mono"
+      title="Auto-generated from name. Used internally to identify this source."
+    >ID: {generatedId}</p>
   </div>
 
   <!-- URL or file input -->
