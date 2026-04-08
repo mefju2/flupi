@@ -31,6 +31,18 @@ pub fn add_recent_project(app: AppHandle, name: String, path: String) -> Result<
 }
 
 #[command]
+pub fn remove_recent_project(app: AppHandle, path: String) -> Result<(), FlupiError> {
+    let file_path = app_data_dir(&app).join("recent-projects.json");
+    let mut projects = if file_path.exists() {
+        file_io::read_json(&file_path)?
+    } else {
+        RecentProjects::default()
+    };
+    projects.remove(&path);
+    file_io::write_json(&file_path, &projects)
+}
+
+#[command]
 pub fn get_preferences(app: AppHandle) -> Result<Preferences, FlupiError> {
     let path = app_data_dir(&app).join("preferences.json");
     if path.exists() {
