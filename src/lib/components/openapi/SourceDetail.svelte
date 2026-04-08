@@ -21,6 +21,7 @@
 
   let importedRequests = $state<SourceRequest[]>([]);
   let loadingRequests = $state(false);
+  let loadError = $state<string | null>(null);
 
   let renamingSource = $state(false);
   let renameValue = $state("");
@@ -28,18 +29,29 @@
 
   $effect(() => {
     void sourceId;
-    loadRequests();
+    let cancelled = false;
+    loadRequests(() => cancelled);
+    return () => { cancelled = true; };
   });
 
-  async function loadRequests() {
+  async function loadRequests(isCancelled: () => boolean) {
     if (!$project.path) return;
     loadingRequests = true;
+    loadError = null;
     try {
-      importedRequests = await listRequestsBySource($project.path, sourceId);
+      const result = await listRequestsBySource($project.path, sourceId);
+      if (!isCancelled()) {
+        importedRequests = result;
+      }
     } catch (e) {
-      console.error("Failed to load requests for source:", e);
+      if (!isCancelled()) {
+        loadError = "Failed to load requests";
+        console.error("Failed to load requests for source:", e);
+      }
     } finally {
-      loadingRequests = false;
+      if (!isCancelled()) {
+        loadingRequests = false;
+      }
     }
   }
 
@@ -69,11 +81,7 @@
     try {
       await renameOpenApiSource($project.path, sourceId, trimmed);
       openApiSources.update((list) =>
-        list.map((s) => {
-          if (s.id !== sourceId) return s;
-          if (s.type === "url") return { ...s, name: trimmed };
-          return { ...s, name: trimmed };
-        }),
+        list.map((s) => (s.id === sourceId ? { ...s, name: trimmed } : s)),
       );
     } catch (e) {
       console.error("Failed to rename source:", e);
@@ -172,6 +180,8 @@
 
       {#if loadingRequests}
         <p class="text-xs text-app-text-4">Loading…</p>
+      {:else if loadError}
+        <p class="text-xs text-red-400">{loadError}</p>
       {:else if importedRequests.length === 0}
         <p class="text-xs text-app-text-4">
           No requests imported from this source yet. Use Import to add requests.
