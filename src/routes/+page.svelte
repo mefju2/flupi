@@ -70,10 +70,12 @@
   }
 
   async function handleRemoveRecent(p: RecentProject) {
+    const previous = recentProjects;
     recentProjects = recentProjects.filter((rp) => rp.path !== p.path);
     try {
       await removeRecentProject(p.path);
     } catch (e) {
+      recentProjects = previous;
       error = String(e);
     }
   }
