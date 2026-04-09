@@ -92,6 +92,7 @@ fn test_extraction_round_trip() {
         variable: "token".to_string(),
         from: "response.body".to_string(),
         path: "$.auth.token".to_string(),
+        scope: "scenario".to_string(),
     };
 
     let json = serde_json::to_string(&ext).unwrap();

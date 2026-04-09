@@ -91,26 +91,29 @@ fn parse_porcelain_v2(output: &str) -> Result<GitStatus> {
         } else if line.starts_with("1 ") {
             // ordinary changed entry: "1 XY sub mH mI mW hH hI path"
             let parts: Vec<&str> = line.splitn(9, ' ').collect();
-            if parts.len() >= 2 {
+            if parts.len() >= 9 {
                 let xy = parts[1];
-                if let Some(file_path) = parts.last() {
-                    let x = xy.chars().next().unwrap_or('.');
-                    let y = xy.chars().nth(1).unwrap_or('.');
-                    if y == 'D' || x == 'D' {
-                        deleted.push(file_path.trim().to_string());
-                    } else if x == 'A' && y == '.' {
-                        staged.push(file_path.trim().to_string());
-                    } else {
-                        modified.push(file_path.trim().to_string());
-                    }
+                let file_path = parts[8].trim().to_string();
+                let x = xy.chars().next().unwrap_or('.');
+                let y = xy.chars().nth(1).unwrap_or('.');
+
+                // Index (staged) changes: x is not '.'
+                if x != '.' {
+                    staged.push(file_path.clone());
+                }
+                // Working tree changes
+                if y == 'D' {
+                    deleted.push(file_path);
+                } else if y == 'M' {
+                    modified.push(file_path);
                 }
             }
         } else if line.starts_with("2 ") {
-            // renamed/copied entry: "2 XY sub mH mI mW hH hI X score newPath\torigPath"
+            // renamed/copied entry — the new path is staged
             let parts: Vec<&str> = line.splitn(10, ' ').collect();
             if let Some(path_field) = parts.last() {
-                let new_path = path_field.split('\t').next().unwrap_or(path_field);
-                modified.push(new_path.trim().to_string());
+                let new_path = path_field.split('\t').next().unwrap_or(path_field).trim().to_string();
+                staged.push(new_path);
             }
         } else if let Some(file_path) = line.strip_prefix("? ") {
             untracked.push(file_path.trim().to_string());
