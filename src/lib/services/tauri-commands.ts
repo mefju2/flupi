@@ -83,6 +83,44 @@ export async function gitFileDiff(projectPath: string, filePath: string): Promis
   return invoke('git_file_diff', { projectPath, filePath });
 }
 
+export interface BranchInfo {
+  name: string;
+  isCurrent: boolean;
+  isRemote: boolean;
+}
+
+export async function gitStageFile(projectPath: string, filePath: string): Promise<void> {
+  return invoke('git_stage_file', { projectPath, filePath });
+}
+
+export async function gitUnstageFile(projectPath: string, filePath: string): Promise<void> {
+  return invoke('git_unstage_file', { projectPath, filePath });
+}
+
+export async function gitStageAll(projectPath: string): Promise<void> {
+  return invoke('git_stage_all', { projectPath });
+}
+
+export async function gitUnstageAll(projectPath: string): Promise<void> {
+  return invoke('git_unstage_all', { projectPath });
+}
+
+export async function gitCommit(projectPath: string, message: string): Promise<void> {
+  return invoke('git_commit', { projectPath, message });
+}
+
+export async function gitPush(projectPath: string): Promise<void> {
+  return invoke('git_push', { projectPath });
+}
+
+export async function gitListBranches(projectPath: string): Promise<BranchInfo[]> {
+  return invoke('git_list_branches', { projectPath });
+}
+
+export async function gitCheckoutBranch(projectPath: string, branch: string): Promise<void> {
+  return invoke('git_checkout_branch', { projectPath, branch });
+}
+
 export async function pickFolder(): Promise<string | null> {
   return open({ directory: true });
 }

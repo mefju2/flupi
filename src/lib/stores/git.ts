@@ -1,11 +1,13 @@
 import { writable } from 'svelte/store';
-import type { GitStatus } from '$lib/services/tauri-commands';
+import type { GitStatus, BranchInfo } from '$lib/services/tauri-commands';
 
 export type { GitStatus };
 
+export type GitFileStatus = 'staged' | 'modified' | 'deleted' | 'untracked';
+
 export interface GitSelectedFile {
   path: string;
-  kind: 'staged' | 'modified' | 'deleted' | 'untracked';
+  status: GitFileStatus;
 }
 
 export interface GitPageState {
@@ -13,10 +15,14 @@ export interface GitPageState {
   isLoading: boolean;
   isFetching: boolean;
   isPulling: boolean;
+  isPushing: boolean;
+  isCommitting: boolean;
+  isSwitchingBranch: boolean;
   error: string | null;
   lastRefreshed: Date | null;
   lastFetched: Date | null;
   selectedFile: GitSelectedFile | null;
+  branches: BranchInfo[];
 }
 
 export const gitAutoRefreshMs = writable<number>(30_000);
@@ -26,8 +32,12 @@ export const gitPageState = writable<GitPageState>({
   isLoading: false,
   isFetching: false,
   isPulling: false,
+  isPushing: false,
+  isCommitting: false,
+  isSwitchingBranch: false,
   error: null,
   lastRefreshed: null,
   lastFetched: null,
   selectedFile: null,
+  branches: [],
 });
