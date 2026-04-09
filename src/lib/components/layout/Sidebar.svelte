@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { Settings2, FileCode, ArrowUpRight, Play, SlidersHorizontal, Code2 } from 'lucide-svelte';
+  import { Settings2, FileCode, ArrowUpRight, Play, SlidersHorizontal, Code2, GitBranch } from 'lucide-svelte';
 
   const sections = [
     { path: '/environments', label: 'Environments', icon: Settings2 },
@@ -9,6 +9,7 @@
     { path: '/requests',     label: 'Requests',     icon: ArrowUpRight },
     { path: '/scenarios',    label: 'Scenarios',    icon: Play },
     { path: '/functions',    label: 'Functions',    icon: Code2 },
+    { path: '/git',          label: 'Git',          icon: GitBranch },
     { path: '/settings',     label: 'Settings',     icon: SlidersHorizontal },
   ];
 </script>

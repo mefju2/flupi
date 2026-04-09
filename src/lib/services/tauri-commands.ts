@@ -15,6 +15,18 @@ export interface RecentProjects {
 export interface Preferences {
   theme: string;
   defaultTimeoutMs: number;
+  gitAutoRefreshMs: number;
+}
+
+export interface GitStatus {
+  branch: string;
+  upstream: string | null;
+  ahead: number;
+  behind: number;
+  modified: string[];
+  deleted: string[];
+  untracked: string[];
+  isGitRepo: boolean;
 }
 
 export async function getRecentProjects(): Promise<RecentProjects> {
@@ -47,6 +59,27 @@ export async function getPreferences(): Promise<Preferences> {
 
 export async function savePreferences(preferences: Preferences): Promise<void> {
   return invoke('save_preferences', { preferences });
+}
+
+export async function getGitStatus(projectPath: string): Promise<GitStatus> {
+  return invoke('get_git_status', { projectPath });
+}
+
+export async function gitFetch(projectPath: string): Promise<void> {
+  return invoke('git_fetch', { projectPath });
+}
+
+export async function gitPull(projectPath: string): Promise<void> {
+  return invoke('git_pull', { projectPath });
+}
+
+export interface GitFileDiff {
+  oldContent: string;
+  newContent: string;
+}
+
+export async function gitFileDiff(projectPath: string, filePath: string): Promise<GitFileDiff> {
+  return invoke('git_file_diff', { projectPath, filePath });
 }
 
 export async function pickFolder(): Promise<string | null> {

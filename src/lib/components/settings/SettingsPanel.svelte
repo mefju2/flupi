@@ -5,31 +5,44 @@
   import { theme, type Theme } from '$lib/stores/ui';
   import { getPreferences, savePreferences } from '$lib/services/tauri-commands';
   import { createDebouncedSave } from '$lib/services/debounced-save';
+  import { gitAutoRefreshMs } from '$lib/stores/git';
 
   let timeoutMs = $state(30000);
   let savedTimeout = $state(false);
+  let gitRefreshSec = $state(30);
+  let savedGitRefresh = $state(false);
 
   const debouncedSave = createDebouncedSave(async () => {
-    await savePreferences({ theme: $theme, defaultTimeoutMs: timeoutMs });
+    await savePreferences({ theme: $theme, defaultTimeoutMs: timeoutMs, gitAutoRefreshMs: gitRefreshSec * 1000 });
+    gitAutoRefreshMs.set(gitRefreshSec * 1000);
     savedTimeout = true;
-    setTimeout(() => (savedTimeout = false), 2000);
+    savedGitRefresh = true;
+    setTimeout(() => { savedTimeout = false; savedGitRefresh = false; }, 2000);
   }, 300);
 
   onMount(async () => {
     const prefs = await getPreferences();
     timeoutMs = prefs.defaultTimeoutMs;
+    gitRefreshSec = Math.round((prefs.gitAutoRefreshMs ?? 30000) / 1000);
     theme.set(prefs.theme as Theme);
   });
 
   async function handleThemeChange(value: Theme) {
     theme.set(value);
-    await savePreferences({ theme: value, defaultTimeoutMs: timeoutMs });
+    await savePreferences({ theme: value, defaultTimeoutMs: timeoutMs, gitAutoRefreshMs: gitRefreshSec * 1000 });
   }
 
   function handleTimeoutInput(e: Event) {
     const raw = (e.target as HTMLInputElement).valueAsNumber;
     if (!Number.isFinite(raw) || raw <= 0) return;
     timeoutMs = raw;
+    debouncedSave.trigger();
+  }
+
+  function handleGitRefreshInput(e: Event) {
+    const raw = (e.target as HTMLInputElement).valueAsNumber;
+    if (!Number.isFinite(raw) || raw <= 0 || raw < 5) return;
+    gitRefreshSec = raw;
     debouncedSave.trigger();
   }
 
@@ -100,6 +113,31 @@
           <SavedIndicator visible={savedTimeout} class="ml-2" />
         </div>
         <p class="text-xs text-app-text-3 mt-1">Applied to requests without an explicit timeout configured.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="border-t border-app-border"></div>
+
+  <section>
+    <h2 class="text-sm font-semibold text-app-text-2 mb-4">Git</h2>
+    <div class="flex flex-col gap-5">
+      <div class="flex flex-col gap-2">
+        <label for="git-refresh" class="text-sm text-app-text-2">Auto-refresh interval (seconds)</label>
+        <div class="flex items-center">
+          <input
+            id="git-refresh"
+            type="number"
+            min="5"
+            step="5"
+            value={gitRefreshSec}
+            oninput={handleGitRefreshInput}
+            class="w-40 px-3 py-2 rounded bg-app-card text-sm text-app-text font-mono
+                   border border-transparent focus:border-cyan-500 focus:outline-none transition-colors"
+          />
+          <SavedIndicator visible={savedGitRefresh} class="ml-2" />
+        </div>
+        <p class="text-xs text-app-text-3 mt-1">How often the Git status page refreshes automatically.</p>
       </div>
     </div>
   </section>

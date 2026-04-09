@@ -1,5 +1,6 @@
 pub mod drift_detection;
 pub mod file_io;
+pub mod git;
 pub mod http_client;
 pub mod inheritance;
 pub mod openapi_import;
