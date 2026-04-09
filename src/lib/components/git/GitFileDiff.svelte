@@ -79,9 +79,9 @@
     <div class="flex-1 overflow-auto">
       <pre class="text-xs leading-5 font-mono p-4 whitespace-pre">{#each diffOrNull as line}<span
             class={line.type === 'add'
-              ? 'block bg-green-950/40 text-green-300'
+              ? 'block bg-green-500/10 text-green-700 dark:bg-green-950/40 dark:text-green-300'
               : line.type === 'remove'
-                ? 'block bg-red-950/40 text-red-400 line-through decoration-red-800/50'
+                ? 'block bg-red-500/10 text-red-700 line-through decoration-red-400/50 dark:bg-red-950/40 dark:text-red-400 dark:decoration-red-800/50'
                 : 'block text-app-text-3'}
           >{line.type === 'add' ? '+ ' : line.type === 'remove' ? '- ' : '  '}{line.text}</span>{/each}</pre>
     </div>

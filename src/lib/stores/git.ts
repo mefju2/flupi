@@ -15,6 +15,7 @@ export interface GitPageState {
   isPulling: boolean;
   error: string | null;
   lastRefreshed: Date | null;
+  lastFetched: Date | null;
   selectedFile: GitSelectedFile | null;
 }
 
@@ -27,5 +28,6 @@ export const gitPageState = writable<GitPageState>({
   isPulling: false,
   error: null,
   lastRefreshed: null,
+  lastFetched: null,
   selectedFile: null,
 });

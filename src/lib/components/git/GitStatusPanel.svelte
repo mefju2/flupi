@@ -1,12 +1,26 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { GitBranch, RefreshCw, ChevronDown, ChevronRight } from 'lucide-svelte';
-  import { project } from '$lib/stores/project';
-  import { gitPageState, gitAutoRefreshMs, type GitSelectedFile } from '$lib/stores/git';
-  import { getGitStatus, gitFetch, gitPull, getPreferences } from '$lib/services/tauri-commands';
-  import { formatRelativeTime } from '$lib/utils/format';
-  import GitFileTree from './GitFileTree.svelte';
-  import GitBranchHeader from './GitBranchHeader.svelte';
+  import { onMount } from "svelte";
+  import {
+    GitBranch,
+    RefreshCw,
+    ChevronDown,
+    ChevronRight,
+  } from "lucide-svelte";
+  import { project } from "$lib/stores/project";
+  import {
+    gitPageState,
+    gitAutoRefreshMs,
+    type GitSelectedFile,
+  } from "$lib/stores/git";
+  import {
+    getGitStatus,
+    gitFetch,
+    gitPull,
+    getPreferences,
+  } from "$lib/services/tauri-commands";
+  import { formatRelativeTime } from "$lib/utils/format";
+  import GitFileTree from "./GitFileTree.svelte";
+  import GitBranchHeader from "./GitBranchHeader.svelte";
 
   let conflictError = $state<string | null>(null);
   let refreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -15,12 +29,25 @@
   async function load() {
     const path = $project.path;
     if (!path) return;
-    gitPageState.update((s) => ({ ...s, isLoading: s.status === null, error: null }));
+    gitPageState.update((s) => ({
+      ...s,
+      isLoading: s.status === null,
+      error: null,
+    }));
     try {
       const status = await getGitStatus(path);
-      gitPageState.update((s) => ({ ...s, status, isLoading: false, lastRefreshed: new Date() }));
+      gitPageState.update((s) => ({
+        ...s,
+        status,
+        isLoading: false,
+        lastRefreshed: new Date(),
+      }));
     } catch (e) {
-      gitPageState.update((s) => ({ ...s, isLoading: false, error: String(e) }));
+      gitPageState.update((s) => ({
+        ...s,
+        isLoading: false,
+        error: String(e),
+      }));
     }
   }
 
@@ -32,6 +59,7 @@
     try {
       await gitFetch(path);
       await load();
+      gitPageState.update((s) => ({ ...s, lastFetched: new Date() }));
     } catch (e) {
       gitPageState.update((s) => ({ ...s, error: String(e) }));
     } finally {
@@ -49,8 +77,8 @@
       await load();
     } catch (e) {
       const msg = String(e);
-      if (msg.includes('CONFLICT')) {
-        conflictError = msg.replace('CONFLICT: ', '');
+      if (msg.includes("CONFLICT")) {
+        conflictError = msg.replace("CONFLICT: ", "");
       } else {
         gitPageState.update((s) => ({ ...s, error: msg }));
       }
@@ -59,7 +87,7 @@
     }
   }
 
-  function selectFile(path: string, kind: GitSelectedFile['kind']) {
+  function selectFile(path: string, kind: GitSelectedFile["kind"]) {
     gitPageState.update((s) => ({ ...s, selectedFile: { path, kind } }));
   }
 
@@ -86,7 +114,6 @@
 </script>
 
 <div class="flex flex-col gap-4 p-4 h-full">
-
   <!-- Header -->
   <div class="flex items-center justify-between shrink-0">
     <h2 class="text-sm font-semibold text-app-text">Git Status</h2>
@@ -97,7 +124,10 @@
       disabled={$gitPageState.isLoading}
       aria-label="Refresh"
     >
-      <RefreshCw size={12} class={$gitPageState.isLoading ? 'animate-spin' : ''} />
+      <RefreshCw
+        size={12}
+        class={$gitPageState.isLoading ? "animate-spin" : ""}
+      />
       Refresh
     </button>
   </div>
@@ -129,6 +159,7 @@
       status={s}
       isFetching={$gitPageState.isFetching}
       isPulling={$gitPageState.isPulling}
+      lastFetched={$gitPageState.lastFetched}
       {conflictError}
       error={$gitPageState.error}
       onfetch={handleFetch}
@@ -145,14 +176,18 @@
             class="flex items-center gap-1 text-xs font-semibold text-app-text-3 uppercase tracking-wider px-1 hover:text-app-text-2 transition-colors w-full text-left"
             onclick={() => (collapsed.modified = !collapsed.modified)}
           >
-            {#if collapsed.modified}<ChevronRight size={12} />{:else}<ChevronDown size={12} />{/if}
+            {#if collapsed.modified}<ChevronRight
+                size={12}
+              />{:else}<ChevronDown size={12} />{/if}
             Modified ({s.modified.length})
           </button>
           {#if !collapsed.modified}
             <GitFileTree
               files={s.modified}
               kind="modified"
-              selectedPath={$gitPageState.selectedFile?.kind === 'modified' ? $gitPageState.selectedFile.path : null}
+              selectedPath={$gitPageState.selectedFile?.kind === "modified"
+                ? $gitPageState.selectedFile.path
+                : null}
               onselect={selectFile}
             />
           {/if}
@@ -165,14 +200,18 @@
             class="flex items-center gap-1 text-xs font-semibold text-app-text-3 uppercase tracking-wider px-1 hover:text-app-text-2 transition-colors w-full text-left"
             onclick={() => (collapsed.deleted = !collapsed.deleted)}
           >
-            {#if collapsed.deleted}<ChevronRight size={12} />{:else}<ChevronDown size={12} />{/if}
+            {#if collapsed.deleted}<ChevronRight size={12} />{:else}<ChevronDown
+                size={12}
+              />{/if}
             Deleted ({s.deleted.length})
           </button>
           {#if !collapsed.deleted}
             <GitFileTree
               files={s.deleted}
               kind="deleted"
-              selectedPath={$gitPageState.selectedFile?.kind === 'deleted' ? $gitPageState.selectedFile.path : null}
+              selectedPath={$gitPageState.selectedFile?.kind === "deleted"
+                ? $gitPageState.selectedFile.path
+                : null}
               onselect={selectFile}
             />
           {/if}
@@ -185,14 +224,18 @@
             class="flex items-center gap-1 text-xs font-semibold text-app-text-3 uppercase tracking-wider px-1 hover:text-app-text-2 transition-colors w-full text-left"
             onclick={() => (collapsed.untracked = !collapsed.untracked)}
           >
-            {#if collapsed.untracked}<ChevronRight size={12} />{:else}<ChevronDown size={12} />{/if}
+            {#if collapsed.untracked}<ChevronRight
+                size={12}
+              />{:else}<ChevronDown size={12} />{/if}
             Untracked ({s.untracked.length})
           </button>
           {#if !collapsed.untracked}
             <GitFileTree
               files={s.untracked}
               kind="untracked"
-              selectedPath={$gitPageState.selectedFile?.kind === 'untracked' ? $gitPageState.selectedFile.path : null}
+              selectedPath={$gitPageState.selectedFile?.kind === "untracked"
+                ? $gitPageState.selectedFile.path
+                : null}
               onselect={selectFile}
             />
           {/if}
@@ -204,7 +247,9 @@
       {/if}
     </div>
   {:else if $gitPageState.error}
-    <div class="px-2.5 py-2 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
+    <div
+      class="px-2.5 py-2 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono"
+    >
       {$gitPageState.error}
     </div>
   {/if}
