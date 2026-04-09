@@ -14,6 +14,7 @@ pub struct GitStatus {
     pub upstream: Option<String>,
     pub ahead: u32,
     pub behind: u32,
+    pub staged: Vec<String>,
     pub modified: Vec<String>,
     pub deleted: Vec<String>,
     pub untracked: Vec<String>,
@@ -48,6 +49,7 @@ pub fn get_status(path: &Path) -> Result<GitStatus> {
                 upstream: None,
                 ahead: 0,
                 behind: 0,
+                staged: vec![],
                 modified: vec![],
                 deleted: vec![],
                 untracked: vec![],
@@ -69,6 +71,7 @@ fn parse_porcelain_v2(output: &str) -> Result<GitStatus> {
     let mut upstream: Option<String> = None;
     let mut ahead = 0u32;
     let mut behind = 0u32;
+    let mut staged = Vec::new();
     let mut modified = Vec::new();
     let mut deleted = Vec::new();
     let mut untracked = Vec::new();
@@ -91,8 +94,12 @@ fn parse_porcelain_v2(output: &str) -> Result<GitStatus> {
             if parts.len() >= 2 {
                 let xy = parts[1];
                 if let Some(file_path) = parts.last() {
-                    if xy.contains('D') {
+                    let x = xy.chars().next().unwrap_or('.');
+                    let y = xy.chars().nth(1).unwrap_or('.');
+                    if y == 'D' || x == 'D' {
                         deleted.push(file_path.trim().to_string());
+                    } else if x == 'A' && y == '.' {
+                        staged.push(file_path.trim().to_string());
                     } else {
                         modified.push(file_path.trim().to_string());
                     }
@@ -115,6 +122,7 @@ fn parse_porcelain_v2(output: &str) -> Result<GitStatus> {
         upstream,
         ahead,
         behind,
+        staged,
         modified,
         deleted,
         untracked,

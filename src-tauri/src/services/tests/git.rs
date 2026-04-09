@@ -13,6 +13,7 @@ fn make_status(
         upstream: upstream.map(|s| s.to_string()),
         ahead,
         behind,
+        staged: vec![],
         modified: modified.into_iter().map(|s| s.to_string()).collect(),
         deleted: vec![],
         untracked: untracked.into_iter().map(|s| s.to_string()).collect(),

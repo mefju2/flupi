@@ -170,6 +170,28 @@
 
     <!-- File trees (scrollable) -->
     <div class="flex flex-col gap-4 overflow-y-auto flex-1 min-h-0">
+      {#if s.staged.length > 0}
+        <section class="flex flex-col gap-1">
+          <button
+            class="flex items-center gap-1 text-xs font-semibold text-app-text-3 uppercase tracking-wider px-1 hover:text-app-text-2 transition-colors w-full text-left"
+            onclick={() => (collapsed.staged = !collapsed.staged)}
+          >
+            {#if collapsed.staged}<ChevronRight size={12} />{:else}<ChevronDown size={12} />{/if}
+            Staged ({s.staged.length})
+          </button>
+          {#if !collapsed.staged}
+            <GitFileTree
+              files={s.staged}
+              kind="staged"
+              selectedPath={$gitPageState.selectedFile?.kind === "staged"
+                ? $gitPageState.selectedFile.path
+                : null}
+              onselect={selectFile}
+            />
+          {/if}
+        </section>
+      {/if}
+
       {#if s.modified.length > 0}
         <section class="flex flex-col gap-1">
           <button
@@ -242,7 +264,7 @@
         </section>
       {/if}
 
-      {#if s.modified.length === 0 && s.deleted.length === 0 && s.untracked.length === 0}
+      {#if s.staged.length === 0 && s.modified.length === 0 && s.deleted.length === 0 && s.untracked.length === 0}
         <p class="text-xs text-app-text-3 px-1">Working tree is clean.</p>
       {/if}
     </div>

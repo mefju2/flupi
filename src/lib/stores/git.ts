@@ -5,7 +5,7 @@ export type { GitStatus };
 
 export interface GitSelectedFile {
   path: string;
-  kind: 'modified' | 'deleted' | 'untracked';
+  kind: 'staged' | 'modified' | 'deleted' | 'untracked';
 }
 
 export interface GitPageState {

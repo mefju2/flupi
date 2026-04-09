@@ -3,11 +3,11 @@
 
   interface Props {
     files: string[];
-    kind: "modified" | "deleted" | "untracked";
+    kind: "staged" | "modified" | "deleted" | "untracked";
     selectedPath?: string | null;
     onselect: (
       path: string,
-      kind: "modified" | "deleted" | "untracked",
+      kind: "staged" | "modified" | "deleted" | "untracked",
     ) => void;
   }
 
@@ -90,7 +90,9 @@
       ? "bg-red-400"
       : kind === "modified"
         ? "bg-yellow-400"
-        : "bg-green-400",
+        : kind === "staged"
+          ? "bg-green-400"
+          : "bg-purple-400",
   );
 </script>
 

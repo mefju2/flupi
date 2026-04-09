@@ -23,6 +23,7 @@ export interface GitStatus {
   upstream: string | null;
   ahead: number;
   behind: number;
+  staged: string[];
   modified: string[];
   deleted: string[];
   untracked: string[];
