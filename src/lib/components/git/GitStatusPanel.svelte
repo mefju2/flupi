@@ -1,53 +1,39 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import {
-    GitBranch,
-    RefreshCw,
-    ChevronDown,
-    ChevronRight,
-  } from "lucide-svelte";
-  import { project } from "$lib/stores/project";
-  import {
-    gitPageState,
-    gitAutoRefreshMs,
-    type GitSelectedFile,
-  } from "$lib/stores/git";
+  import { onMount } from 'svelte';
+  import { RefreshCw, GitBranch } from 'lucide-svelte';
+  import { project } from '$lib/stores/project';
+  import { gitPageState, gitAutoRefreshMs, type GitFileStatus } from '$lib/stores/git';
   import {
     getGitStatus,
     gitFetch,
     gitPull,
+    gitPush,
+    gitStageFile,
+    gitUnstageFile,
+    gitStageAll,
+    gitUnstageAll,
+    gitCommit,
+    gitListBranches,
+    gitCheckoutBranch,
     getPreferences,
-  } from "$lib/services/tauri-commands";
-  import { formatRelativeTime } from "$lib/utils/format";
-  import GitFileTree from "./GitFileTree.svelte";
-  import GitBranchHeader from "./GitBranchHeader.svelte";
+  } from '$lib/services/tauri-commands';
+  import { formatRelativeTime } from '$lib/utils/format';
+  import GitBranchHeader from './GitBranchHeader.svelte';
+  import GitChangesPanel from './GitChangesPanel.svelte';
+  import GitCommitPanel from './GitCommitPanel.svelte';
 
   let conflictError = $state<string | null>(null);
   let refreshInterval: ReturnType<typeof setInterval> | null = null;
-  let collapsed = $state<Record<string, boolean>>({});
 
   async function load() {
     const path = $project.path;
     if (!path) return;
-    gitPageState.update((s) => ({
-      ...s,
-      isLoading: s.status === null,
-      error: null,
-    }));
+    gitPageState.update((s) => ({ ...s, isLoading: s.status === null, error: null }));
     try {
       const status = await getGitStatus(path);
-      gitPageState.update((s) => ({
-        ...s,
-        status,
-        isLoading: false,
-        lastRefreshed: new Date(),
-      }));
+      gitPageState.update((s) => ({ ...s, status, isLoading: false, lastRefreshed: new Date() }));
     } catch (e) {
-      gitPageState.update((s) => ({
-        ...s,
-        isLoading: false,
-        error: String(e),
-      }));
+      gitPageState.update((s) => ({ ...s, isLoading: false, error: String(e) }));
     }
   }
 
@@ -77,21 +63,114 @@
       await load();
     } catch (e) {
       const msg = String(e);
-      if (msg.includes("CONFLICT")) {
-        conflictError = msg.replace("CONFLICT: ", "");
-      } else {
-        gitPageState.update((s) => ({ ...s, error: msg }));
-      }
+      if (msg.includes('CONFLICT')) conflictError = msg.replace('CONFLICT: ', '');
+      else gitPageState.update((s) => ({ ...s, error: msg }));
     } finally {
       gitPageState.update((s) => ({ ...s, isPulling: false }));
     }
   }
 
-  function selectFile(path: string, kind: GitSelectedFile["kind"]) {
-    gitPageState.update((s) => ({ ...s, selectedFile: { path, kind } }));
+  async function handlePush() {
+    const path = $project.path;
+    if (!path) return;
+    gitPageState.update((s) => ({ ...s, isPushing: true, error: null }));
+    try {
+      await gitPush(path);
+      await load();
+    } catch (e) {
+      gitPageState.update((s) => ({ ...s, error: String(e) }));
+    } finally {
+      gitPageState.update((s) => ({ ...s, isPushing: false }));
+    }
   }
 
-  // Restart the interval whenever the configured refresh ms changes.
+  async function handleStageFile(filePath: string) {
+    const path = $project.path;
+    if (!path) return;
+    try {
+      await gitStageFile(path, filePath);
+      await load();
+    } catch (e) {
+      gitPageState.update((s) => ({ ...s, error: String(e) }));
+    }
+  }
+
+  async function handleUnstageFile(filePath: string) {
+    const path = $project.path;
+    if (!path) return;
+    try {
+      await gitUnstageFile(path, filePath);
+      await load();
+    } catch (e) {
+      gitPageState.update((s) => ({ ...s, error: String(e) }));
+    }
+  }
+
+  async function handleStageAll() {
+    const path = $project.path;
+    if (!path) return;
+    try {
+      await gitStageAll(path);
+      await load();
+    } catch (e) {
+      gitPageState.update((s) => ({ ...s, error: String(e) }));
+    }
+  }
+
+  async function handleUnstageAll() {
+    const path = $project.path;
+    if (!path) return;
+    try {
+      await gitUnstageAll(path);
+      await load();
+    } catch (e) {
+      gitPageState.update((s) => ({ ...s, error: String(e) }));
+    }
+  }
+
+  async function handleCommit(message: string) {
+    const path = $project.path;
+    if (!path) return;
+    gitPageState.update((s) => ({ ...s, isCommitting: true, error: null }));
+    try {
+      await gitCommit(path, message);
+      await load();
+    } catch (e) {
+      gitPageState.update((s) => ({ ...s, error: String(e) }));
+    } finally {
+      gitPageState.update((s) => ({ ...s, isCommitting: false }));
+    }
+  }
+
+  async function handleLoadBranches() {
+    const path = $project.path;
+    if (!path) return;
+    try {
+      const branches = await gitListBranches(path);
+      gitPageState.update((s) => ({ ...s, branches }));
+    } catch (_) {
+      // Non-critical — branch dropdown stays empty on error
+    }
+  }
+
+  async function handleCheckoutBranch(branch: string) {
+    const path = $project.path;
+    if (!path) return;
+    gitPageState.update((s) => ({ ...s, isSwitchingBranch: true, error: null }));
+    try {
+      await gitCheckoutBranch(path, branch);
+      await load();
+    } catch (e) {
+      gitPageState.update((s) => ({ ...s, error: String(e) }));
+    } finally {
+      gitPageState.update((s) => ({ ...s, isSwitchingBranch: false }));
+    }
+  }
+
+  function selectFile(path: string, status: GitFileStatus) {
+    gitPageState.update((s) => ({ ...s, selectedFile: { path, status } }));
+  }
+
   $effect(() => {
     const ms = $gitAutoRefreshMs;
     if (refreshInterval !== null) clearInterval(refreshInterval);
@@ -101,7 +180,6 @@
     };
   });
 
-  // Load whenever the project path changes (handles initial load too).
   $effect(() => {
     const path = $project.path;
     if (path) load();
@@ -116,7 +194,7 @@
 <div class="flex flex-col gap-4 p-4 h-full">
   <!-- Header -->
   <div class="flex items-center justify-between shrink-0">
-    <h2 class="text-sm font-semibold text-app-text">Git Status</h2>
+    <h2 class="text-sm font-semibold text-app-text">Git</h2>
     <button
       class="flex items-center gap-1 px-2 py-1 rounded text-xs text-app-text-3
              hover:bg-app-card hover:text-app-text-2 transition-colors disabled:opacity-50"
@@ -124,10 +202,7 @@
       disabled={$gitPageState.isLoading}
       aria-label="Refresh"
     >
-      <RefreshCw
-        size={12}
-        class={$gitPageState.isLoading ? "animate-spin" : ""}
-      />
+      <RefreshCw size={12} class={$gitPageState.isLoading ? 'animate-spin' : ''} />
       Refresh
     </button>
   </div>
@@ -159,115 +234,40 @@
       status={s}
       isFetching={$gitPageState.isFetching}
       isPulling={$gitPageState.isPulling}
+      isPushing={$gitPageState.isPushing}
+      isSwitchingBranch={$gitPageState.isSwitchingBranch}
+      branches={$gitPageState.branches}
       lastFetched={$gitPageState.lastFetched}
       {conflictError}
       error={$gitPageState.error}
       onfetch={handleFetch}
       onpull={handlePull}
+      onpush={handlePush}
+      onbranch={handleCheckoutBranch}
+      onloadbranches={handleLoadBranches}
     />
 
     <div class="border-t border-app-border shrink-0"></div>
 
-    <!-- File trees (scrollable) -->
-    <div class="flex flex-col gap-4 overflow-y-auto flex-1 min-h-0">
-      {#if s.staged.length > 0}
-        <section class="flex flex-col gap-1">
-          <button
-            class="flex items-center gap-1 text-xs font-semibold text-app-text-3 uppercase tracking-wider px-1 hover:text-app-text-2 transition-colors w-full text-left"
-            onclick={() => (collapsed.staged = !collapsed.staged)}
-          >
-            {#if collapsed.staged}<ChevronRight size={12} />{:else}<ChevronDown size={12} />{/if}
-            Staged ({s.staged.length})
-          </button>
-          {#if !collapsed.staged}
-            <GitFileTree
-              files={s.staged}
-              kind="staged"
-              selectedPath={$gitPageState.selectedFile?.kind === "staged"
-                ? $gitPageState.selectedFile.path
-                : null}
-              onselect={selectFile}
-            />
-          {/if}
-        </section>
-      {/if}
-
-      {#if s.modified.length > 0}
-        <section class="flex flex-col gap-1">
-          <button
-            class="flex items-center gap-1 text-xs font-semibold text-app-text-3 uppercase tracking-wider px-1 hover:text-app-text-2 transition-colors w-full text-left"
-            onclick={() => (collapsed.modified = !collapsed.modified)}
-          >
-            {#if collapsed.modified}<ChevronRight
-                size={12}
-              />{:else}<ChevronDown size={12} />{/if}
-            Modified ({s.modified.length})
-          </button>
-          {#if !collapsed.modified}
-            <GitFileTree
-              files={s.modified}
-              kind="modified"
-              selectedPath={$gitPageState.selectedFile?.kind === "modified"
-                ? $gitPageState.selectedFile.path
-                : null}
-              onselect={selectFile}
-            />
-          {/if}
-        </section>
-      {/if}
-
-      {#if s.deleted.length > 0}
-        <section class="flex flex-col gap-1">
-          <button
-            class="flex items-center gap-1 text-xs font-semibold text-app-text-3 uppercase tracking-wider px-1 hover:text-app-text-2 transition-colors w-full text-left"
-            onclick={() => (collapsed.deleted = !collapsed.deleted)}
-          >
-            {#if collapsed.deleted}<ChevronRight size={12} />{:else}<ChevronDown
-                size={12}
-              />{/if}
-            Deleted ({s.deleted.length})
-          </button>
-          {#if !collapsed.deleted}
-            <GitFileTree
-              files={s.deleted}
-              kind="deleted"
-              selectedPath={$gitPageState.selectedFile?.kind === "deleted"
-                ? $gitPageState.selectedFile.path
-                : null}
-              onselect={selectFile}
-            />
-          {/if}
-        </section>
-      {/if}
-
-      {#if s.untracked.length > 0}
-        <section class="flex flex-col gap-1">
-          <button
-            class="flex items-center gap-1 text-xs font-semibold text-app-text-3 uppercase tracking-wider px-1 hover:text-app-text-2 transition-colors w-full text-left"
-            onclick={() => (collapsed.untracked = !collapsed.untracked)}
-          >
-            {#if collapsed.untracked}<ChevronRight
-                size={12}
-              />{:else}<ChevronDown size={12} />{/if}
-            Untracked ({s.untracked.length})
-          </button>
-          {#if !collapsed.untracked}
-            <GitFileTree
-              files={s.untracked}
-              kind="untracked"
-              selectedPath={$gitPageState.selectedFile?.kind === "untracked"
-                ? $gitPageState.selectedFile.path
-                : null}
-              onselect={selectFile}
-            />
-          {/if}
-        </section>
-      {/if}
-
-      {#if s.staged.length === 0 && s.modified.length === 0 && s.deleted.length === 0 && s.untracked.length === 0}
-        <p class="text-xs text-app-text-3 px-1">Working tree is clean.</p>
-      {/if}
+    <!-- Changes (scrollable) -->
+    <div class="overflow-y-auto flex-1 min-h-0">
+      <GitChangesPanel
+        status={s}
+        selectedPath={$gitPageState.selectedFile?.path ?? null}
+        onselect={selectFile}
+        onstage={handleStageFile}
+        onunstage={handleUnstageFile}
+        onstageall={handleStageAll}
+        onunstageall={handleUnstageAll}
+      />
     </div>
+
+    <!-- Commit (fixed at bottom) -->
+    <GitCommitPanel
+      hasStagedFiles={s.staged.length > 0}
+      isCommitting={$gitPageState.isCommitting}
+      oncommit={handleCommit}
+    />
   {:else if $gitPageState.error}
     <div
       class="px-2.5 py-2 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono"
