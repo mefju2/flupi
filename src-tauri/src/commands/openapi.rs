@@ -1,11 +1,13 @@
 use crate::error::{FlupiError, Result};
 use crate::models::openapi::{ImportableOperation, OpenApiSource};
 use crate::models::request::derive_request_id;
-use crate::services::{file_io, openapi_import, openapi_sources, schema_defaults};
+use crate::services::{
+    file_io, openapi_fetch_times, openapi_import, openapi_sources, schema_defaults,
+};
 use crate::AppState;
 use serde::Serialize;
-use std::path::PathBuf;
-use tauri::command;
+use std::path::{Path, PathBuf};
+use tauri::{command, Manager};
 
 /// What the frontend needs to render the drift explanation panel.
 #[derive(Debug, Serialize)]
@@ -167,8 +169,36 @@ pub async fn remove_openapi_source(
 }
 
 #[command]
-pub fn list_openapi_sources(project_path: PathBuf) -> Result<Vec<OpenApiSource>> {
-    let sources = openapi_sources::load(&project_path)?;
+pub fn list_openapi_sources(
+    app: tauri::AppHandle,
+    project_path: PathBuf,
+) -> Result<Vec<OpenApiSource>> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .expect("failed to get app data dir");
+    list_openapi_sources_impl(&project_path, Some(&app_data_dir))
+}
+
+pub(crate) fn list_openapi_sources_impl(
+    project_path: &Path,
+    app_data_dir: Option<&Path>,
+) -> Result<Vec<OpenApiSource>> {
+    let mut sources = openapi_sources::load(project_path)?;
+    if let Some(data_dir) = app_data_dir {
+        for source in &mut sources.sources {
+            let fetched_at =
+                openapi_fetch_times::get(data_dir, project_path, source.id()).unwrap_or(None);
+            match source {
+                OpenApiSource::Url {
+                    last_fetched_at, ..
+                } => *last_fetched_at = fetched_at,
+                OpenApiSource::File {
+                    last_fetched_at, ..
+                } => *last_fetched_at = fetched_at,
+            }
+        }
+    }
     Ok(sources.sources)
 }
 
@@ -232,6 +262,7 @@ pub async fn import_operations(
 #[command]
 pub async fn refresh_source(
     state: tauri::State<'_, AppState>,
+    app: tauri::AppHandle,
     project_path: PathBuf,
     source_id: String,
 ) -> Result<Vec<String>> {
@@ -262,14 +293,14 @@ pub async fn refresh_source(
                         id,
                         name,
                         url,
-                        last_fetched_at: Some(now.clone()),
+                        last_fetched_at: None,
                         last_hash: Some(new_hash.clone()),
                     },
                     OpenApiSource::File { id, name, path, .. } => OpenApiSource::File {
                         id,
                         name,
                         path,
-                        last_fetched_at: Some(now.clone()),
+                        last_fetched_at: None,
                         last_hash: Some(new_hash.clone()),
                     },
                 };
@@ -277,6 +308,12 @@ pub async fn refresh_source(
         }
         openapi_sources::save(&project_path, &sources)?;
     } // lock released here
+
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .expect("failed to get app data dir");
+    openapi_fetch_times::set(&app_data_dir, &project_path, &source_id, &now)?;
 
     let drifted =
         crate::services::drift_detection::detect_drift(&project_path, &source_id, &ops, &spec)?;

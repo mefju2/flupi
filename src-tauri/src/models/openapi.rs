@@ -13,7 +13,11 @@ pub enum OpenApiSource {
         id: String,
         name: String,
         url: String,
-        #[serde(rename = "lastFetchedAt")]
+        #[serde(
+            rename = "lastFetchedAt",
+            skip_deserializing,
+            skip_serializing_if = "Option::is_none"
+        )]
         last_fetched_at: Option<String>,
         #[serde(rename = "lastHash")]
         last_hash: Option<String>,
@@ -23,7 +27,11 @@ pub enum OpenApiSource {
         id: String,
         name: String,
         path: String,
-        #[serde(rename = "lastFetchedAt")]
+        #[serde(
+            rename = "lastFetchedAt",
+            skip_deserializing,
+            skip_serializing_if = "Option::is_none"
+        )]
         last_fetched_at: Option<String>,
         #[serde(rename = "lastHash")]
         last_hash: Option<String>,

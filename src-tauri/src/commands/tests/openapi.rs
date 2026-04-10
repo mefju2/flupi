@@ -1,6 +1,6 @@
 use super::*;
-use tempfile::TempDir;
 use crate::services::openapi_sources;
+use tempfile::TempDir;
 
 fn minimal_spec_json() -> String {
     serde_json::json!({
@@ -33,7 +33,7 @@ fn test_add_openapi_source_creates_file() {
         last_hash: None,
     };
 
-    openapi_sources::add(&project_path,source).unwrap();
+    openapi_sources::add(&project_path, source).unwrap();
 
     let sources_path = project_path.join("openapi-sources.json");
     assert!(sources_path.exists());
@@ -64,10 +64,10 @@ fn test_add_openapi_source_appends_to_existing() {
         last_hash: None,
     };
 
-    openapi_sources::add(&project_path,source1).unwrap();
-    openapi_sources::add(&project_path,source2).unwrap();
+    openapi_sources::add(&project_path, source1).unwrap();
+    openapi_sources::add(&project_path, source2).unwrap();
 
-    let sources = list_openapi_sources(project_path).unwrap();
+    let sources = list_openapi_sources_impl(&project_path, None).unwrap();
     assert_eq!(sources.len(), 2);
 }
 
@@ -91,11 +91,11 @@ fn test_remove_openapi_source() {
         last_hash: None,
     };
 
-    openapi_sources::add(&project_path,source1).unwrap();
-    openapi_sources::add(&project_path,source2).unwrap();
+    openapi_sources::add(&project_path, source1).unwrap();
+    openapi_sources::add(&project_path, source2).unwrap();
     openapi_sources::remove(&project_path, "src-1").unwrap();
 
-    let sources = list_openapi_sources(project_path).unwrap();
+    let sources = list_openapi_sources_impl(&project_path, None).unwrap();
     assert_eq!(sources.len(), 1);
     assert_eq!(sources[0].id(), "src-2");
 }
@@ -105,7 +105,7 @@ fn test_list_openapi_sources_empty_when_no_file() {
     let dir = TempDir::new().unwrap();
     let project_path = dir.path().to_path_buf();
 
-    let sources = list_openapi_sources(project_path).unwrap();
+    let sources = list_openapi_sources_impl(&project_path, None).unwrap();
     assert!(sources.is_empty());
 }
 
@@ -124,9 +124,11 @@ async fn test_fetch_operations_from_file_source() {
         last_fetched_at: None,
         last_hash: None,
     };
-    openapi_sources::add(&project_path,source).unwrap();
+    openapi_sources::add(&project_path, source).unwrap();
 
-    let ops = fetch_operations(project_path, "src-file".to_string()).await.unwrap();
+    let ops = fetch_operations(project_path, "src-file".to_string())
+        .await
+        .unwrap();
     assert_eq!(ops.len(), 1);
     assert_eq!(ops[0].operation_id, "getHealth");
     assert_eq!(ops[0].method, "get");
@@ -134,7 +136,12 @@ async fn test_fetch_operations_from_file_source() {
 
 // ── find_candidate_operations ────────────────────────────────────────────────
 
-fn make_ops(paths_methods: &[(&str, &str, &str)]) -> Vec<(crate::models::openapi::ImportableOperation, serde_json::Value)> {
+fn make_ops(
+    paths_methods: &[(&str, &str, &str)],
+) -> Vec<(
+    crate::models::openapi::ImportableOperation,
+    serde_json::Value,
+)> {
     paths_methods
         .iter()
         .map(|(method, path, op_id)| {
@@ -155,15 +162,23 @@ fn test_candidates_ranked_by_normalized_score() {
     // /api/Roles (len=10) vs /api/Role (len=9): score = 2*9/19 ≈ 0.947
     // /api/Roles (len=10) vs /api/RoleIntentAssignment/role-with-intents (len=42): score = 2*9/52 ≈ 0.346
     let ops = make_ops(&[
-        ("get", "/api/RoleIntentAssignment/role-with-intents", "getApiRoleRoleId"),
+        (
+            "get",
+            "/api/RoleIntentAssignment/role-with-intents",
+            "getApiRoleRoleId",
+        ),
         ("get", "/api/Role", "getApiRole"),
     ]);
     let excluded = std::collections::HashSet::new();
     let candidates = find_candidate_operations("get", "/api/Roles", &ops, &excluded);
     assert!(!candidates.is_empty(), "Expected at least one candidate");
     // /api/Role must be ranked first (highest score)
-    assert_eq!(candidates[0].path, "/api/Role",
-        "Expected /api/Role as top candidate, got: {:?}", candidates.iter().map(|c| &c.path).collect::<Vec<_>>());
+    assert_eq!(
+        candidates[0].path,
+        "/api/Role",
+        "Expected /api/Role as top candidate, got: {:?}",
+        candidates.iter().map(|c| &c.path).collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -202,7 +217,10 @@ fn test_candidates_below_threshold_excluded() {
     let ops = make_ops(&[("get", "/v2/completely/different", "someOp")]);
     let excluded = std::collections::HashSet::new();
     let candidates = find_candidate_operations("get", "/api/Roles", &ops, &excluded);
-    assert!(candidates.is_empty(), "Dissimilar paths must not be candidates");
+    assert!(
+        candidates.is_empty(),
+        "Dissimilar paths must not be candidates"
+    );
 }
 
 #[test]
@@ -217,5 +235,8 @@ fn test_candidates_capped_at_eight() {
     let ops = make_ops(&ops_ref);
     let excluded = std::collections::HashSet::new();
     let candidates = find_candidate_operations("get", "/api/Role", &ops, &excluded);
-    assert!(candidates.len() <= 8, "Must not return more than 8 candidates");
+    assert!(
+        candidates.len() <= 8,
+        "Must not return more than 8 candidates"
+    );
 }

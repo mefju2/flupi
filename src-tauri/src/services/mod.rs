@@ -8,6 +8,7 @@ pub mod git_branch;
 pub mod git_staging;
 pub mod http_client;
 pub mod inheritance;
+pub mod openapi_fetch_times;
 pub mod openapi_import;
 pub mod openapi_sources;
 pub mod project;

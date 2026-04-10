@@ -30,6 +30,9 @@ fn test_openapi_source_file_serializes_with_type_file() {
     assert_eq!(json["type"], "file");
     assert_eq!(json["id"], "src-2");
     assert_eq!(json["path"], "/path/to/spec.json");
+    // lastFetchedAt is skipped in serialization — it lives in app_data_dir instead
+    // lastFetchedAt is excluded from the project file (skip_deserializing, skip_serializing_if = None)
+    // but IS included when Some — used for the IPC response after being injected from app_data_dir.
     assert_eq!(json["lastFetchedAt"], "2026-03-27T00:00:00Z");
     assert_eq!(json["lastHash"], "abc123");
 }
