@@ -4,9 +4,7 @@ use std::process::Command;
 use serde::Serialize;
 
 use crate::error::{FlupiError, Result};
-
-const GIT_NOT_FOUND: &str =
-    "git binary not found. Please install git and ensure it is on your PATH.";
+use crate::services::GIT_NOT_FOUND;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct BranchInfo {
@@ -67,9 +65,51 @@ pub fn list_branches(path: &Path) -> Result<Vec<BranchInfo>> {
     Ok(parse_branch_list(&stdout))
 }
 
-pub fn checkout_branch(path: &Path, branch: &str) -> Result<()> {
-    if branch.contains("..") || branch.starts_with('-') {
+pub fn checkout_branch(path: &Path, branch: &str, is_remote: bool) -> Result<()> {
+    if branch.contains("..")
+        || branch.starts_with('-')
+        || branch.chars().any(|c| matches!(c, '\0' | '\n' | '\r'))
+    {
         return Err(FlupiError::Custom("Invalid branch name".to_string()));
+    }
+
+    if is_remote {
+        // branch is e.g. "origin/feature" — derive the local tracking name
+        let local = branch.splitn(2, '/').nth(1).unwrap_or(branch);
+
+        // Try to create a local tracking branch
+        let out = Command::new("git")
+            .args(["checkout", "-b", local, "--track", branch])
+            .current_dir(path)
+            .output()
+            .map_err(|_| FlupiError::Custom(GIT_NOT_FOUND.to_string()))?;
+
+        if out.status.success() {
+            return Ok(());
+        }
+
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        // Local branch already exists — just switch to it
+        if stderr.contains("already exists") {
+            let out2 = Command::new("git")
+                .args(["checkout", local])
+                .current_dir(path)
+                .output()
+                .map_err(|_| FlupiError::Custom(GIT_NOT_FOUND.to_string()))?;
+            if !out2.status.success() {
+                let e = String::from_utf8_lossy(&out2.stderr);
+                return Err(FlupiError::Custom(format!(
+                    "git checkout failed: {}",
+                    e.trim()
+                )));
+            }
+            return Ok(());
+        }
+
+        return Err(FlupiError::Custom(format!(
+            "git checkout failed: {}",
+            stderr.trim()
+        )));
     }
 
     let output = Command::new("git")

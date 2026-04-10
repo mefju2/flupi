@@ -4,9 +4,7 @@ use std::process::Command;
 use serde::Serialize;
 
 use crate::error::{FlupiError, Result};
-
-const GIT_NOT_FOUND: &str =
-    "git binary not found. Please install git and ensure it is on your PATH.";
+use crate::services::GIT_NOT_FOUND;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GitStatus {
@@ -112,7 +110,12 @@ fn parse_porcelain_v2(output: &str) -> Result<GitStatus> {
             // renamed/copied entry — the new path is staged
             let parts: Vec<&str> = line.splitn(10, ' ').collect();
             if let Some(path_field) = parts.last() {
-                let new_path = path_field.split('\t').next().unwrap_or(path_field).trim().to_string();
+                let new_path = path_field
+                    .split('\t')
+                    .next()
+                    .unwrap_or(path_field)
+                    .trim()
+                    .to_string();
                 staged.push(new_path);
             }
         } else if let Some(file_path) = line.strip_prefix("? ") {

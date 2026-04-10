@@ -1,13 +1,13 @@
 <script lang="ts" module>
   export interface GitFileEntry {
     path: string;
-    status: import('$lib/stores/git').GitFileStatus;
+    status: import("$lib/stores/git").GitFileStatus;
   }
 </script>
 
 <script lang="ts">
-  import { ChevronRight, ChevronDown, Plus, Minus } from 'lucide-svelte';
-  import type { GitFileStatus } from '$lib/stores/git';
+  import { ChevronRight, ChevronDown, Plus, Minus } from "lucide-svelte";
+  import type { GitFileStatus } from "$lib/stores/git";
 
   interface Props {
     files: GitFileEntry[];
@@ -29,12 +29,12 @@
   function buildTree(entries: GitFileEntry[]): Map<string, TreeNode> {
     const root = new Map<string, TreeNode>();
     for (const entry of entries) {
-      const parts = entry.path.split('/');
+      const parts = entry.path.split("/");
       let current = root;
       for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
         const isFile = i === parts.length - 1;
-        const nodePath = parts.slice(0, i + 1).join('/');
+        const nodePath = parts.slice(0, i + 1).join("/");
         if (!current.has(part)) {
           current.set(part, {
             name: part,
@@ -53,26 +53,28 @@
   let openDirs = $state<Set<string>>(new Set());
 
   $effect(() => {
+    const next = new Set<string>();
     for (const entry of files) {
-      const parts = entry.path.split('/');
+      const parts = entry.path.split("/");
       for (let i = 0; i < parts.length - 1; i++) {
-        openDirs.add(parts.slice(0, i + 1).join('/'));
+        next.add(parts.slice(0, i + 1).join("/"));
       }
     }
+    openDirs = next;
   });
 
   const tree = $derived(buildTree(files));
 
   function dotColor(status: GitFileStatus): string {
     switch (status) {
-      case 'staged':
-        return 'text-green-400';
-      case 'modified':
-        return 'text-yellow-400';
-      case 'deleted':
-        return 'text-red-400';
-      case 'untracked':
-        return 'text-purple-400';
+      case "staged":
+        return "text-green-400";
+      case "modified":
+        return "text-yellow-400";
+      case "deleted":
+        return "text-red-400";
+      case "untracked":
+        return "text-purple-400";
     }
   }
 
@@ -89,15 +91,19 @@
     <div
       class="group flex items-center gap-1 rounded px-1 py-0.5 cursor-pointer text-xs
              {node.path === selectedPath
-               ? 'bg-app-card text-app-text'
-               : 'text-app-text-2 hover:bg-app-card/50'}"
+        ? 'bg-app-card text-app-text'
+        : 'text-app-text-2 hover:bg-app-card/50'}"
       style="padding-left: {depth * 12 + 4}px"
       role="button"
       tabindex="0"
       onclick={() => onselect(node.path, node.status!)}
-      onkeydown={(e) => e.key === 'Enter' && onselect(node.path, node.status!)}
+      onkeydown={(e) => e.key === "Enter" && onselect(node.path, node.status!)}
     >
-      <span class="w-1.5 h-1.5 rounded-full shrink-0 {dotColor(node.status!)} bg-current"></span>
+      <span
+        class="w-1.5 h-1.5 rounded-full shrink-0 {dotColor(
+          node.status!,
+        )} bg-current"
+      ></span>
       <span class="font-mono truncate flex-1">{node.name}</span>
       <button
         class="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded
@@ -106,10 +112,10 @@
           e.stopPropagation();
           onaction(node.path, node.status!);
         }}
-        title={node.status === 'staged' ? 'Unstage' : 'Stage'}
-        aria-label={node.status === 'staged' ? 'Unstage file' : 'Stage file'}
+        title={node.status === "staged" ? "Unstage" : "Stage"}
+        aria-label={node.status === "staged" ? "Unstage file" : "Stage file"}
       >
-        {#if node.status === 'staged'}
+        {#if node.status === "staged"}
           <Minus size={10} />
         {:else}
           <Plus size={10} />
@@ -124,7 +130,9 @@
       style="padding-left: {depth * 12 + 4}px"
       onclick={() => toggleDir(node.path)}
     >
-      {#if isOpen}<ChevronDown size={10} />{:else}<ChevronRight size={10} />{/if}
+      {#if isOpen}<ChevronDown size={10} />{:else}<ChevronRight
+          size={10}
+        />{/if}
       <span class="font-mono">{node.name}</span>
     </button>
     {#if isOpen}

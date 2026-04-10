@@ -1,43 +1,52 @@
 <script lang="ts">
-  import { ChevronDown, Check, GitBranch } from 'lucide-svelte';
-  import type { BranchInfo } from '$lib/services/tauri-commands';
+  import { ChevronDown, Check, GitBranch } from "lucide-svelte";
+  import type { BranchInfo } from "$lib/services/tauri-commands";
 
   interface Props {
     currentBranch: string;
     branches: BranchInfo[];
     isSwitching: boolean;
-    onswitch: (branch: string) => void;
+    onswitch: (branch: string, isRemote: boolean) => void;
     onopen: () => void;
   }
 
-  let { currentBranch, branches, isSwitching, onswitch, onopen }: Props = $props();
+  let { currentBranch, branches, isSwitching, onswitch, onopen }: Props =
+    $props();
 
   let open = $state(false);
-  let filter = $state('');
+  let filter = $state("");
 
   const localBranches = $derived(
-    branches.filter((b) => !b.isRemote && b.name.toLowerCase().includes(filter.toLowerCase()))
+    branches.filter(
+      (b) => !b.isRemote && b.name.toLowerCase().includes(filter.toLowerCase()),
+    ),
   );
 
   const remoteBranches = $derived(
-    branches.filter((b) => b.isRemote && b.name.toLowerCase().includes(filter.toLowerCase()))
+    branches.filter(
+      (b) => b.isRemote && b.name.toLowerCase().includes(filter.toLowerCase()),
+    ),
   );
 
   function toggle() {
     open = !open;
     if (open) {
-      filter = '';
+      filter = "";
       onopen();
     }
   }
 
-  function select(name: string) {
+  function select(name: string, isRemote: boolean) {
     open = false;
-    if (name !== currentBranch) onswitch(name);
+    if (name !== currentBranch) onswitch(name, isRemote);
   }
 </script>
 
-<svelte:window onkeydown={(e) => { if (e.key === 'Escape') open = false; }} />
+<svelte:window
+  onkeydown={(e) => {
+    if (e.key === "Escape") open = false;
+  }}
+/>
 
 <div class="relative">
   <button
@@ -50,7 +59,10 @@
   >
     <GitBranch size={12} class="shrink-0" />
     <span class="max-w-[140px] truncate">{currentBranch}</span>
-    <ChevronDown size={10} class="shrink-0 transition-transform {open ? 'rotate-180' : ''}" />
+    <ChevronDown
+      size={10}
+      class="shrink-0 transition-transform {open ? 'rotate-180' : ''}"
+    />
   </button>
 
   {#if open}
@@ -78,7 +90,9 @@
 
       <div class="overflow-y-auto max-h-56 flex flex-col">
         {#if localBranches.length > 0}
-          <p class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-app-text-3">
+          <p
+            class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-app-text-3"
+          >
             Local
           </p>
           {#each localBranches as branch}
@@ -86,7 +100,7 @@
               class="flex items-center gap-2 px-2 py-1.5 text-xs text-left
                      hover:bg-app-card transition-colors
                      {branch.isCurrent ? 'text-app-text' : 'text-app-text-2'}"
-              onclick={() => select(branch.name)}
+              onclick={() => select(branch.name, false)}
             >
               {#if branch.isCurrent}
                 <Check size={12} class="text-cyan-400 shrink-0" />
@@ -109,7 +123,7 @@
             <button
               class="flex items-center gap-2 px-2 py-1.5 text-xs text-left
                      text-app-text-3 hover:bg-app-card hover:text-app-text-2 transition-colors"
-              onclick={() => select(branch.name)}
+              onclick={() => select(branch.name, true)}
             >
               <span class="w-3 shrink-0"></span>
               <span class="font-mono truncate">{branch.name}</span>
@@ -118,7 +132,9 @@
         {/if}
 
         {#if localBranches.length === 0 && remoteBranches.length === 0}
-          <p class="px-2 py-3 text-xs text-center text-app-text-3">No branches found</p>
+          <p class="px-2 py-3 text-xs text-center text-app-text-3">
+            No branches found
+          </p>
         {/if}
       </div>
     </div>

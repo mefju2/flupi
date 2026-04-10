@@ -1,175 +1,29 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { RefreshCw, GitBranch } from 'lucide-svelte';
-  import { project } from '$lib/stores/project';
-  import { gitPageState, gitAutoRefreshMs, type GitFileStatus } from '$lib/stores/git';
+  import { onMount } from "svelte";
+  import { RefreshCw, GitBranch } from "lucide-svelte";
+  import { project } from "$lib/stores/project";
+  import { gitPageState, gitAutoRefreshMs } from "$lib/stores/git";
+  import { formatRelativeTime } from "$lib/utils/format";
+  import GitBranchHeader from "./GitBranchHeader.svelte";
+  import GitChangesPanel from "./GitChangesPanel.svelte";
+  import GitCommitPanel from "./GitCommitPanel.svelte";
   import {
-    getGitStatus,
-    gitFetch,
-    gitPull,
-    gitPush,
-    gitStageFile,
-    gitUnstageFile,
-    gitStageAll,
-    gitUnstageAll,
-    gitCommit,
-    gitListBranches,
-    gitCheckoutBranch,
-    getPreferences,
-  } from '$lib/services/tauri-commands';
-  import { formatRelativeTime } from '$lib/utils/format';
-  import GitBranchHeader from './GitBranchHeader.svelte';
-  import GitChangesPanel from './GitChangesPanel.svelte';
-  import GitCommitPanel from './GitCommitPanel.svelte';
+    load,
+    handleFetch,
+    handlePull,
+    handlePush,
+    handleStageFile,
+    handleUnstageFile,
+    handleStageAll,
+    handleUnstageAll,
+    handleCommit,
+    handleLoadBranches,
+    handleCheckoutBranch,
+    selectFile,
+    initAutoRefresh,
+  } from "./git-actions";
 
-  let conflictError = $state<string | null>(null);
   let refreshInterval: ReturnType<typeof setInterval> | null = null;
-
-  async function load() {
-    const path = $project.path;
-    if (!path) return;
-    gitPageState.update((s) => ({ ...s, isLoading: s.status === null, error: null }));
-    try {
-      const status = await getGitStatus(path);
-      gitPageState.update((s) => ({ ...s, status, isLoading: false, lastRefreshed: new Date() }));
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, isLoading: false, error: String(e) }));
-    }
-  }
-
-  async function handleFetch() {
-    const path = $project.path;
-    if (!path) return;
-    conflictError = null;
-    gitPageState.update((s) => ({ ...s, isFetching: true, error: null }));
-    try {
-      await gitFetch(path);
-      await load();
-      gitPageState.update((s) => ({ ...s, lastFetched: new Date() }));
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, error: String(e) }));
-    } finally {
-      gitPageState.update((s) => ({ ...s, isFetching: false }));
-    }
-  }
-
-  async function handlePull() {
-    const path = $project.path;
-    if (!path) return;
-    conflictError = null;
-    gitPageState.update((s) => ({ ...s, isPulling: true, error: null }));
-    try {
-      await gitPull(path);
-      await load();
-    } catch (e) {
-      const msg = String(e);
-      if (msg.includes('CONFLICT')) conflictError = msg.replace('CONFLICT: ', '');
-      else gitPageState.update((s) => ({ ...s, error: msg }));
-    } finally {
-      gitPageState.update((s) => ({ ...s, isPulling: false }));
-    }
-  }
-
-  async function handlePush() {
-    const path = $project.path;
-    if (!path) return;
-    gitPageState.update((s) => ({ ...s, isPushing: true, error: null }));
-    try {
-      await gitPush(path);
-      await load();
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, error: String(e) }));
-    } finally {
-      gitPageState.update((s) => ({ ...s, isPushing: false }));
-    }
-  }
-
-  async function handleStageFile(filePath: string) {
-    const path = $project.path;
-    if (!path) return;
-    try {
-      await gitStageFile(path, filePath);
-      await load();
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, error: String(e) }));
-    }
-  }
-
-  async function handleUnstageFile(filePath: string) {
-    const path = $project.path;
-    if (!path) return;
-    try {
-      await gitUnstageFile(path, filePath);
-      await load();
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, error: String(e) }));
-    }
-  }
-
-  async function handleStageAll() {
-    const path = $project.path;
-    if (!path) return;
-    try {
-      await gitStageAll(path);
-      await load();
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, error: String(e) }));
-    }
-  }
-
-  async function handleUnstageAll() {
-    const path = $project.path;
-    if (!path) return;
-    try {
-      await gitUnstageAll(path);
-      await load();
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, error: String(e) }));
-    }
-  }
-
-  async function handleCommit(message: string) {
-    const path = $project.path;
-    if (!path) return;
-    gitPageState.update((s) => ({ ...s, isCommitting: true, error: null }));
-    try {
-      await gitCommit(path, message);
-      await load();
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, error: String(e) }));
-    } finally {
-      gitPageState.update((s) => ({ ...s, isCommitting: false }));
-    }
-  }
-
-  async function handleLoadBranches() {
-    const path = $project.path;
-    if (!path) return;
-    try {
-      const branches = await gitListBranches(path);
-      gitPageState.update((s) => ({ ...s, branches }));
-    } catch (_) {
-      // Non-critical — branch dropdown stays empty on error
-    }
-  }
-
-  async function handleCheckoutBranch(branch: string) {
-    const path = $project.path;
-    if (!path) return;
-    gitPageState.update((s) => ({ ...s, isSwitchingBranch: true, error: null }));
-    try {
-      await gitCheckoutBranch(path, branch);
-      await load();
-    } catch (e) {
-      gitPageState.update((s) => ({ ...s, error: String(e) }));
-    } finally {
-      gitPageState.update((s) => ({ ...s, isSwitchingBranch: false }));
-    }
-  }
-
-  function selectFile(path: string, status: GitFileStatus) {
-    gitPageState.update((s) => ({ ...s, selectedFile: { path, status } }));
-  }
 
   $effect(() => {
     const ms = $gitAutoRefreshMs;
@@ -185,10 +39,7 @@
     if (path) load();
   });
 
-  onMount(async () => {
-    const prefs = await getPreferences();
-    gitAutoRefreshMs.set(prefs.gitAutoRefreshMs ?? 30_000);
-  });
+  onMount(initAutoRefresh);
 </script>
 
 <div class="flex flex-col gap-4 p-4 h-full">
@@ -202,7 +53,10 @@
       disabled={$gitPageState.isLoading}
       aria-label="Refresh"
     >
-      <RefreshCw size={12} class={$gitPageState.isLoading ? 'animate-spin' : ''} />
+      <RefreshCw
+        size={12}
+        class={$gitPageState.isLoading ? "animate-spin" : ""}
+      />
       Refresh
     </button>
   </div>
@@ -238,7 +92,7 @@
       isSwitchingBranch={$gitPageState.isSwitchingBranch}
       branches={$gitPageState.branches}
       lastFetched={$gitPageState.lastFetched}
-      {conflictError}
+      conflictError={$gitPageState.conflictError}
       error={$gitPageState.error}
       onfetch={handleFetch}
       onpull={handlePull}

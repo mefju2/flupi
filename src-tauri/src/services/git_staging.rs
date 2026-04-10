@@ -2,9 +2,7 @@ use std::path::{Component, Path};
 use std::process::Command;
 
 use crate::error::{FlupiError, Result};
-
-const GIT_NOT_FOUND: &str =
-    "git binary not found. Please install git and ensure it is on your PATH.";
+use crate::services::GIT_NOT_FOUND;
 
 fn validate_path(file_path: &str) -> Result<()> {
     let fp = Path::new(file_path);

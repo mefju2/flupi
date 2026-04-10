@@ -117,8 +117,8 @@ export async function gitListBranches(projectPath: string): Promise<BranchInfo[]
   return invoke('git_list_branches', { projectPath });
 }
 
-export async function gitCheckoutBranch(projectPath: string, branch: string): Promise<void> {
-  return invoke('git_checkout_branch', { projectPath, branch });
+export async function gitCheckoutBranch(projectPath: string, branch: string, isRemote: boolean): Promise<void> {
+  return invoke('git_checkout_branch', { projectPath, branch, isRemote });
 }
 
 export async function pickFolder(): Promise<string | null> {

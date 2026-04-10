@@ -1,8 +1,15 @@
 <script lang="ts">
-  import { Download, ArrowDown, ArrowUp, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-svelte';
-  import type { GitStatus, BranchInfo } from '$lib/services/tauri-commands';
-  import { formatRelativeTime } from '$lib/utils/format';
-  import GitBranchSwitcher from './GitBranchSwitcher.svelte';
+  import {
+    Download,
+    ArrowDown,
+    ArrowUp,
+    AlertTriangle,
+    CheckCircle2,
+    RefreshCw,
+  } from "lucide-svelte";
+  import type { GitStatus, BranchInfo } from "$lib/services/tauri-commands";
+  import { formatRelativeTime } from "$lib/utils/format";
+  import GitBranchSwitcher from "./GitBranchSwitcher.svelte";
 
   interface Props {
     status: GitStatus;
@@ -17,7 +24,7 @@
     onfetch: () => void;
     onpull: () => void;
     onpush: () => void;
-    onbranch: (branch: string) => void;
+    onbranch: (branch: string, isRemote: boolean) => void;
     onloadbranches: () => void;
   }
 
@@ -47,7 +54,7 @@
           ? `${status.ahead} ahead of ${status.upstream}`
           : status.behind > 0
             ? `${status.behind} behind ${status.upstream}`
-            : 'Your branch is up to date'
+            : "Your branch is up to date",
   );
 </script>
 
@@ -68,16 +75,22 @@
 </section>
 
 {#if status.upstream}
-  <p class="text-xs text-app-text-3 truncate pl-1 -mt-2 shrink-0">{status.upstream}</p>
+  <p class="text-xs text-app-text-3 truncate pl-1 -mt-2 shrink-0">
+    {status.upstream}
+  </p>
 {/if}
 
 <!-- Sync status -->
 {#if status.upstream}
-  <section class="flex flex-col gap-1 shrink-0 border border-app-border rounded px-2.5 py-2">
+  <section
+    class="flex flex-col gap-1 shrink-0 border border-app-border rounded px-2.5 py-2"
+  >
     <div class="flex items-center gap-1.5">
       <CheckCircle2
         size={12}
-        class={status.behind === 0 && status.ahead === 0 ? 'text-green-500' : 'text-yellow-500'}
+        class={status.behind === 0 && status.ahead === 0
+          ? "text-green-500"
+          : "text-yellow-500"}
       />
       <span class="text-xs text-app-text-2">{syncLabel}</span>
     </div>
@@ -104,34 +117,42 @@
     onclick={onfetch}
     disabled={isFetching || isPulling || isPushing}
   >
-    <Download size={12} class={isFetching ? 'animate-spin' : ''} />
-    {isFetching ? 'Fetching…' : 'Fetch'}
+    <Download size={12} class={isFetching ? "animate-spin" : ""} />
+    {isFetching ? "Fetching…" : "Fetch"}
   </button>
   <button
     class="flex items-center gap-1 px-2.5 py-1.5 rounded text-xs bg-app-card text-app-text-2
            hover:bg-app-hover border border-app-border transition-colors disabled:opacity-50"
     onclick={onpull}
-    disabled={isPulling || isFetching || isPushing || !status.upstream || status.behind === 0}
+    disabled={isPulling ||
+      isFetching ||
+      isPushing ||
+      !status.upstream ||
+      status.behind === 0}
   >
-    <ArrowDown size={12} class={isPulling ? 'animate-spin' : ''} />
-    {isPulling ? 'Pulling…' : 'Pull'}
+    <ArrowDown size={12} class={isPulling ? "animate-spin" : ""} />
+    {isPulling ? "Pulling…" : "Pull"}
   </button>
   <button
     class="flex items-center gap-1 px-2.5 py-1.5 rounded text-xs transition-colors
            disabled:opacity-50
            {status.ahead > 0 && !isPushing
-             ? 'bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-500'
-             : 'bg-app-card text-app-text-2 hover:bg-app-hover border border-app-border'}"
+      ? 'bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-500'
+      : 'bg-app-card text-app-text-2 hover:bg-app-hover border border-app-border'}"
     onclick={onpush}
     disabled={isPushing || isFetching || isPulling || !status.upstream}
-    title={!status.upstream ? 'No upstream configured' : 'Push commits'}
+    title={!status.upstream ? "No upstream configured" : "Push commits"}
   >
     {#if isPushing}
       <RefreshCw size={12} class="animate-spin" />
     {:else}
       <ArrowUp size={12} />
     {/if}
-    {isPushing ? 'Pushing…' : status.ahead > 0 ? `Push (${status.ahead})` : 'Push'}
+    {isPushing
+      ? "Pushing…"
+      : status.ahead > 0
+        ? `Push (${status.ahead})`
+        : "Push"}
   </button>
 </section>
 

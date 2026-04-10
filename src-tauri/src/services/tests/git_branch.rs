@@ -24,6 +24,6 @@ fn test_parse_branches_remote() {
 #[test]
 fn test_checkout_branch_rejects_suspicious_names() {
     use std::path::Path;
-    assert!(checkout_branch(Path::new("/tmp"), "../../etc").is_err());
-    assert!(checkout_branch(Path::new("/tmp"), "-bad").is_err());
+    assert!(checkout_branch(Path::new("/tmp"), "../../etc", false).is_err());
+    assert!(checkout_branch(Path::new("/tmp"), "-bad", false).is_err());
 }

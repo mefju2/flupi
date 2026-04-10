@@ -19,6 +19,7 @@ export interface GitPageState {
   isCommitting: boolean;
   isSwitchingBranch: boolean;
   error: string | null;
+  conflictError: string | null;
   lastRefreshed: Date | null;
   lastFetched: Date | null;
   selectedFile: GitSelectedFile | null;
@@ -36,6 +37,7 @@ export const gitPageState = writable<GitPageState>({
   isCommitting: false,
   isSwitchingBranch: false,
   error: null,
+  conflictError: null,
   lastRefreshed: null,
   lastFetched: null,
   selectedFile: null,

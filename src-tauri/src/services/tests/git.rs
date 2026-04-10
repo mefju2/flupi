@@ -1,26 +1,5 @@
 use super::*;
 
-fn make_status(
-    branch: &str,
-    upstream: Option<&str>,
-    ahead: u32,
-    behind: u32,
-    modified: Vec<&str>,
-    untracked: Vec<&str>,
-) -> GitStatus {
-    GitStatus {
-        branch: branch.to_string(),
-        upstream: upstream.map(|s| s.to_string()),
-        ahead,
-        behind,
-        staged: vec![],
-        modified: modified.into_iter().map(|s| s.to_string()).collect(),
-        deleted: vec![],
-        untracked: untracked.into_iter().map(|s| s.to_string()).collect(),
-        is_git_repo: true,
-    }
-}
-
 #[test]
 fn test_parse_clean_repo() {
     let output = "\

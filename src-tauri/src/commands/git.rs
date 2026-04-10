@@ -14,13 +14,19 @@ pub fn get_git_status(project_path: String) -> Result<GitStatus, FlupiError> {
 }
 
 #[command]
-pub fn git_fetch(project_path: String) -> Result<(), FlupiError> {
-    git::fetch(&PathBuf::from(project_path))
+pub async fn git_fetch(project_path: String) -> Result<(), FlupiError> {
+    let path = PathBuf::from(project_path);
+    tokio::task::spawn_blocking(move || git::fetch(&path))
+        .await
+        .map_err(|e| FlupiError::Custom(e.to_string()))?
 }
 
 #[command]
-pub fn git_pull(project_path: String) -> Result<(), FlupiError> {
-    git::pull(&PathBuf::from(project_path))
+pub async fn git_pull(project_path: String) -> Result<(), FlupiError> {
+    let path = PathBuf::from(project_path);
+    tokio::task::spawn_blocking(move || git::pull(&path))
+        .await
+        .map_err(|e| FlupiError::Custom(e.to_string()))?
 }
 
 #[command]
@@ -54,8 +60,11 @@ pub fn git_commit(project_path: String, message: String) -> Result<(), FlupiErro
 }
 
 #[command]
-pub fn git_push(project_path: String) -> Result<(), FlupiError> {
-    git_staging::push(&PathBuf::from(project_path))
+pub async fn git_push(project_path: String) -> Result<(), FlupiError> {
+    let path = PathBuf::from(project_path);
+    tokio::task::spawn_blocking(move || git_staging::push(&path))
+        .await
+        .map_err(|e| FlupiError::Custom(e.to_string()))?
 }
 
 #[command]
@@ -64,6 +73,6 @@ pub fn git_list_branches(project_path: String) -> Result<Vec<BranchInfo>, FlupiE
 }
 
 #[command]
-pub fn git_checkout_branch(project_path: String, branch: String) -> Result<(), FlupiError> {
-    git_branch::checkout_branch(&PathBuf::from(project_path), &branch)
+pub fn git_checkout_branch(project_path: String, branch: String, is_remote: bool) -> Result<(), FlupiError> {
+    git_branch::checkout_branch(&PathBuf::from(project_path), &branch, is_remote)
 }
