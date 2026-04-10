@@ -41,11 +41,17 @@ impl RecentProjects {
     }
 }
 
+fn default_git_refresh_ms() -> u64 {
+    30_000
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Preferences {
     pub theme: String,
     #[serde(rename = "defaultTimeoutMs")]
     pub default_timeout_ms: u64,
+    #[serde(rename = "gitAutoRefreshMs", default = "default_git_refresh_ms")]
+    pub git_auto_refresh_ms: u64,
 }
 
 impl Default for Preferences {
@@ -53,6 +59,7 @@ impl Default for Preferences {
         Self {
             theme: "dark".to_string(),
             default_timeout_ms: 30000,
+            git_auto_refresh_ms: 30_000,
         }
     }
 }

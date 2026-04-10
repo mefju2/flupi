@@ -12,6 +12,7 @@ fn make_extraction(variable: &str, from: &str, path: &str) -> Extraction {
         variable: variable.to_string(),
         from: from.to_string(),
         path: path.to_string(),
+        scope: "scenario".to_string(),
     }
 }
 

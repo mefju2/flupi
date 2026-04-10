@@ -1,5 +1,11 @@
+pub(crate) const GIT_NOT_FOUND: &str =
+    "git binary not found. Please install git and ensure it is on your PATH.";
+
 pub mod drift_detection;
 pub mod file_io;
+pub mod git;
+pub mod git_branch;
+pub mod git_staging;
 pub mod http_client;
 pub mod inheritance;
 pub mod openapi_import;

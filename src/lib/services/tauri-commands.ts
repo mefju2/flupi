@@ -15,6 +15,19 @@ export interface RecentProjects {
 export interface Preferences {
   theme: string;
   defaultTimeoutMs: number;
+  gitAutoRefreshMs: number;
+}
+
+export interface GitStatus {
+  branch: string;
+  upstream: string | null;
+  ahead: number;
+  behind: number;
+  staged: string[];
+  modified: string[];
+  deleted: string[];
+  untracked: string[];
+  isGitRepo: boolean;
 }
 
 export async function getRecentProjects(): Promise<RecentProjects> {
@@ -47,6 +60,65 @@ export async function getPreferences(): Promise<Preferences> {
 
 export async function savePreferences(preferences: Preferences): Promise<void> {
   return invoke('save_preferences', { preferences });
+}
+
+export async function getGitStatus(projectPath: string): Promise<GitStatus> {
+  return invoke('get_git_status', { projectPath });
+}
+
+export async function gitFetch(projectPath: string): Promise<void> {
+  return invoke('git_fetch', { projectPath });
+}
+
+export async function gitPull(projectPath: string): Promise<void> {
+  return invoke('git_pull', { projectPath });
+}
+
+export interface GitFileDiff {
+  oldContent: string;
+  newContent: string;
+}
+
+export async function gitFileDiff(projectPath: string, filePath: string): Promise<GitFileDiff> {
+  return invoke('git_file_diff', { projectPath, filePath });
+}
+
+export interface BranchInfo {
+  name: string;
+  isCurrent: boolean;
+  isRemote: boolean;
+}
+
+export async function gitStageFile(projectPath: string, filePath: string): Promise<void> {
+  return invoke('git_stage_file', { projectPath, filePath });
+}
+
+export async function gitUnstageFile(projectPath: string, filePath: string): Promise<void> {
+  return invoke('git_unstage_file', { projectPath, filePath });
+}
+
+export async function gitStageAll(projectPath: string): Promise<void> {
+  return invoke('git_stage_all', { projectPath });
+}
+
+export async function gitUnstageAll(projectPath: string): Promise<void> {
+  return invoke('git_unstage_all', { projectPath });
+}
+
+export async function gitCommit(projectPath: string, message: string): Promise<void> {
+  return invoke('git_commit', { projectPath, message });
+}
+
+export async function gitPush(projectPath: string): Promise<void> {
+  return invoke('git_push', { projectPath });
+}
+
+export async function gitListBranches(projectPath: string): Promise<BranchInfo[]> {
+  return invoke('git_list_branches', { projectPath });
+}
+
+export async function gitCheckoutBranch(projectPath: string, branch: string, isRemote: boolean): Promise<void> {
+  return invoke('git_checkout_branch', { projectPath, branch, isRemote });
 }
 
 export async function pickFolder(): Promise<string | null> {
