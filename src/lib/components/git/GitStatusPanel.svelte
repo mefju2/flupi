@@ -25,6 +25,12 @@
 
   let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
+  const lastRefreshedLabel = $derived(
+    $gitPageState.lastRefreshed
+      ? formatRelativeTime($gitPageState.lastRefreshed.toISOString())
+      : null,
+  );
+
   $effect(() => {
     const ms = $gitAutoRefreshMs;
     if (refreshInterval !== null) clearInterval(refreshInterval);
@@ -39,7 +45,9 @@
     if (path) load();
   });
 
-  onMount(initAutoRefresh);
+  onMount(() => {
+    initAutoRefresh();
+  });
 </script>
 
 <div class="flex flex-col gap-4 p-4 h-full">
@@ -67,7 +75,7 @@
         title={$gitPageState.lastRefreshed.toLocaleTimeString()}
         class="cursor-default border-b border-dotted border-app-border"
       >
-        {formatRelativeTime($gitPageState.lastRefreshed.toISOString())}
+        {lastRefreshedLabel}
       </span>
     </p>
   {/if}
@@ -107,7 +115,7 @@
     <div class="overflow-y-auto flex-1 min-h-0">
       <GitChangesPanel
         status={s}
-        selectedPath={$gitPageState.selectedFile?.path ?? null}
+        selectedFile={$gitPageState.selectedFile}
         onselect={selectFile}
         onstage={handleStageFile}
         onunstage={handleUnstageFile}

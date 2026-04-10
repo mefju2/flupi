@@ -163,8 +163,7 @@ export function selectFile(path: string, status: GitFileStatus) {
   gitPageState.update((s) => ({ ...s, selectedFile: { path, status } }));
 }
 
-export async function initAutoRefresh(): Promise<() => void> {
+export async function initAutoRefresh(): Promise<void> {
   const prefs = await getPreferences();
   gitAutoRefreshMs.set(prefs.gitAutoRefreshMs ?? 30_000);
-  return () => {};
 }

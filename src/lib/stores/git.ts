@@ -28,6 +28,11 @@ export interface GitPageState {
 
 export const gitAutoRefreshMs = writable<number>(30_000);
 
+/** Number of commits the current branch is behind its remote, as determined by
+ *  the background fetch that runs on app startup. Cleared when the user visits
+ *  the Git page. */
+export const gitBehindCount = writable<number>(0);
+
 export const gitPageState = writable<GitPageState>({
   status: null,
   isLoading: false,

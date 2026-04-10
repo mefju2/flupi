@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { ChevronDown, ChevronRight, Plus, Minus } from 'lucide-svelte';
-  import type { GitStatus } from '$lib/services/tauri-commands';
-  import type { GitFileStatus } from '$lib/stores/git';
-  import GitFileTree, { type GitFileEntry } from './GitFileTree.svelte';
+  import { ChevronDown, ChevronRight, Plus, Minus } from "lucide-svelte";
+  import type { GitStatus } from "$lib/services/tauri-commands";
+  import type { GitFileStatus } from "$lib/stores/git";
+  import GitFileTree, { type GitFileEntry } from "./GitFileTree.svelte";
 
   interface Props {
     status: GitStatus;
-    selectedPath: string | null;
+    selectedFile: { path: string; status: GitFileStatus } | null;
     onselect: (path: string, status: GitFileStatus) => void;
     onstage: (path: string) => void;
     onunstage: (path: string) => void;
@@ -14,26 +14,35 @@
     onunstageall: () => void;
   }
 
-  let { status, selectedPath, onselect, onstage, onunstage, onstageall, onunstageall }: Props =
-    $props();
+  let {
+    status,
+    selectedFile,
+    onselect,
+    onstage,
+    onunstage,
+    onstageall,
+    onunstageall,
+  }: Props = $props();
 
   let stagedOpen = $state(true);
   let unstagedOpen = $state(true);
 
   const stagedFiles = $derived<GitFileEntry[]>(
-    status.staged.map((path) => ({ path, status: 'staged' as const }))
+    status.staged.map((path) => ({ path, status: "staged" as const })),
   );
 
   const unstagedFiles = $derived<GitFileEntry[]>([
-    ...status.modified.map((path) => ({ path, status: 'modified' as const })),
-    ...status.deleted.map((path) => ({ path, status: 'deleted' as const })),
-    ...status.untracked.map((path) => ({ path, status: 'untracked' as const })),
+    ...status.modified.map((path) => ({ path, status: "modified" as const })),
+    ...status.deleted.map((path) => ({ path, status: "deleted" as const })),
+    ...status.untracked.map((path) => ({ path, status: "untracked" as const })),
   ]);
 
-  const isEmpty = $derived(stagedFiles.length === 0 && unstagedFiles.length === 0);
+  const isEmpty = $derived(
+    stagedFiles.length === 0 && unstagedFiles.length === 0,
+  );
 
   function handleAction(path: string, fileStatus: GitFileStatus) {
-    if (fileStatus === 'staged') onunstage(path);
+    if (fileStatus === "staged") onunstage(path);
     else onstage(path);
   }
 </script>
@@ -50,7 +59,9 @@
                  tracking-wider px-1 hover:text-app-text-2 transition-colors flex-1 text-left"
           onclick={() => (stagedOpen = !stagedOpen)}
         >
-          {#if stagedOpen}<ChevronDown size={12} />{:else}<ChevronRight size={12} />{/if}
+          {#if stagedOpen}<ChevronDown size={12} />{:else}<ChevronRight
+              size={12}
+            />{/if}
           Staged ({stagedFiles.length})
         </button>
         {#if stagedFiles.length > 0}
@@ -67,7 +78,12 @@
       </div>
       {#if stagedOpen}
         {#if stagedFiles.length > 0}
-          <GitFileTree files={stagedFiles} {selectedPath} {onselect} onaction={handleAction} />
+          <GitFileTree
+            files={stagedFiles}
+            {selectedFile}
+            {onselect}
+            onaction={handleAction}
+          />
         {:else}
           <p class="text-xs text-app-text-3 px-3 italic">No staged changes</p>
         {/if}
@@ -82,7 +98,9 @@
                  tracking-wider px-1 hover:text-app-text-2 transition-colors flex-1 text-left"
           onclick={() => (unstagedOpen = !unstagedOpen)}
         >
-          {#if unstagedOpen}<ChevronDown size={12} />{:else}<ChevronRight size={12} />{/if}
+          {#if unstagedOpen}<ChevronDown size={12} />{:else}<ChevronRight
+              size={12}
+            />{/if}
           Unstaged ({unstagedFiles.length})
         </button>
         {#if unstagedFiles.length > 0}
@@ -99,7 +117,12 @@
       </div>
       {#if unstagedOpen}
         {#if unstagedFiles.length > 0}
-          <GitFileTree files={unstagedFiles} {selectedPath} {onselect} onaction={handleAction} />
+          <GitFileTree
+            files={unstagedFiles}
+            {selectedFile}
+            {onselect}
+            onaction={handleAction}
+          />
         {:else}
           <p class="text-xs text-app-text-3 px-3 italic">No unstaged changes</p>
         {/if}

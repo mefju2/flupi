@@ -27,6 +27,8 @@
     setProjectActiveEnvironment,
   } from "$lib/services/tauri-commands";
   import { openApiSources, driftedIdsBySource } from "$lib/stores/openapi";
+  import { gitBehindCount } from "$lib/stores/git";
+  import { gitFetch, getGitStatus } from "$lib/services/tauri-commands";
   import { functions } from "$lib/stores/functions";
   import { requestTree } from "$lib/stores/requests";
   import { scenarioTree, activeScenarioId } from "$lib/stores/scenarios";
@@ -91,6 +93,19 @@
       activeEnvironment.set(validStored);
       selectedEnvironmentFile.set(validStored);
     }
+
+    // Startup git fetch — runs in the background to detect if the branch is behind remote.
+    (async () => {
+      try {
+        await gitFetch(projectPath);
+        const status = await getGitStatus(projectPath);
+        if (status.isGitRepo) {
+          gitBehindCount.set(status.behind);
+        }
+      } catch {
+        // Non-git project or fetch failed — silently ignore.
+      }
+    })();
 
     // Startup drift scan — runs in the background without blocking the UI.
     (async () => {

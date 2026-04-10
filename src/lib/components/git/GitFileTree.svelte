@@ -11,12 +11,12 @@
 
   interface Props {
     files: GitFileEntry[];
-    selectedPath?: string | null;
+    selectedFile?: { path: string; status: GitFileStatus } | null;
     onselect: (path: string, status: GitFileStatus) => void;
     onaction: (path: string, status: GitFileStatus) => void;
   }
 
-  let { files, selectedPath = null, onselect, onaction }: Props = $props();
+  let { files, selectedFile = null, onselect, onaction }: Props = $props();
 
   type TreeNode = {
     name: string;
@@ -90,7 +90,9 @@
   {#if node.isFile}
     <div
       class="group flex items-center gap-1 rounded px-1 py-0.5 cursor-pointer text-xs
-             {node.path === selectedPath
+             {selectedFile &&
+      node.path === selectedFile.path &&
+      node.status === selectedFile.status
         ? 'bg-app-card text-app-text'
         : 'text-app-text-2 hover:bg-app-card/50'}"
       style="padding-left: {depth * 12 + 4}px"
