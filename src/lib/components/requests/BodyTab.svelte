@@ -69,7 +69,6 @@
 
   function isActive(sel: BodySelection): boolean {
     if (!body || body.type === "none") return sel.type === "none";
-    if (sel.type === "none") return body.type === "none";
     if (sel.type === "form-urlencoded") return body.type === "form-urlencoded";
     if (sel.type === "raw")
       return body.type === "raw" && body.format === sel.format;
@@ -211,11 +210,16 @@
 
       {#if open}
         <!-- Backdrop to close on outside click -->
-        <div class="fixed inset-0 z-40" onclick={() => (open = false)}></div>
+        <div
+          role="none"
+          class="fixed inset-0 z-40"
+          onclick={() => (open = false)}
+          onkeydown={(e) => e.key === "Escape" && (open = false)}
+        ></div>
 
         <!-- Dropdown panel -->
         <div
-          class="absolute top-full left-0 mt-1 z-50 bg-app-panel border border-app-border rounded shadow-lg min-w-[180px]"
+          class="absolute top-full left-0 mt-1 z-50 bg-app-panel border border-app-border rounded shadow-lg min-w-45"
         >
           {#each GROUPS as group}
             <div

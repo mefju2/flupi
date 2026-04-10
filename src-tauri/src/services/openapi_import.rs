@@ -1,13 +1,15 @@
-use std::path::Path;
-use std::time::Duration;
-use sha2::{Sha256, Digest};
-use once_cell::sync::Lazy;
 use crate::error::{FlupiError, Result};
 use crate::models::openapi::ImportableOperation;
 use crate::models::request::{BodyConfig, RawFormat, Request, TemplateRef};
 use crate::services::{file_io, schema_defaults};
+use once_cell::sync::Lazy;
+use sha2::{Digest, Sha256};
+use std::path::Path;
+use std::time::Duration;
 
-const HTTP_METHODS: &[&str] = &["get", "post", "put", "delete", "patch", "head", "options", "trace"];
+const HTTP_METHODS: &[&str] = &[
+    "get", "post", "put", "delete", "patch", "head", "options", "trace",
+];
 
 /// Shared HTTP client — connection pool is reused across all spec fetches.
 static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
@@ -30,11 +32,15 @@ pub fn read_spec_from_file(path: &Path) -> Result<serde_json::Value> {
 fn derive_operation_id(method: &str, path: &str) -> String {
     let mut parts = vec![method.to_lowercase()];
     for segment in path.split('/') {
-        if segment.is_empty() { continue; }
+        if segment.is_empty() {
+            continue;
+        }
         let clean = segment
-            .trim_start_matches('{').trim_end_matches('}')
+            .trim_start_matches('{')
+            .trim_end_matches('}')
             .trim_start_matches(':');
-        let camel: String = clean.split(['-', '.'])
+        let camel: String = clean
+            .split(['-', '.'])
             .filter(|s| !s.is_empty())
             .map(|word| {
                 let mut c = word.chars();
@@ -49,10 +55,12 @@ fn derive_operation_id(method: &str, path: &str) -> String {
     parts.join("")
 }
 
-pub fn parse_operations(spec: &serde_json::Value) -> Result<Vec<(ImportableOperation, serde_json::Value)>> {
-    let paths = spec["paths"].as_object().ok_or_else(|| {
-        FlupiError::Custom("OpenAPI spec missing 'paths' object".to_string())
-    })?;
+pub fn parse_operations(
+    spec: &serde_json::Value,
+) -> Result<Vec<(ImportableOperation, serde_json::Value)>> {
+    let paths = spec["paths"]
+        .as_object()
+        .ok_or_else(|| FlupiError::Custom("OpenAPI spec missing 'paths' object".to_string()))?;
 
     let mut result = Vec::new();
 
@@ -122,10 +130,16 @@ pub fn extract_schemas(
     op_json: &serde_json::Value,
     spec: &serde_json::Value,
 ) -> (serde_json::Value, serde_json::Value) {
-    (extract_request_schema(op_json, spec), extract_response_schema(op_json, spec))
+    (
+        extract_request_schema(op_json, spec),
+        extract_response_schema(op_json, spec),
+    )
 }
 
-fn extract_request_schema(operation: &serde_json::Value, spec: &serde_json::Value) -> serde_json::Value {
+fn extract_request_schema(
+    operation: &serde_json::Value,
+    spec: &serde_json::Value,
+) -> serde_json::Value {
     let raw = operation
         .pointer("/requestBody/content/application~1json/schema")
         .cloned()
@@ -136,7 +150,10 @@ fn extract_request_schema(operation: &serde_json::Value, spec: &serde_json::Valu
     schema_defaults::resolve_refs(&raw, spec, 0)
 }
 
-fn extract_response_schema(operation: &serde_json::Value, spec: &serde_json::Value) -> serde_json::Value {
+fn extract_response_schema(
+    operation: &serde_json::Value,
+    spec: &serde_json::Value,
+) -> serde_json::Value {
     let resolve = |raw: &serde_json::Value| schema_defaults::resolve_refs(raw, spec, 0);
 
     if let Some(schema) = operation.pointer("/responses/200/content/application~1json/schema") {
@@ -173,13 +190,20 @@ pub fn import_operations(
         let body = if request_schema.is_null() {
             None
         } else {
-            let content = schema_defaults::generate_default_body(&request_schema, &import_timestamp);
+            let content =
+                schema_defaults::generate_default_body(&request_schema, &import_timestamp);
             let content_str = serde_json::to_string_pretty(&content).unwrap_or_default();
-            Some(BodyConfig::Raw { format: RawFormat::Json, content: content_str })
+            Some(BodyConfig::Raw {
+                format: RawFormat::Json,
+                content: content_str,
+            })
         };
 
         let request = Request {
-            name: op.summary.clone().unwrap_or_else(|| op.operation_id.clone()),
+            name: op
+                .summary
+                .clone()
+                .unwrap_or_else(|| op.operation_id.clone()),
             method: op.method.to_uppercase(),
             path: op.path.clone(),
             auth: None,
@@ -196,6 +220,7 @@ pub fn import_operations(
             disabled_headers: vec![],
             disabled_collection_headers: vec![],
             extractions: vec![],
+            pre_request_actions: vec![],
         };
 
         let file_path = project_path

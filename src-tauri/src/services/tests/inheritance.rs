@@ -1,6 +1,6 @@
 use super::*;
-use crate::models::request::{Request, AuthConfig};
 use crate::models::collection::Collection;
+use crate::models::request::{AuthConfig, Request};
 use indexmap::IndexMap;
 
 fn make_request(
@@ -20,6 +20,7 @@ fn make_request(
         disabled_headers: vec![],
         disabled_collection_headers: vec![],
         extractions: vec![],
+        pre_request_actions: vec![],
     }
 }
 
@@ -107,7 +108,10 @@ fn test_disabled_collection_header_excluded() {
     req.disabled_collection_headers = vec!["X-Tenant".to_string()];
 
     let effective = resolve_inheritance(&req, Some(&collection));
-    assert!(!effective.headers.contains_key("X-Tenant"), "disabled collection header must be excluded");
+    assert!(
+        !effective.headers.contains_key("X-Tenant"),
+        "disabled collection header must be excluded"
+    );
     assert_eq!(effective.headers["X-Version"], "2");
 }
 
@@ -122,6 +126,9 @@ fn test_disabled_request_header_excluded() {
     req.disabled_headers = vec!["X-Debug".to_string()];
 
     let effective = resolve_inheritance(&req, Some(&collection));
-    assert!(!effective.headers.contains_key("X-Debug"), "disabled request header must be excluded");
+    assert!(
+        !effective.headers.contains_key("X-Debug"),
+        "disabled request header must be excluded"
+    );
     assert_eq!(effective.headers["Accept"], "application/json");
 }

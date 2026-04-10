@@ -1,10 +1,10 @@
-use std::path::PathBuf;
-use serde::Serialize;
-use tauri::command;
 use crate::error::FlupiError;
-use crate::models::request::{Request, derive_request_id};
+use crate::models::request::{derive_request_id, Request};
 use crate::services::{file_io, request_path};
 use crate::utils::name_to_slug;
+use serde::Serialize;
+use std::path::PathBuf;
+use tauri::command;
 
 /// `Request` enriched with a derived `collection` field for the frontend.
 /// The `collection` field is never persisted to disk — it is computed from
@@ -17,7 +17,10 @@ pub struct RequestResponse {
 }
 
 #[command]
-pub fn get_request(project_path: PathBuf, request_id: String) -> Result<RequestResponse, FlupiError> {
+pub fn get_request(
+    project_path: PathBuf,
+    request_id: String,
+) -> Result<RequestResponse, FlupiError> {
     let path = request_path::resolve_request_path(&project_path, &request_id);
     let inner: Request = file_io::read_json(&path)?;
     let collection = request_path::collection_folder_for(&request_id, &project_path);
@@ -69,6 +72,7 @@ pub fn create_request(
         disabled_headers: vec![],
         disabled_collection_headers: vec![],
         extractions: vec![],
+        pre_request_actions: vec![],
     };
     file_io::write_json(&path, &request)?;
     Ok(id)
@@ -142,10 +146,7 @@ pub fn move_request(
 }
 
 #[command]
-pub fn duplicate_request(
-    project_path: PathBuf,
-    request_id: String,
-) -> Result<String, FlupiError> {
+pub fn duplicate_request(project_path: PathBuf, request_id: String) -> Result<String, FlupiError> {
     let old_path = request_path::resolve_request_path(&project_path, &request_id);
     let mut request: Request = file_io::read_json(&old_path)?;
 
@@ -173,9 +174,7 @@ pub fn duplicate_request(
                     break;
                 }
             }
-            found.ok_or_else(|| {
-                FlupiError::Custom("duplicate already exists".to_string())
-            })?
+            found.ok_or_else(|| FlupiError::Custom("duplicate already exists".to_string()))?
         }
     };
 
@@ -192,10 +191,7 @@ pub fn duplicate_request(
         format!("{} copy", base_name)
     } else {
         // extract the numeric suffix from "{stem}-copy-N"
-        let suffix = copy_stem
-            .rsplit('-')
-            .next()
-            .unwrap_or("2");
+        let suffix = copy_stem.rsplit('-').next().unwrap_or("2");
         format!("{} copy {}", base_name, suffix)
     };
 
@@ -212,7 +208,10 @@ pub async fn get_request_references(
 ) -> Result<Vec<String>, FlupiError> {
     let project_path = std::path::Path::new(&project_path);
     let refs = crate::services::referential_integrity::find_references(project_path, &request_id)?;
-    Ok(refs.iter().map(|p| p.to_string_lossy().to_string()).collect())
+    Ok(refs
+        .iter()
+        .map(|p| p.to_string_lossy().to_string())
+        .collect())
 }
 
 #[cfg(test)]

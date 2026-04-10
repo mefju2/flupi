@@ -189,6 +189,15 @@ export interface TemplateRef {
   responseSchema: unknown;
 }
 
+export interface SetVariableAction {
+  type: 'set_variable';
+  variable: string;
+  function_name: string;
+  args: string[];
+}
+
+export type PreRequestAction = SetVariableAction;
+
 export interface RequestData {
   name: string;
   method: string;
@@ -202,6 +211,7 @@ export interface RequestData {
   templateRef?: TemplateRef;
   pathParams?: Record<string, string>;
   extractions?: Extraction[];
+  preRequestActions?: PreRequestAction[];
 }
 
 export interface CollectionData {

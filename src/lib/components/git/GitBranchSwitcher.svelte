@@ -15,6 +15,11 @@
 
   let open = $state(false);
   let filter = $state("");
+  let filterInput = $state<HTMLInputElement | null>(null);
+
+  $effect(() => {
+    if (open) filterInput?.focus();
+  });
 
   const localBranches = $derived(
     branches.filter(
@@ -58,7 +63,7 @@
     aria-label="Switch branch"
   >
     <GitBranch size={12} class="shrink-0" />
-    <span class="max-w-[140px] truncate">{currentBranch}</span>
+    <span class="max-w-35 truncate">{currentBranch}</span>
     <ChevronDown
       size={10}
       class="shrink-0 transition-transform {open ? 'rotate-180' : ''}"
@@ -84,7 +89,7 @@
                  placeholder:text-app-text-3 focus:outline-none"
           placeholder="Filter branches…"
           bind:value={filter}
-          autofocus
+          bind:this={filterInput}
         />
       </div>
 

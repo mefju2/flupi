@@ -1,5 +1,4 @@
 use super::*;
-use std::path::Path;
 use tempfile::TempDir;
 
 fn minimal_openapi_spec() -> serde_json::Value {
@@ -63,12 +62,18 @@ fn test_parse_operations_correct_methods_and_paths() {
     let mut ops = parse_operations(&spec).unwrap();
     ops.sort_by(|a, b| a.0.operation_id.cmp(&b.0.operation_id));
 
-    let create_pet = ops.iter().find(|(op, _)| op.operation_id == "createPet").unwrap();
+    let create_pet = ops
+        .iter()
+        .find(|(op, _)| op.operation_id == "createPet")
+        .unwrap();
     assert_eq!(create_pet.0.method, "post");
     assert_eq!(create_pet.0.path, "/pets/{id}");
     assert_eq!(create_pet.0.tag, "pets");
 
-    let list_pets = ops.iter().find(|(op, _)| op.operation_id == "listPets").unwrap();
+    let list_pets = ops
+        .iter()
+        .find(|(op, _)| op.operation_id == "listPets")
+        .unwrap();
     assert_eq!(list_pets.0.method, "get");
     assert_eq!(list_pets.0.path, "/pets");
     assert_eq!(list_pets.0.tag, "pets");
@@ -78,7 +83,10 @@ fn test_parse_operations_correct_methods_and_paths() {
 fn test_parse_operations_extracts_summary() {
     let spec = minimal_openapi_spec();
     let ops = parse_operations(&spec).unwrap();
-    let list_pets = ops.iter().find(|(op, _)| op.operation_id == "listPets").unwrap();
+    let list_pets = ops
+        .iter()
+        .find(|(op, _)| op.operation_id == "listPets")
+        .unwrap();
     assert_eq!(list_pets.0.summary.as_deref(), Some("List all pets"));
 }
 
@@ -112,12 +120,10 @@ fn test_import_operations_creates_request_files() {
     assert_eq!(created.len(), 2);
 
     // Verify files were created
-    let list_pets_path = project_path
-        .join("collections/my-collection/requests/listPets.json");
+    let list_pets_path = project_path.join("collections/my-collection/requests/listPets.json");
     assert!(list_pets_path.exists());
 
-    let create_pet_path = project_path
-        .join("collections/my-collection/requests/createPet.json");
+    let create_pet_path = project_path.join("collections/my-collection/requests/createPet.json");
     assert!(create_pet_path.exists());
 }
 
@@ -136,7 +142,10 @@ fn test_import_operations_sets_template_ref() {
 
     assert_eq!(req["templateRef"]["sourceId"], "src-1");
     assert_eq!(req["templateRef"]["operationId"], "listPets");
-    assert!(!req["templateRef"]["schemaHash"].as_str().unwrap().is_empty());
+    assert!(!req["templateRef"]["schemaHash"]
+        .as_str()
+        .unwrap()
+        .is_empty());
 }
 
 #[test]
@@ -166,4 +175,3 @@ fn test_read_spec_from_file() {
     let loaded = read_spec_from_file(&spec_path).unwrap();
     assert_eq!(loaded["openapi"], "3.0.0");
 }
-

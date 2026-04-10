@@ -75,7 +75,10 @@
 
   async function confirmDelete() {
     const sourceId = pendingDeleteId;
-    if (!sourceId || !$project.path) { pendingDeleteId = null; return; }
+    if (!sourceId || !$project.path) {
+      pendingDeleteId = null;
+      return;
+    }
     pendingDeleteId = null;
     const addDeleting = new Set(deletingIds);
     addDeleting.add(sourceId);
@@ -149,14 +152,14 @@
           <div class="flex items-center gap-2 flex-wrap">
             <span
               class="text-sm font-semibold text-app-text truncate"
-              title={source.name}
-              >{source.name}</span
+              title={source.name}>{source.name}</span
             >
             {#if drift > 0}
               <span
                 class="px-1 py-0 text-[10px] leading-4 bg-red-900/70 text-red-300 rounded shrink-0"
-                title="{drift} endpoint{drift === 1 ? '' : 's'} changed since last import"
-                >{drift} drifted</span
+                title="{drift} endpoint{drift === 1
+                  ? ''
+                  : 's'} changed since last import">{drift} drifted</span
               >
             {/if}
           </div>
@@ -183,7 +186,10 @@
         <div class="flex items-center gap-1 shrink-0">
           <button
             class="px-2 py-1 text-xs bg-app-card hover:bg-app-hover text-app-text-2 rounded transition-colors"
-            onclick={(e) => { e.stopPropagation(); onImport(source.id); }}
+            onclick={(e) => {
+              e.stopPropagation();
+              onImport(source.id);
+            }}
             title="Choose endpoints to add to your request collection"
           >
             Import
@@ -193,15 +199,21 @@
               ? 'text-green-400'
               : 'text-cyan-400'} rounded transition-colors disabled:opacity-50"
             disabled={loading}
-            onclick={(e) => { e.stopPropagation(); handleRefresh(source.id); }}
+            onclick={(e) => {
+              e.stopPropagation();
+              handleRefresh(source.id);
+            }}
             title="Re-fetch the spec and check for changes"
           >
             {loading ? "…" : synced ? "Synced ✓" : "Sync"}
           </button>
           <button
-            class="px-2 py-1 text-xs text-app-text-4 opacity-0 group-hover/card:opacity-60 hover:!opacity-100 hover:bg-red-900/30 hover:text-red-300 rounded transition-all disabled:opacity-50"
+            class="px-2 py-1 text-xs text-app-text-4 opacity-0 group-hover/card:opacity-60 hover:opacity-100! hover:bg-red-900/30 hover:text-red-300 rounded transition-all disabled:opacity-50"
             disabled={deleting}
-            onclick={(e) => { e.stopPropagation(); pendingDeleteId = source.id; }}
+            onclick={(e) => {
+              e.stopPropagation();
+              pendingDeleteId = source.id;
+            }}
             aria-label="Remove source"
           >
             ✕
@@ -215,10 +227,12 @@
 {#if pendingDeleteId !== null}
   {@const pendingSource = $openApiSources.find((s) => s.id === pendingDeleteId)}
   <ConfirmDialog
-    message={`Remove "${pendingSource?.name ?? 'this source'}"?`}
+    message={`Remove "${pendingSource?.name ?? "this source"}"?`}
     detail="All imported requests from this source will remain, but the source will no longer sync."
     confirmLabel="Remove source"
     onConfirm={confirmDelete}
-    onCancel={() => { pendingDeleteId = null; }}
+    onCancel={() => {
+      pendingDeleteId = null;
+    }}
   />
 {/if}

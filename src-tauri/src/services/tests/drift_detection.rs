@@ -1,9 +1,9 @@
 use super::*;
-use tempfile::TempDir;
 use crate::models::openapi::ImportableOperation;
 use crate::models::request::{Request, TemplateRef};
 use crate::services::file_io;
 use indexmap::IndexMap;
+use tempfile::TempDir;
 
 fn make_operation(operation_id: &str, hash: &str) -> (ImportableOperation, serde_json::Value) {
     let op = ImportableOperation {
@@ -19,7 +19,11 @@ fn make_operation(operation_id: &str, hash: &str) -> (ImportableOperation, serde
     (op, json)
 }
 
-fn make_operation_at(operation_id: &str, path: &str, hash: &str) -> (ImportableOperation, serde_json::Value) {
+fn make_operation_at(
+    operation_id: &str,
+    path: &str,
+    hash: &str,
+) -> (ImportableOperation, serde_json::Value) {
     let op = ImportableOperation {
         tag: "test".to_string(),
         operation_id: operation_id.to_string(),
@@ -77,6 +81,7 @@ fn write_request_at_path(
         disabled_headers: vec![],
         disabled_collection_headers: vec![],
         extractions: vec![],
+        pre_request_actions: vec![],
     };
     let file_path = project_path
         .join("collections")
@@ -164,7 +169,10 @@ fn test_detect_drift_ignores_other_sources() {
     let ops = vec![(op, op_json)];
     let spec = serde_json::json!({"paths": {}});
     let drifted = detect_drift(project_path, "src-1", &ops, &spec).unwrap();
-    assert!(drifted.is_empty(), "Should not report drift for other sources");
+    assert!(
+        drifted.is_empty(),
+        "Should not report drift for other sources"
+    );
 }
 
 #[test]
@@ -230,7 +238,11 @@ fn test_detect_drift_when_operation_removed() {
     let ops: Vec<(ImportableOperation, serde_json::Value)> = vec![];
     let spec = serde_json::json!({"paths": {}});
     let drifted = detect_drift(project_path, "src-1", &ops, &spec).unwrap();
-    assert_eq!(drifted.len(), 1, "Removed operation should be marked as drifted");
+    assert_eq!(
+        drifted.len(),
+        1,
+        "Removed operation should be marked as drifted"
+    );
     assert!(drifted[0].contains("listPets"));
 }
 
@@ -326,6 +338,7 @@ fn test_detect_drift_when_resolved_schema_changes() {
         disabled_headers: vec![],
         disabled_collection_headers: vec![],
         extractions: vec![],
+        pre_request_actions: vec![],
     };
     let file_path = project_path
         .join("collections")
@@ -336,6 +349,10 @@ fn test_detect_drift_when_resolved_schema_changes() {
 
     let ops = vec![(op, op_json)];
     let drifted = detect_drift(project_path, "src-1", &ops, &spec).unwrap();
-    assert_eq!(drifted.len(), 1, "Contract change (new property) must trigger drift");
+    assert_eq!(
+        drifted.len(),
+        1,
+        "Contract change (new property) must trigger drift"
+    );
     assert!(drifted[0].contains("createRole"));
 }
