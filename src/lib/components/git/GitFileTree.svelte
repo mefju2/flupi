@@ -8,15 +8,27 @@
 <script lang="ts">
   import { ChevronRight, ChevronDown, Plus, Minus } from "lucide-svelte";
   import type { GitFileStatus } from "$lib/stores/git";
+  import GitFileContextMenu from "./GitFileContextMenu.svelte";
 
   interface Props {
     files: GitFileEntry[];
     selectedFile?: { path: string; status: GitFileStatus } | null;
     onselect: (path: string, status: GitFileStatus) => void;
     onaction: (path: string, status: GitFileStatus) => void;
+    ondiscard?: (path: string, status: GitFileStatus) => void;
+    ondelete?: (path: string, status: GitFileStatus) => void;
+    onshowexplorer?: (path: string, status: GitFileStatus) => void;
   }
 
-  let { files, selectedFile = null, onselect, onaction }: Props = $props();
+  let {
+    files,
+    selectedFile = null,
+    onselect,
+    onaction,
+    ondiscard,
+    ondelete,
+    onshowexplorer,
+  }: Props = $props();
 
   type TreeNode = {
     name: string;
@@ -65,6 +77,24 @@
 
   const tree = $derived(buildTree(files));
 
+  type ContextMenu = {
+    x: number;
+    y: number;
+    path: string;
+    status: GitFileStatus;
+  } | null;
+
+  let contextMenu = $state<ContextMenu>(null);
+
+  function openContextMenu(e: MouseEvent, path: string, status: GitFileStatus) {
+    e.preventDefault();
+    e.stopPropagation();
+    contextMenu = { x: e.clientX, y: e.clientY, path, status };
+  }
+
+  function closeContextMenu() {
+    contextMenu = null;
+  }
   function dotColor(status: GitFileStatus): string {
     switch (status) {
       case "staged":
@@ -100,6 +130,7 @@
       tabindex="0"
       onclick={() => onselect(node.path, node.status!)}
       onkeydown={(e) => e.key === "Enter" && onselect(node.path, node.status!)}
+      oncontextmenu={(e) => openContextMenu(e, node.path, node.status!)}
     >
       <span
         class="w-1.5 h-1.5 rounded-full shrink-0 {dotColor(
@@ -150,3 +181,16 @@
     {@render renderNode(node, 0)}
   {/each}
 </div>
+
+{#if contextMenu}
+  <GitFileContextMenu
+    x={contextMenu.x}
+    y={contextMenu.y}
+    path={contextMenu.path}
+    status={contextMenu.status}
+    onclose={closeContextMenu}
+    {ondiscard}
+    {ondelete}
+    {onshowexplorer}
+  />
+{/if}

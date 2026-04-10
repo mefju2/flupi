@@ -73,6 +73,20 @@ pub fn git_list_branches(project_path: String) -> Result<Vec<BranchInfo>, FlupiE
 }
 
 #[command]
-pub fn git_checkout_branch(project_path: String, branch: String, is_remote: bool) -> Result<(), FlupiError> {
+pub fn git_discard_file(project_path: String, file_path: String) -> Result<(), FlupiError> {
+    git_staging::discard_file(&PathBuf::from(project_path), &file_path)
+}
+
+#[command]
+pub fn git_delete_file(project_path: String, file_path: String) -> Result<(), FlupiError> {
+    git_staging::delete_file(&PathBuf::from(project_path), &file_path)
+}
+
+#[command]
+pub fn git_checkout_branch(
+    project_path: String,
+    branch: String,
+    is_remote: bool,
+) -> Result<(), FlupiError> {
     git_branch::checkout_branch(&PathBuf::from(project_path), &branch, is_remote)
 }

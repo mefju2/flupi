@@ -57,8 +57,8 @@
 {:else}
   <GitFileDiffView
     filePath={$gitPageState.selectedFile.path}
-    oldContent={diffContent?.oldContent ?? ""}
-    newContent={diffContent?.newContent ?? ""}
+    lines={diffContent?.lines ?? []}
+    isNewFile={diffContent?.isNewFile ?? false}
     isLoading={isLoadingDiff}
   />
 {/if}

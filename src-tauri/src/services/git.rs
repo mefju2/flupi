@@ -1,7 +1,8 @@
 use std::path::{Component, Path};
-use std::process::Command;
 
 use serde::Serialize;
+
+use crate::utils::git_command;
 
 use crate::error::{FlupiError, Result};
 use crate::services::GIT_NOT_FOUND;
@@ -21,15 +22,29 @@ pub struct GitStatus {
 }
 
 #[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum DiffLineType {
+    Add,
+    Remove,
+    Same,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DiffLine {
+    #[serde(rename = "type")]
+    pub line_type: DiffLineType,
+    pub text: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
 pub struct GitFileDiff {
-    #[serde(rename = "oldContent")]
-    pub old_content: String,
-    #[serde(rename = "newContent")]
-    pub new_content: String,
+    pub lines: Vec<DiffLine>,
+    #[serde(rename = "isNewFile")]
+    pub is_new_file: bool,
 }
 
 pub fn get_status(path: &Path) -> Result<GitStatus> {
-    let output = Command::new("git")
+    let output = git_command()
         .args(["status", "--porcelain=v2", "--branch"])
         .current_dir(path)
         .output();
@@ -137,7 +152,7 @@ fn parse_porcelain_v2(output: &str) -> Result<GitStatus> {
 }
 
 pub fn fetch(path: &Path) -> Result<()> {
-    let output = Command::new("git")
+    let output = git_command()
         .arg("fetch")
         .current_dir(path)
         .output()
@@ -155,7 +170,7 @@ pub fn fetch(path: &Path) -> Result<()> {
 }
 
 pub fn pull(path: &Path) -> Result<()> {
-    let output = Command::new("git")
+    let output = git_command()
         .arg("pull")
         .current_dir(path)
         .output()
@@ -186,7 +201,7 @@ pub fn get_file_diff(repo_path: &Path, file_path: &str) -> Result<GitFileDiff> {
         return Err(FlupiError::Custom("Invalid file path".to_string()));
     }
 
-    let old_output = Command::new("git")
+    let old_output = git_command()
         .args(["show", &format!("HEAD:{}", file_path)])
         .current_dir(repo_path)
         .output()
@@ -200,12 +215,23 @@ pub fn get_file_diff(repo_path: &Path, file_path: &str) -> Result<GitFileDiff> {
         String::new()
     };
 
+    let is_new_file = old_content.is_empty();
     let new_content = std::fs::read_to_string(repo_path.join(file_path)).unwrap_or_default();
 
-    Ok(GitFileDiff {
-        old_content,
-        new_content,
-    })
+    let diff = similar::TextDiff::from_lines(&old_content, &new_content);
+    let lines = diff
+        .iter_all_changes()
+        .map(|change| DiffLine {
+            line_type: match change.tag() {
+                similar::ChangeTag::Insert => DiffLineType::Add,
+                similar::ChangeTag::Delete => DiffLineType::Remove,
+                similar::ChangeTag::Equal => DiffLineType::Same,
+            },
+            text: change.value().trim_end_matches('\n').to_string(),
+        })
+        .collect();
+
+    Ok(GitFileDiff { lines, is_new_file })
 }
 
 #[cfg(test)]

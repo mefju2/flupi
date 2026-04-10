@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eye, EyeOff } from 'lucide-svelte';
+  import { Eye, EyeOff } from "lucide-svelte";
 
   interface Props {
     value: string;
@@ -7,9 +7,9 @@
     onchange?: (value: string) => void;
   }
 
-  let { value, class: className = '', onchange }: Props = $props();
+  let { value, class: className = "", onchange }: Props = $props();
 
-  let revealed = $state(false);
+  let revealed = $state(!value);
 </script>
 
 {#if onchange}
@@ -23,7 +23,9 @@
         placeholder="Value"
       />
     {:else}
-      <div class="flex-1 min-w-0 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono overflow-hidden text-ellipsis tracking-widest">
+      <div
+        class="flex-1 min-w-0 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono overflow-hidden text-ellipsis tracking-widest"
+      >
         ••••••••
       </div>
     {/if}
@@ -31,7 +33,7 @@
       type="button"
       class="text-app-text-4 hover:text-app-text-2 transition-colors shrink-0"
       onclick={() => (revealed = !revealed)}
-      aria-label={revealed ? 'Hide secret' : 'Reveal secret'}
+      aria-label={revealed ? "Hide secret" : "Reveal secret"}
     >
       {#if revealed}
         <EyeOff size={14} />
@@ -42,12 +44,14 @@
   </div>
 {:else}
   <span class="inline-flex items-center gap-1 {className}">
-    <span class="font-mono tracking-widest break-all overflow-hidden">{revealed ? value : '••••••••'}</span>
+    <span class="font-mono tracking-widest break-all overflow-hidden"
+      >{revealed || !value ? value : "••••••••"}</span
+    >
     <button
       type="button"
       class="text-app-text-4 hover:text-app-text-2 transition-colors shrink-0"
       onclick={() => (revealed = !revealed)}
-      aria-label={revealed ? 'Hide secret' : 'Reveal secret'}
+      aria-label={revealed ? "Hide secret" : "Reveal secret"}
     >
       {#if revealed}
         <EyeOff size={12} />

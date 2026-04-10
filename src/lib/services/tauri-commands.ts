@@ -74,13 +74,22 @@ export async function gitPull(projectPath: string): Promise<void> {
   return invoke('git_pull', { projectPath });
 }
 
+export interface DiffLine {
+  type: 'add' | 'remove' | 'same';
+  text: string;
+}
+
 export interface GitFileDiff {
-  oldContent: string;
-  newContent: string;
+  lines: DiffLine[];
+  isNewFile: boolean;
 }
 
 export async function gitFileDiff(projectPath: string, filePath: string): Promise<GitFileDiff> {
   return invoke('git_file_diff', { projectPath, filePath });
+}
+
+export async function diffText(oldText: string, newText: string): Promise<DiffLine[]> {
+  return invoke('diff_text', { oldText, newText });
 }
 
 export interface BranchInfo {
@@ -119,6 +128,14 @@ export async function gitListBranches(projectPath: string): Promise<BranchInfo[]
 
 export async function gitCheckoutBranch(projectPath: string, branch: string, isRemote: boolean): Promise<void> {
   return invoke('git_checkout_branch', { projectPath, branch, isRemote });
+}
+
+export async function gitDiscardFile(projectPath: string, filePath: string): Promise<void> {
+  return invoke('git_discard_file', { projectPath, filePath });
+}
+
+export async function gitDeleteFile(projectPath: string, filePath: string): Promise<void> {
+  return invoke('git_delete_file', { projectPath, filePath });
 }
 
 export async function pickFolder(): Promise<string | null> {

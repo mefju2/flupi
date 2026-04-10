@@ -19,6 +19,9 @@
     handleCommit,
     handleLoadBranches,
     handleCheckoutBranch,
+    handleDiscardFile,
+    handleDeleteFile,
+    handleShowInFileExplorer,
     selectFile,
     initAutoRefresh,
   } from "./git-actions";
@@ -121,6 +124,9 @@
         onunstage={handleUnstageFile}
         onstageall={handleStageAll}
         onunstageall={handleUnstageAll}
+        ondiscard={handleDiscardFile}
+        ondelete={handleDeleteFile}
+        onshowexplorer={handleShowInFileExplorer}
       />
     </div>
 

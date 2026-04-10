@@ -547,6 +547,23 @@ pub fn list_requests_by_source(
     Ok(result)
 }
 
+/// Diffs two text blobs (already serialised to strings) and returns pre-computed
+/// DiffLine objects so the frontend never has to run an O(m×n) LCS in JS.
+#[command]
+pub fn diff_text(old_text: String, new_text: String) -> Vec<crate::services::git::DiffLine> {
+    let diff = similar::TextDiff::from_lines(old_text.as_str(), new_text.as_str());
+    diff.iter_all_changes()
+        .map(|change| crate::services::git::DiffLine {
+            line_type: match change.tag() {
+                similar::ChangeTag::Insert => crate::services::git::DiffLineType::Add,
+                similar::ChangeTag::Delete => crate::services::git::DiffLineType::Remove,
+                similar::ChangeTag::Equal => crate::services::git::DiffLineType::Same,
+            },
+            text: change.value().trim_end_matches('\n').to_string(),
+        })
+        .collect()
+}
+
 #[cfg(test)]
 #[path = "tests/openapi.rs"]
 mod tests;

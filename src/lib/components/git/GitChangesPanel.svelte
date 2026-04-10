@@ -12,6 +12,9 @@
     onunstage: (path: string) => void;
     onstageall: () => void;
     onunstageall: () => void;
+    ondiscard: (path: string) => void;
+    ondelete: (path: string) => void;
+    onshowexplorer: (path: string) => void;
   }
 
   let {
@@ -22,6 +25,9 @@
     onunstage,
     onstageall,
     onunstageall,
+    ondiscard,
+    ondelete,
+    onshowexplorer,
   }: Props = $props();
 
   let stagedOpen = $state(true);
@@ -83,6 +89,9 @@
             {selectedFile}
             {onselect}
             onaction={handleAction}
+            {ondiscard}
+            {ondelete}
+            {onshowexplorer}
           />
         {:else}
           <p class="text-xs text-app-text-3 px-3 italic">No staged changes</p>
@@ -122,6 +131,9 @@
             {selectedFile}
             {onselect}
             onaction={handleAction}
+            {ondiscard}
+            {ondelete}
+            {onshowexplorer}
           />
         {:else}
           <p class="text-xs text-app-text-3 px-3 italic">No unstaged changes</p>

@@ -6,6 +6,8 @@
   import TopBar from "$lib/components/layout/TopBar.svelte";
   import Sidebar from "$lib/components/layout/Sidebar.svelte";
   import SearchModal from "$lib/components/shared/SearchModal.svelte";
+  import UpdateBanner from "$lib/components/layout/UpdateBanner.svelte";
+  import { checkForUpdates } from "$lib/stores/updates";
   import { registerShortcuts } from "$lib/services/keyboard-shortcuts";
   import { searchOpen, theme, type Theme } from "$lib/stores/ui";
   import { project } from "$lib/stores/project";
@@ -133,6 +135,9 @@
       }
     })();
 
+    // Startup update check — runs after a short delay to not compete with critical init.
+    setTimeout(() => checkForUpdates(), 5000);
+
     cleanupShortcuts = registerShortcuts([
       {
         key: "n",
@@ -207,6 +212,7 @@
 
 <div class="flex flex-col h-screen bg-app-bg text-app-text">
   <TopBar />
+  <UpdateBanner />
   <div class="flex flex-1 overflow-hidden">
     <Sidebar />
     <main class="flex-1 overflow-auto">

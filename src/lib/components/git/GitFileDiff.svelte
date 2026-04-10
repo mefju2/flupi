@@ -1,49 +1,17 @@
 <script lang="ts">
   import { RefreshCw } from "lucide-svelte";
+  import type { DiffLine } from "$lib/services/tauri-commands";
 
   interface Props {
     filePath: string;
-    oldContent: string;
-    newContent: string;
+    lines: DiffLine[];
+    isNewFile: boolean;
     isLoading: boolean;
   }
 
-  let { filePath, oldContent, newContent, isLoading }: Props = $props();
+  let { filePath, lines, isNewFile, isLoading }: Props = $props();
 
-  type DiffLine = { type: "same" | "add" | "remove"; text: string };
   type DiffHunk = { lines: DiffLine[] } | { collapsed: number };
-
-  function diffLines(a: string[], b: string[]): DiffLine[] {
-    const m = a.length;
-    const n = b.length;
-    const dp: number[][] = Array.from({ length: m + 1 }, () =>
-      new Array(n + 1).fill(0),
-    );
-    for (let i = 1; i <= m; i++)
-      for (let j = 1; j <= n; j++)
-        dp[i][j] =
-          a[i - 1] === b[j - 1]
-            ? dp[i - 1][j - 1] + 1
-            : Math.max(dp[i - 1][j], dp[i][j - 1]);
-
-    const result: DiffLine[] = [];
-    let i = m;
-    let j = n;
-    while (i > 0 || j > 0) {
-      if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
-        result.push({ type: "same", text: a[i - 1] });
-        i--;
-        j--;
-      } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-        result.push({ type: "add", text: b[j - 1] });
-        j--;
-      } else {
-        result.push({ type: "remove", text: a[i - 1] });
-        i--;
-      }
-    }
-    return result.reverse();
-  }
 
   // Build context-diff hunks: only emit changed lines + CTX surrounding lines.
   // Collapses long unchanged stretches into a single placeholder to keep DOM small.
@@ -73,25 +41,16 @@
     return hunks;
   }
 
-  const diffOrNull = $derived.by(() => {
-    const a = oldContent ? oldContent.split("\n") : [];
-    const b = newContent ? newContent.split("\n") : [];
-    if (Math.max(a.length, b.length) > 2000) return null;
-    return diffLines(a, b);
-  });
+  const hasChanges = $derived(lines.some((l) => l.type !== "same"));
 
   type RenderLine = DiffLine | { type: "collapsed"; count: number };
-
-  const hasChanges = $derived(
-    diffOrNull !== null && diffOrNull.some((l) => l.type !== "same"),
-  );
 
   // Flatten hunks into a render-ready array: changed/context lines stay as DiffLine,
   // collapsed unchanged runs become a single placeholder — minimizing DOM nodes.
   const renderLines = $derived.by((): RenderLine[] | null => {
-    if (!diffOrNull || !hasChanges) return null;
+    if (!hasChanges) return null;
     const result: RenderLine[] = [];
-    for (const hunk of buildHunks(diffOrNull)) {
+    for (const hunk of buildHunks(lines)) {
       if ("collapsed" in hunk) {
         result.push({ type: "collapsed", count: hunk.collapsed });
       } else {
@@ -102,7 +61,6 @@
   });
 
   const fileName = $derived(filePath.split("/").at(-1) ?? filePath);
-  const isNewFile = $derived(oldContent === "" && newContent !== "");
 </script>
 
 <div class="flex flex-col h-full">
@@ -127,11 +85,7 @@
       <RefreshCw size={14} class="animate-spin" />
       Loading diff…
     </div>
-  {:else if diffOrNull === null}
-    <p class="p-4 text-sm text-app-text-3 italic">
-      File too large to diff (>2000 lines).
-    </p>
-  {:else if diffOrNull.length === 0}
+  {:else if lines.length === 0}
     <p class="p-4 text-sm text-app-text-3 italic">Empty file.</p>
   {:else if !hasChanges}
     <p class="p-4 text-sm text-app-text-3 italic">No changes detected.</p>

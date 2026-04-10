@@ -13,6 +13,8 @@ import {
   gitCommit,
   gitListBranches,
   gitCheckoutBranch,
+  gitDiscardFile,
+  gitDeleteFile,
   getPreferences,
 } from '$lib/services/tauri-commands';
 
@@ -161,6 +163,39 @@ export async function handleCheckoutBranch(branch: string, isRemote: boolean) {
 
 export function selectFile(path: string, status: GitFileStatus) {
   gitPageState.update((s) => ({ ...s, selectedFile: { path, status } }));
+}
+
+export async function handleDiscardFile(filePath: string) {
+  const path = get(project).path;
+  if (!path) return;
+  try {
+    await gitDiscardFile(path, filePath);
+    await load();
+  } catch (e) {
+    gitPageState.update((s) => ({ ...s, error: String(e) }));
+  }
+}
+
+export async function handleDeleteFile(filePath: string) {
+  const path = get(project).path;
+  if (!path) return;
+  try {
+    await gitDeleteFile(path, filePath);
+    await load();
+  } catch (e) {
+    gitPageState.update((s) => ({ ...s, error: String(e) }));
+  }
+}
+
+export async function handleShowInFileExplorer(filePath: string) {
+  const path = get(project).path;
+  if (!path) return;
+  try {
+    const { revealItemInDir } = await import('@tauri-apps/plugin-opener');
+    await revealItemInDir(`${path}/${filePath}`);
+  } catch (e) {
+    gitPageState.update((s) => ({ ...s, error: String(e) }));
+  }
 }
 
 export async function initAutoRefresh(): Promise<void> {

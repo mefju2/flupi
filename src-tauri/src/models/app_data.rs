@@ -18,16 +18,21 @@ pub struct RecentProjects {
 
 impl RecentProjects {
     pub fn add(&mut self, name: &str, path: &str) {
-        let existing_active_env = self.projects.iter()
+        let existing_active_env = self
+            .projects
+            .iter()
             .find(|p| p.path == path)
             .and_then(|p| p.active_environment.clone());
         self.projects.retain(|p| p.path != path);
-        self.projects.insert(0, RecentProject {
-            name: name.to_string(),
-            path: path.to_string(),
-            last_opened_at: Utc::now().to_rfc3339(),
-            active_environment: existing_active_env,
-        });
+        self.projects.insert(
+            0,
+            RecentProject {
+                name: name.to_string(),
+                path: path.to_string(),
+                last_opened_at: Utc::now().to_rfc3339(),
+                active_environment: existing_active_env,
+            },
+        );
     }
 
     pub fn remove(&mut self, path: &str) {
@@ -42,7 +47,7 @@ impl RecentProjects {
 }
 
 fn default_git_refresh_ms() -> u64 {
-    30_000
+    60_000
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -59,7 +64,7 @@ impl Default for Preferences {
         Self {
             theme: "dark".to_string(),
             default_timeout_ms: 30000,
-            git_auto_refresh_ms: 30_000,
+            git_auto_refresh_ms: 60_000,
         }
     }
 }

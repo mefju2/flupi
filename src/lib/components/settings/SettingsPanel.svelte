@@ -1,23 +1,57 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import SavedIndicator from '$lib/components/shared/SavedIndicator.svelte';
-  import { project } from '$lib/stores/project';
-  import { theme, type Theme } from '$lib/stores/ui';
-  import { getPreferences, savePreferences } from '$lib/services/tauri-commands';
-  import { createDebouncedSave } from '$lib/services/debounced-save';
-  import { gitAutoRefreshMs } from '$lib/stores/git';
+  import { onMount } from "svelte";
+  import SavedIndicator from "$lib/components/shared/SavedIndicator.svelte";
+  import { project } from "$lib/stores/project";
+  import { theme, type Theme } from "$lib/stores/ui";
+  import {
+    getPreferences,
+    savePreferences,
+  } from "$lib/services/tauri-commands";
+  import { revealItemInDir } from "@tauri-apps/plugin-opener";
+  import { addRecentProject } from "$lib/services/tauri-commands";
+  import { createDebouncedSave } from "$lib/services/debounced-save";
+  import { gitAutoRefreshMs } from "$lib/stores/git";
+  import {
+    checkForUpdates,
+    updateChecking,
+    pendingUpdate,
+  } from "$lib/stores/updates";
 
   let timeoutMs = $state(30000);
   let savedTimeout = $state(false);
   let gitRefreshSec = $state(30);
   let savedGitRefresh = $state(false);
+  let projectName = $state($project.name ?? "");
+  let savedProjectName = $state(false);
+
+  const debouncedSaveName = createDebouncedSave(async () => {
+    if (!$project.path || !projectName.trim()) return;
+    await addRecentProject(projectName.trim(), $project.path);
+    project.update((p) => ({ ...p, name: projectName.trim() }));
+    savedProjectName = true;
+    setTimeout(() => {
+      savedProjectName = false;
+    }, 2000);
+  }, 400);
+
+  function handleProjectNameInput(e: Event) {
+    projectName = (e.target as HTMLInputElement).value;
+    debouncedSaveName.trigger();
+  }
 
   const debouncedSave = createDebouncedSave(async () => {
-    await savePreferences({ theme: $theme, defaultTimeoutMs: timeoutMs, gitAutoRefreshMs: gitRefreshSec * 1000 });
+    await savePreferences({
+      theme: $theme,
+      defaultTimeoutMs: timeoutMs,
+      gitAutoRefreshMs: gitRefreshSec * 1000,
+    });
     gitAutoRefreshMs.set(gitRefreshSec * 1000);
     savedTimeout = true;
     savedGitRefresh = true;
-    setTimeout(() => { savedTimeout = false; savedGitRefresh = false; }, 2000);
+    setTimeout(() => {
+      savedTimeout = false;
+      savedGitRefresh = false;
+    }, 2000);
   }, 300);
 
   onMount(async () => {
@@ -29,7 +63,11 @@
 
   async function handleThemeChange(value: Theme) {
     theme.set(value);
-    await savePreferences({ theme: value, defaultTimeoutMs: timeoutMs, gitAutoRefreshMs: gitRefreshSec * 1000 });
+    await savePreferences({
+      theme: value,
+      defaultTimeoutMs: timeoutMs,
+      gitAutoRefreshMs: gitRefreshSec * 1000,
+    });
   }
 
   function handleTimeoutInput(e: Event) {
@@ -47,9 +85,9 @@
   }
 
   const themeOptions: { value: Theme; label: string }[] = [
-    { value: 'dark', label: 'Dark' },
-    { value: 'light', label: 'Light' },
-    { value: 'system', label: 'System' },
+    { value: "dark", label: "Dark" },
+    { value: "light", label: "Light" },
+    { value: "system", label: "System" },
   ];
 </script>
 
@@ -60,15 +98,35 @@
     <h2 class="text-sm font-semibold text-app-text-2 mb-4">Project</h2>
     <div class="flex flex-col gap-3">
       <div class="flex flex-col gap-1">
-        <label class="text-sm text-app-text-2">Name</label>
-        <div class="font-mono text-sm text-app-text-3 py-1">
-          {$project.name ?? '—'}
+        <label for="project-name" class="text-sm text-app-text-2">Name</label>
+        <div class="flex items-center">
+          <input
+            id="project-name"
+            type="text"
+            value={projectName}
+            oninput={handleProjectNameInput}
+            class="w-60 px-3 py-2 rounded bg-app-card text-sm text-app-text font-mono
+                   border border-transparent focus:border-cyan-500 focus:outline-none transition-colors"
+          />
+          <SavedIndicator visible={savedProjectName} class="ml-2" />
         </div>
       </div>
       <div class="flex flex-col gap-1">
-        <label class="text-sm text-app-text-2">Folder</label>
-        <div class="font-mono text-sm text-app-text-3 py-1 truncate">
-          {$project.path ?? '—'}
+        <p class="text-sm text-app-text-2">Folder</p>
+        <div class="flex items-center gap-2">
+          <div class="font-mono text-sm text-app-text-3 py-1 truncate flex-1">
+            {$project.path ?? "—"}
+          </div>
+          {#if $project.path}
+            <button
+              type="button"
+              onclick={() => revealItemInDir($project.path!)}
+              title="Open in file explorer"
+              class="shrink-0 px-2 py-1 rounded text-xs bg-app-card text-app-text-2 hover:bg-app-hover transition-colors"
+            >
+              Open
+            </button>
+          {/if}
         </div>
       </div>
     </div>
@@ -80,12 +138,13 @@
     <h2 class="text-sm font-semibold text-app-text-2 mb-4">App</h2>
     <div class="flex flex-col gap-5">
       <div class="flex flex-col gap-2">
-        <label class="text-sm text-app-text-2">Theme</label>
+        <p class="text-sm text-app-text-2">Theme</p>
         <div class="flex gap-2">
           {#each themeOptions as opt}
             <button
               type="button"
-              class="px-4 py-1.5 rounded text-sm transition-colors {$theme === opt.value
+              class="px-4 py-1.5 rounded text-sm transition-colors {$theme ===
+              opt.value
                 ? 'bg-cyan-500 text-zinc-900 font-medium'
                 : 'bg-app-card text-app-text-2 hover:bg-app-hover'}"
               onclick={() => handleThemeChange(opt.value)}
@@ -94,11 +153,15 @@
             </button>
           {/each}
         </div>
-        <p class="text-xs text-app-text-3 mt-1">Follows your operating system appearance preference.</p>
+        <p class="text-xs text-app-text-3 mt-1">
+          Follows your operating system appearance preference.
+        </p>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="timeout" class="text-sm text-app-text-2">Default request timeout (ms)</label>
+        <label for="timeout" class="text-sm text-app-text-2"
+          >Default request timeout (ms)</label
+        >
         <div class="flex items-center">
           <input
             id="timeout"
@@ -112,7 +175,9 @@
           />
           <SavedIndicator visible={savedTimeout} class="ml-2" />
         </div>
-        <p class="text-xs text-app-text-3 mt-1">Applied to requests without an explicit timeout configured.</p>
+        <p class="text-xs text-app-text-3 mt-1">
+          Applied to requests without an explicit timeout configured.
+        </p>
       </div>
     </div>
   </section>
@@ -123,7 +188,9 @@
     <h2 class="text-sm font-semibold text-app-text-2 mb-4">Git</h2>
     <div class="flex flex-col gap-5">
       <div class="flex flex-col gap-2">
-        <label for="git-refresh" class="text-sm text-app-text-2">Auto-refresh interval (seconds)</label>
+        <label for="git-refresh" class="text-sm text-app-text-2"
+          >Auto-refresh interval (seconds)</label
+        >
         <div class="flex items-center">
           <input
             id="git-refresh"
@@ -137,8 +204,39 @@
           />
           <SavedIndicator visible={savedGitRefresh} class="ml-2" />
         </div>
-        <p class="text-xs text-app-text-3 mt-1">How often the Git status page refreshes automatically.</p>
+        <p class="text-xs text-app-text-3 mt-1">
+          How often the Git status page refreshes automatically.
+        </p>
       </div>
+    </div>
+  </section>
+
+  <div class="border-t border-app-border"></div>
+
+  <section>
+    <h2 class="text-sm font-semibold text-app-text-2 mb-4">Updates</h2>
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          onclick={checkForUpdates}
+          disabled={$updateChecking}
+          class="px-4 py-2 rounded text-sm bg-app-card text-app-text-2 hover:bg-app-hover
+                 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {$updateChecking ? "Checking…" : "Check for Updates"}
+        </button>
+        {#if $pendingUpdate}
+          <span class="text-xs text-cyan-400">
+            {$pendingUpdate.version} available — see the banner above
+          </span>
+        {:else if !$updateChecking}
+          <span class="text-xs text-app-text-4">You're on v0.1.4</span>
+        {/if}
+      </div>
+      <p class="text-xs text-app-text-3">
+        Current version: <span class="font-mono">0.1.4</span>
+      </p>
     </div>
   </section>
 </div>

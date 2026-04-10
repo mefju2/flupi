@@ -39,6 +39,8 @@ pub fn run() {
         .manage(AppState::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             commands::project::create_project,
@@ -107,6 +109,9 @@ pub fn run() {
             commands::git::git_push,
             commands::git::git_list_branches,
             commands::git::git_checkout_branch,
+            commands::git::git_discard_file,
+            commands::git::git_delete_file,
+            commands::openapi::diff_text,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

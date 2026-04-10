@@ -1,7 +1,8 @@
 use std::path::Path;
-use std::process::Command;
 
 use serde::Serialize;
+
+use crate::utils::git_command;
 
 use crate::error::{FlupiError, Result};
 use crate::services::GIT_NOT_FOUND;
@@ -47,7 +48,7 @@ pub(crate) fn parse_branch_list(output: &str) -> Vec<BranchInfo> {
 }
 
 pub fn list_branches(path: &Path) -> Result<Vec<BranchInfo>> {
-    let output = Command::new("git")
+    let output = git_command()
         .args(["branch", "-a"])
         .current_dir(path)
         .output()
@@ -78,7 +79,7 @@ pub fn checkout_branch(path: &Path, branch: &str, is_remote: bool) -> Result<()>
         let local = branch.splitn(2, '/').nth(1).unwrap_or(branch);
 
         // Try to create a local tracking branch
-        let out = Command::new("git")
+        let out = git_command()
             .args(["checkout", "-b", local, "--track", branch])
             .current_dir(path)
             .output()
@@ -91,7 +92,7 @@ pub fn checkout_branch(path: &Path, branch: &str, is_remote: bool) -> Result<()>
         let stderr = String::from_utf8_lossy(&out.stderr);
         // Local branch already exists — just switch to it
         if stderr.contains("already exists") {
-            let out2 = Command::new("git")
+            let out2 = git_command()
                 .args(["checkout", local])
                 .current_dir(path)
                 .output()
@@ -112,7 +113,7 @@ pub fn checkout_branch(path: &Path, branch: &str, is_remote: bool) -> Result<()>
         )));
     }
 
-    let output = Command::new("git")
+    let output = git_command()
         .args(["checkout", branch])
         .current_dir(path)
         .output()
