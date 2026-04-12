@@ -3,9 +3,9 @@
   import { listen } from "@tauri-apps/api/event";
   import type {
     ScenarioData,
-    ScenarioStep,
     StepResult,
   } from "$lib/services/tauri-commands";
+  import { isDelayStep } from "$lib/services/tauri-commands";
   import StepResultCard from "./StepResultCard.svelte";
   import VariableStatePanel from "./VariableStatePanel.svelte";
   import SectionHeader from "$lib/components/shared/SectionHeader.svelte";
@@ -186,7 +186,8 @@
                     ? 'text-cyan-300'
                     : status.state === 'skipped'
                       ? 'text-app-text-4 line-through'
-                      : 'text-app-text-3'}">{step.name}</span
+                      : 'text-app-text-3'}"
+                >{step.name}{#if isDelayStep(step)}<span class="text-app-text-4"> — ⏱ {step.duration}ms</span>{/if}</span
                 >
               </div>
             {/if}

@@ -89,7 +89,7 @@ export async function evaluateFunctionCalls(
       .join('');
 
     try {
-      const value = await evalInSandbox(preamble + fn.body, args);
+      const { result: value } = await evalInSandbox(preamble + fn.body, args);
       result[token] = value;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

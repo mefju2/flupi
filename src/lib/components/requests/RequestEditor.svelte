@@ -20,7 +20,7 @@
   import { createDebouncedSave } from "$lib/services/debounced-save";
   import { getMethodColor } from "$lib/utils/format";
   import { evaluateFunctionCalls } from "$lib/services/function-evaluator";
-  import { evalInSandbox } from "$lib/services/function-sandbox";
+  import { evalInSandbox, type EnvContext } from "$lib/services/function-sandbox";
   import { functions } from "$lib/stores/functions";
   import ParamsTab from "./ParamsTab.svelte";
   import PathParamsTab from "./PathParamsTab.svelte";
@@ -241,6 +241,11 @@
       const envEntry = $environments.find((e) => e.fileName === env);
       if (envEntry) {
         const updatedVars = { ...envEntry.environment.variables };
+        const envContext: EnvContext = {
+          name: envEntry.environment.name,
+          variables: { ...envEntry.environment.variables, ...envEntry.secrets },
+        };
+        const secretKeys = new Set(envEntry.environment.secrets);
         for (const action of preActions) {
           if (
             action.type !== "set_variable" ||
@@ -261,8 +266,9 @@
               .map((p, idx) => `const ${p.name} = args[${idx}];`)
               .join("\n") + "\n";
           let result: string;
+          let mutations: Record<string, string>;
           try {
-            result = await evalInSandbox(preamble + fn.body, action.args);
+            ({ result, mutations } = await evalInSandbox(preamble + fn.body, action.args, envContext));
           } catch (e) {
             lastError.set(
               `Pre-request action "${action.function_name}": ${e instanceof Error ? e.message : String(e)}`,
@@ -270,6 +276,12 @@
             return;
           }
           updatedVars[action.variable] = result;
+          // Apply any flu.env.setVar mutations (skip secret keys)
+          for (const [k, v] of Object.entries(mutations)) {
+            if (!secretKeys.has(k)) {
+              updatedVars[k] = v;
+            }
+          }
         }
         const updatedEnv = { ...envEntry.environment, variables: updatedVars };
         try {

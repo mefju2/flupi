@@ -1,10 +1,65 @@
+<script module>
+  // Module-level flags — shared across all instances, survive component remounts.
+  let _fluCompletionsRegistered = false;
+  let _themesRegistered = false;
+</script>
+
 <script lang="ts">
   import { untrack } from 'svelte';
   import * as monaco from 'monaco-editor';
   import { theme } from '$lib/stores/ui';
   import { ensureMonacoEnv } from '$lib/services/monaco-env';
 
-  let _themesRegistered = false;
+  function registerFluCompletions() {
+    if (_fluCompletionsRegistered) return;
+    _fluCompletionsRegistered = true;
+    monaco.languages.registerCompletionItemProvider('javascript', {
+      triggerCharacters: ['.'],
+      provideCompletionItems(model, position) {
+        const line = model.getValueInRange({
+          startLineNumber: position.lineNumber, startColumn: 1,
+          endLineNumber: position.lineNumber, endColumn: position.column,
+        });
+        const word = model.getWordUntilPosition(position);
+        const range = {
+          startLineNumber: position.lineNumber, endLineNumber: position.lineNumber,
+          startColumn: word.startColumn, endColumn: word.endColumn,
+        };
+        if (/\bflu\.env\.$/.test(line)) {
+          return { suggestions: [
+            { label: 'getVar', kind: monaco.languages.CompletionItemKind.Method,
+              insertText: 'getVar(${1:key})',
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              detail: 'getVar(key: string): string',
+              documentation: "Returns the value of an environment variable, or '' if not set.",
+              range },
+            { label: 'setVar', kind: monaco.languages.CompletionItemKind.Method,
+              insertText: 'setVar(${1:key}, ${2:value})',
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              detail: 'setVar(key: string, value: string): void',
+              documentation: 'Sets an environment variable to the given value.',
+              range },
+            { label: 'name', kind: monaco.languages.CompletionItemKind.Method,
+              insertText: 'name()',
+              detail: 'name(): string',
+              documentation: 'Returns the name of the active environment.',
+              range },
+          ]};
+        }
+        if (/\bflu\.$/.test(line)) {
+          return { suggestions: [
+            { label: 'env', kind: monaco.languages.CompletionItemKind.Property,
+              insertText: 'env',
+              detail: 'flu.env',
+              documentation: 'Access the active environment variables.',
+              range },
+          ]};
+        }
+        return { suggestions: [] };
+      },
+    });
+  }
+
   function registerThemes() {
     if (_themesRegistered) return;
     _themesRegistered = true;
@@ -52,6 +107,7 @@
     const initialValue = untrack(() => value);
     ensureMonacoEnv();
     registerThemes();
+    registerFluCompletions();
     const isDark = document.documentElement.classList.contains('dark');
 
     let model = monaco.editor.getModel(MODEL_URI);

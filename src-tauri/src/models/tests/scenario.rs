@@ -36,10 +36,14 @@ fn test_scenario_round_trip() {
     assert_eq!(scenario.inputs[0].default, "admin");
     assert!(scenario.inputs[0].required);
     assert_eq!(scenario.steps.len(), 1);
-    assert_eq!(scenario.steps[0].id, "step-1");
-    assert_eq!(scenario.steps[0].request_id, "auth/login");
-    assert_eq!(scenario.steps[0].extract.len(), 1);
-    assert_eq!(scenario.steps[0].extract[0].variable, "token");
+
+    let ScenarioStep::Request(ref s) = scenario.steps[0] else {
+        panic!("expected request step");
+    };
+    assert_eq!(s.id, "step-1");
+    assert_eq!(s.request_id, "auth/login");
+    assert_eq!(s.extract.len(), 1);
+    assert_eq!(s.extract[0].variable, "token");
 
     let serialized = serde_json::to_string(&scenario).unwrap();
     let re_parsed: Scenario = serde_json::from_str(&serialized).unwrap();
@@ -81,9 +85,51 @@ fn test_step_defaults() {
     }"#;
 
     let step: ScenarioStep = serde_json::from_str(json).unwrap();
-    assert!(step.overrides.is_empty());
-    assert!(step.extract.is_empty());
-    assert_eq!(step.request_id, "req-id");
+    let ScenarioStep::Request(ref r) = step else {
+        panic!("expected request step");
+    };
+    assert!(r.overrides.is_empty());
+    assert!(r.extract.is_empty());
+    assert_eq!(r.request_id, "req-id");
+}
+
+#[test]
+fn test_delay_step_round_trip() {
+    let json = r#"{
+        "id": "d1",
+        "name": "Wait",
+        "duration": 300
+    }"#;
+
+    let step: ScenarioStep = serde_json::from_str(json).unwrap();
+    let ScenarioStep::Delay(ref d) = step else {
+        panic!("expected delay step");
+    };
+    assert_eq!(d.id, "d1");
+    assert_eq!(d.name, "Wait");
+    assert_eq!(d.duration, 300);
+
+    let serialized = serde_json::to_string(&step).unwrap();
+    let re_parsed: ScenarioStep = serde_json::from_str(&serialized).unwrap();
+    let ScenarioStep::Delay(ref d2) = re_parsed else {
+        panic!("expected delay step after round-trip");
+    };
+    assert_eq!(d2.duration, 300);
+}
+
+#[test]
+fn test_legacy_request_step_no_type() {
+    // Old JSON files have no "type" field — must deserialize as Request
+    let json = r#"{
+        "id": "s1",
+        "name": "Login",
+        "requestId": "auth/login",
+        "overrides": {},
+        "extract": []
+    }"#;
+
+    let step: ScenarioStep = serde_json::from_str(json).unwrap();
+    assert!(matches!(step, ScenarioStep::Request(_)), "old step without type field should be Request");
 }
 
 #[test]

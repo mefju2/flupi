@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts">
-  import type { ScenarioStep, RequestTreeNode } from '$lib/services/tauri-commands';
+  import type { RequestStep, RequestTreeNode } from '$lib/services/tauri-commands';
   import { getRequest } from '$lib/services/tauri-commands';
   import { project } from '$lib/stores/project';
   import { getMethodColor } from '$lib/utils/format';
@@ -20,11 +20,11 @@
   }
 
   interface Props {
-    step: ScenarioStep;
+    step: RequestStep;
     requestTree: RequestTreeNode[];
     index: number;
     extractedVars?: VarMeta[];
-    onUpdate: (step: ScenarioStep) => void;
+    onUpdate: (step: RequestStep) => void;
     onDelete: () => void;
     onMoveUp?: () => void;
     onMoveDown?: () => void;

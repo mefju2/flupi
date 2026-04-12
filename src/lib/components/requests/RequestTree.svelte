@@ -279,11 +279,11 @@
         const newId = await renameRequest($project.path, id, trimmed);
         // Sync any open scenario that references the old request ID in memory
         const cur = $activeScenario;
-        if (cur && cur.steps.some((s) => s.requestId === id)) {
+        if (cur && cur.steps.some((s) => 'requestId' in s && s.requestId === id)) {
           activeScenario.set({
             ...cur,
             steps: cur.steps.map((s) =>
-              s.requestId === id ? { ...s, requestId: newId } : s,
+              'requestId' in s && s.requestId === id ? { ...s, requestId: newId } : s,
             ),
           });
         }

@@ -8,7 +8,7 @@ pub fn name_to_slug(name: &str) -> String {
 /// Windows (the `CREATE_NO_WINDOW` flag). On other platforms it behaves exactly
 /// like `Command::new("git")`.
 pub fn git_command() -> std::process::Command {
-    let mut cmd = std::process::Command::new("git");
+    let cmd = std::process::Command::new("git");
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
