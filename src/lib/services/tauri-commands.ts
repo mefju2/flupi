@@ -330,13 +330,29 @@ export interface Extraction {
   scope?: 'env' | 'scenario';
 }
 
-export interface ScenarioStep {
+export interface RequestStep {
   id: string;
   name: string;
   requestId: string;
   overrides: Record<string, string>;
   extract: Extraction[];
   expectedStatus?: string[];
+}
+
+export interface DelayStep {
+  id: string;
+  name: string;
+  duration: number; // milliseconds
+}
+
+export type ScenarioStep = RequestStep | DelayStep;
+
+export function isDelayStep(step: ScenarioStep): step is DelayStep {
+  return 'duration' in step;
+}
+
+export function isRequestStep(step: ScenarioStep): step is RequestStep {
+  return 'requestId' in step;
 }
 
 export interface ScenarioData {

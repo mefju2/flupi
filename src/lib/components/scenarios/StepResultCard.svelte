@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tryParseJson } from "$lib/utils/format";
   import type { ScenarioStep, StepResult } from "$lib/services/tauri-commands";
+  import { isDelayStep } from "$lib/services/tauri-commands";
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
   import SentRequestCard from "./SentRequestCard.svelte";
 
@@ -68,6 +69,9 @@
     {/if}
 
     <span class="text-sm text-app-text flex-1 truncate">{step.name}</span>
+    {#if isDelayStep(step)}
+      <span class="text-xs text-app-text-4 shrink-0">⏱ {step.duration}ms</span>
+    {/if}
 
     <div class="flex items-center gap-2 shrink-0">
       {#if statusCode !== undefined}

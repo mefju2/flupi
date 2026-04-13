@@ -83,7 +83,7 @@
     const templates = scenario
       ? [
           ...Object.values(inputs),
-          ...scenario.steps.flatMap((s) => Object.values(s.overrides ?? {})),
+          ...scenario.steps.flatMap((s) => 'overrides' in s ? Object.values(s.overrides) : []),
         ]
       : [];
 

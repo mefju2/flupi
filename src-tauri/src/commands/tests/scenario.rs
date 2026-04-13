@@ -38,7 +38,7 @@ fn test_get_scenario() {
 
 #[test]
 fn test_save_scenario() {
-    use crate::models::scenario::{ScenarioStep, Scenario};
+    use crate::models::scenario::{ScenarioStep, RequestStep, Scenario};
 
     let dir = setup_dir();
     let root = dir.path().to_path_buf();
@@ -48,20 +48,20 @@ fn test_save_scenario() {
     let updated = Scenario {
         name: "Flow".to_string(),
         inputs: vec![],
-        steps: vec![ScenarioStep {
+        steps: vec![ScenarioStep::Request(RequestStep {
             id: "step-1".to_string(),
             name: "Step One".to_string(),
             request_id: "req/login".to_string(),
             overrides: indexmap::IndexMap::new(),
             extract: vec![],
             expected_status: vec![],
-        }],
+        })],
     };
     save_scenario(root.clone(), "flow".to_string(), updated).unwrap();
 
     let loaded = get_scenario(root.clone(), "flow".to_string()).unwrap();
     assert_eq!(loaded.steps.len(), 1);
-    assert_eq!(loaded.steps[0].id, "step-1");
+    assert_eq!(loaded.steps[0].id(), "step-1");
 }
 
 #[test]

@@ -11,6 +11,13 @@
     pickFolder,
   } from "$lib/services/tauri-commands";
   import { project } from "$lib/stores/project";
+  import { scenarioTree, activeScenarioId, activeScenario } from "$lib/stores/scenarios";
+  import { requestTree, activeRequestId, activeRequest, activeCollectionFolder, activeCollection } from "$lib/stores/requests";
+  import { environments, activeEnvironment, selectedEnvironmentFile } from "$lib/stores/environment";
+  import { lastResponse, isExecuting, lastError } from "$lib/stores/execution";
+  import { gitPageState, gitBehindCount } from "$lib/stores/git";
+  import { openApiSources, driftedIdsBySource } from "$lib/stores/openapi";
+  import { functions, selectedFunctionName } from "$lib/stores/functions";
   import type { RecentProject } from "$lib/services/tauri-commands";
 
   let recentProjects: RecentProject[] = $state([]);
@@ -33,6 +40,29 @@
   }
 
   async function openAndNavigate(path: string, name: string) {
+    // Reset all project-scoped stores so stale data from the previous project
+    // doesn't bleed into the newly opened one.
+    scenarioTree.set([]);
+    activeScenarioId.set(null);
+    activeScenario.set(null);
+    requestTree.set([]);
+    activeRequestId.set(null);
+    activeRequest.set(null);
+    activeCollectionFolder.set(null);
+    activeCollection.set(null);
+    environments.set([]);
+    activeEnvironment.set(null);
+    selectedEnvironmentFile.set(null);
+    lastResponse.set(null);
+    isExecuting.set(false);
+    lastError.set(null);
+    gitPageState.set({ status: null, isLoading: false, isFetching: false, isPulling: false, isPushing: false, isCommitting: false, isSwitchingBranch: false, error: null, conflictError: null, lastRefreshed: null, lastFetched: null, selectedFile: null, branches: [] });
+    gitBehindCount.set(0);
+    openApiSources.set([]);
+    driftedIdsBySource.set(new Map());
+    functions.set([]);
+    selectedFunctionName.set(null);
+
     project.set({ isOpen: true, path, name });
     await addRecentProject(name, path);
     goto("/requests");

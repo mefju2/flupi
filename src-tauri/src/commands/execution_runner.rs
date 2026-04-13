@@ -4,7 +4,7 @@ use tauri::{command, AppHandle, Emitter};
 use serde::Serialize;
 use crate::AppState;
 use crate::error::FlupiError;
-use crate::models::scenario::Scenario;
+use crate::models::scenario::{Scenario, ScenarioStep, RequestStep};
 use crate::services::{file_io, http_client, variable_resolver, request_executor};
 use super::execution::execute_single_request;
 pub use request_executor::apply_extraction;
@@ -63,6 +63,126 @@ fn status_is_expected(status: u16, expected: &[String]) -> bool {
     })
 }
 
+async fn run_request_step(
+    app: &AppHandle,
+    project_path: &Path,
+    env_file_name: &str,
+    timeout_ms: u64,
+    step: &RequestStep,
+    extracted: &mut HashMap<String, String>,
+) -> Result<(), FlupiError> {
+    let mut path_param_overrides: HashMap<String, String> = HashMap::new();
+    let mut regular_overrides: HashMap<String, String> = HashMap::new();
+    for (k, v) in &step.overrides {
+        if let Some(param_name) = k.strip_prefix("path.") {
+            path_param_overrides.insert(param_name.to_string(), v.clone());
+        } else {
+            regular_overrides.insert(k.clone(), v.clone());
+        }
+    }
+    let mut extra_vars = extracted.clone();
+    // Resolve override values against the current context so function-call
+    // tokens like {{$randomInt(12)}} are expanded before being stored as vars.
+    let pre_ctx = variable_resolver::build_context(
+        HashMap::new(),
+        &[],
+        None,
+        Some(extracted),
+    );
+    let resolved_overrides: HashMap<String, String> = regular_overrides
+        .iter()
+        .map(|(k, v)| (k.clone(), variable_resolver::resolve_string(v, &pre_ctx)))
+        .collect();
+    apply_overrides(&mut extra_vars, &resolved_overrides);
+
+    let response = execute_single_request(
+        project_path,
+        &step.request_id,
+        env_file_name,
+        timeout_ms,
+        &extra_vars,
+        &path_param_overrides,
+    )
+    .await;
+
+    match response {
+        Err(e) => {
+            let result = StepResult {
+                step_id: step.id.clone(),
+                status: "error".to_string(),
+                response: None,
+                error: Some(e.to_string()),
+                extracted: HashMap::new(),
+                sent_request: None,
+            };
+            let _ = app.emit("scenario-step-result", &result);
+            Err(e)
+        }
+        Ok((sent_req, resp)) => {
+            let is_success = status_is_expected(resp.status, &step.expected_status);
+            if !is_success {
+                let error_msg = format!("HTTP {} {}", resp.status, resp.status_text);
+                let result = StepResult {
+                    step_id: step.id.clone(),
+                    status: "error".to_string(),
+                    response: Some(resp),
+                    error: Some(error_msg.clone()),
+                    extracted: HashMap::new(),
+                    sent_request: Some(sent_req),
+                };
+                let _ = app.emit("scenario-step-result", &result);
+                return Err(FlupiError::Custom(error_msg));
+            }
+
+            let mut step_extracted: HashMap<String, String> = HashMap::new();
+            for ext in &step.extract {
+                match apply_extraction(ext, &resp.body, &resp.headers) {
+                    Ok(val) => {
+                        step_extracted.insert(ext.variable.clone(), val.clone());
+                        extracted.insert(ext.variable.clone(), val);
+                    }
+                    Err(e) => {
+                        let result = StepResult {
+                            step_id: step.id.clone(),
+                            status: "error".to_string(),
+                            response: Some(resp),
+                            error: Some(e.clone()),
+                            extracted: HashMap::new(),
+                            sent_request: Some(sent_req),
+                        };
+                        let _ = app.emit("scenario-step-result", &result);
+                        return Err(FlupiError::Custom(e));
+                    }
+                }
+            }
+
+            // Persist env-scoped extractions to the environment file
+            let env_exts: Vec<_> = step.extract.iter()
+                .filter(|e| e.scope != "scenario")
+                .cloned()
+                .collect();
+            if !env_exts.is_empty() {
+                if let Err(e) = request_executor::apply_extractions_to_env(
+                    project_path, env_file_name, &env_exts, &resp,
+                ) {
+                    eprintln!("[flupi] scenario extraction write failed: {e}");
+                }
+            }
+
+            let result = StepResult {
+                step_id: step.id.clone(),
+                status: "success".to_string(),
+                response: Some(resp),
+                error: None,
+                extracted: step_extracted,
+                sent_request: Some(sent_req),
+            };
+            let _ = app.emit("scenario-step-result", &result);
+            Ok(())
+        }
+    }
+}
+
 async fn run_scenario_inner(
     app: &AppHandle,
     project_path: &Path,
@@ -86,113 +206,21 @@ async fn run_scenario_inner(
     }
 
     for step in &scenario.steps {
-        let mut path_param_overrides: HashMap<String, String> = HashMap::new();
-        let mut regular_overrides: HashMap<String, String> = HashMap::new();
-        for (k, v) in &step.overrides {
-            if let Some(param_name) = k.strip_prefix("path.") {
-                path_param_overrides.insert(param_name.to_string(), v.clone());
-            } else {
-                regular_overrides.insert(k.clone(), v.clone());
-            }
-        }
-        let mut extra_vars = extracted.clone();
-        // Resolve override values against the current context so function-call
-        // tokens like {{$randomInt(12)}} are expanded before being stored as vars.
-        let pre_ctx = variable_resolver::build_context(
-            HashMap::new(),
-            &[],
-            None,
-            Some(&extracted),
-        );
-        let resolved_overrides: HashMap<String, String> = regular_overrides
-            .iter()
-            .map(|(k, v)| (k.clone(), variable_resolver::resolve_string(v, &pre_ctx)))
-            .collect();
-        apply_overrides(&mut extra_vars, &resolved_overrides);
-
-        let response = execute_single_request(
-            project_path,
-            &step.request_id,
-            env_file_name,
-            timeout_ms,
-            &extra_vars,
-            &path_param_overrides,
-        )
-        .await;
-
-        match response {
-            Err(e) => {
+        match step {
+            ScenarioStep::Delay(delay_step) => {
+                tokio::time::sleep(tokio::time::Duration::from_millis(delay_step.duration)).await;
                 let result = StepResult {
-                    step_id: step.id.clone(),
-                    status: "error".to_string(),
+                    step_id: delay_step.id.clone(),
+                    status: "success".to_string(),
                     response: None,
-                    error: Some(e.to_string()),
+                    error: None,
                     extracted: HashMap::new(),
                     sent_request: None,
                 };
                 let _ = app.emit("scenario-step-result", &result);
-                return Err(e);
             }
-            Ok((sent_req, resp)) => {
-                let is_success = status_is_expected(resp.status, &step.expected_status);
-                if !is_success {
-                    let error_msg = format!("HTTP {} {}", resp.status, resp.status_text);
-                    let result = StepResult {
-                        step_id: step.id.clone(),
-                        status: "error".to_string(),
-                        response: Some(resp),
-                        error: Some(error_msg.clone()),
-                        extracted: HashMap::new(),
-                        sent_request: Some(sent_req),
-                    };
-                    let _ = app.emit("scenario-step-result", &result);
-                    return Err(FlupiError::Custom(error_msg));
-                }
-
-                let mut step_extracted: HashMap<String, String> = HashMap::new();
-                for ext in &step.extract {
-                    match apply_extraction(ext, &resp.body, &resp.headers) {
-                        Ok(val) => {
-                            step_extracted.insert(ext.variable.clone(), val.clone());
-                            extracted.insert(ext.variable.clone(), val);
-                        }
-                        Err(e) => {
-                            let result = StepResult {
-                                step_id: step.id.clone(),
-                                status: "error".to_string(),
-                                response: Some(resp),
-                                error: Some(e.clone()),
-                                extracted: HashMap::new(),
-                                sent_request: Some(sent_req),
-                            };
-                            let _ = app.emit("scenario-step-result", &result);
-                            return Err(FlupiError::Custom(e));
-                        }
-                    }
-                }
-
-                // Persist env-scoped extractions to the environment file
-                let env_exts: Vec<_> = step.extract.iter()
-                    .filter(|e| e.scope != "scenario")
-                    .cloned()
-                    .collect();
-                if !env_exts.is_empty() {
-                    if let Err(e) = request_executor::apply_extractions_to_env(
-                        project_path, env_file_name, &env_exts, &resp,
-                    ) {
-                        eprintln!("[flupi] scenario extraction write failed: {e}");
-                    }
-                }
-
-                let result = StepResult {
-                    step_id: step.id.clone(),
-                    status: "success".to_string(),
-                    response: Some(resp),
-                    error: None,
-                    extracted: step_extracted,
-                    sent_request: Some(sent_req),
-                };
-                let _ = app.emit("scenario-step-result", &result);
+            ScenarioStep::Request(step) => {
+                run_request_step(app, project_path, env_file_name, timeout_ms, step, &mut extracted).await?;
             }
         }
     }
