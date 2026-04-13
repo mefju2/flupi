@@ -59,6 +59,7 @@ impl ScenarioStep {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct RequestStep {
     pub id: String,
     pub name: String,
@@ -73,6 +74,7 @@ pub struct RequestStep {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct DelayStep {
     pub id: String,
     pub name: String,

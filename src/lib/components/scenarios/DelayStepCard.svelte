@@ -49,6 +49,7 @@
 
     <div class="flex items-center gap-2 shrink-0">
       <button
+        type="button"
         class="text-app-text-4 hover:text-red-400 transition-colors text-base"
         onclick={(e) => { e.stopPropagation(); onDelete(); }}
         aria-label="Delete delay step"

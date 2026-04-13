@@ -186,10 +186,12 @@
       {/if}
       <div class="flex gap-3 mt-2">
         <button
+          type="button"
           class="text-xs text-cyan-500 hover:text-cyan-400 transition-colors"
           onclick={addStep}
         >+ Add Step</button>
         <button
+          type="button"
           class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors"
           onclick={addDelay}
         >+ Add Delay</button>

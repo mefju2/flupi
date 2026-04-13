@@ -133,6 +133,34 @@ fn test_legacy_request_step_no_type() {
 }
 
 #[test]
+fn test_mixed_steps_round_trip() {
+    let json = r#"{
+        "name": "Mixed",
+        "steps": [
+            {"id": "r1", "name": "Login", "requestId": "auth/login"},
+            {"id": "d1", "name": "Wait", "duration": 200},
+            {"id": "r2", "name": "Fetch", "requestId": "api/data"}
+        ]
+    }"#;
+
+    let scenario: Scenario = serde_json::from_str(json).unwrap();
+    assert_eq!(scenario.steps.len(), 3);
+    assert!(matches!(scenario.steps[0], ScenarioStep::Request(_)));
+    assert!(matches!(scenario.steps[1], ScenarioStep::Delay(_)));
+    assert!(matches!(scenario.steps[2], ScenarioStep::Request(_)));
+
+    let ScenarioStep::Delay(ref d) = scenario.steps[1] else { panic!() };
+    assert_eq!(d.duration, 200);
+
+    // Round-trip
+    let serialized = serde_json::to_string(&scenario).unwrap();
+    let re_parsed: Scenario = serde_json::from_str(&serialized).unwrap();
+    assert!(matches!(re_parsed.steps[0], ScenarioStep::Request(_)));
+    assert!(matches!(re_parsed.steps[1], ScenarioStep::Delay(_)));
+    assert!(matches!(re_parsed.steps[2], ScenarioStep::Request(_)));
+}
+
+#[test]
 fn test_extraction_round_trip() {
     let ext = Extraction {
         variable: "token".to_string(),
