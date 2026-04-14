@@ -231,11 +231,11 @@
             {$pendingUpdate.version} available — see the banner above
           </span>
         {:else if !$updateChecking}
-          <span class="text-xs text-app-text-4">You're on v0.1.5</span>
+          <span class="text-xs text-app-text-4">You're on v0.1.7</span>
         {/if}
       </div>
       <p class="text-xs text-app-text-3">
-        Current version: <span class="font-mono">0.1.5</span>
+        Current version: <span class="font-mono">0.1.7</span>
       </p>
     </div>
   </section>
