@@ -18,7 +18,10 @@
   let lastInputsRaw = $state<Record<string, string>>({});
   let runKey = $state(0);
 
-  const JS_FUNC_RE = /\{\{\$[a-zA-Z_$][a-zA-Z0-9_$]*\([^)]*\)\}\}/;
+  // Detect any JS function call syntax {{$identifier(…)}}.
+  // Using `\(` rather than matching the full call avoids false negatives
+  // when arguments contain closing parentheses (e.g. string literals).
+  const JS_FUNC_RE = /\{\{\$[a-zA-Z_$][a-zA-Z0-9_$]*\(/;
   const hasFunctionInputs = $derived(
     Object.values(lastInputsRaw).some((v) => JS_FUNC_RE.test(v))
   );

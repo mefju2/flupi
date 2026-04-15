@@ -127,6 +127,25 @@
 </script>
 
 <div class="flex flex-col h-full bg-app-bg">
+  {#snippet retryButtons()}
+    {#if hasFunctionInputs}
+      <button
+        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+        title="Re-run with the same resolved values from the previous run"
+        onclick={onRetry}>↺ Retry (same)</button
+      >
+      <button
+        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+        title="Re-run and re-evaluate all JS functions to generate new values"
+        onclick={onRetryFresh}>↺ Retry (fresh)</button
+      >
+    {:else}
+      <button
+        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+        onclick={onRetry}>↺ Retry</button
+      >
+    {/if}
+  {/snippet}
   <ToolBar>
     <button
       class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors"
@@ -141,46 +160,14 @@
       {:else}
         <span class="text-xs text-green-400 ml-auto">Completed</span>
       {/if}
-      {#if hasFunctionInputs}
-        <button
-          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-          title="Re-run with the same resolved values from the previous run"
-          onclick={onRetry}>↺ Retry (same)</button
-        >
-        <button
-          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-          title="Re-run and re-evaluate all JS functions to generate new values"
-          onclick={onRetryFresh}>↺ Retry (fresh)</button
-        >
-      {:else}
-        <button
-          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-          onclick={onRetry}>↺ Retry</button
-        >
-      {/if}
+      {@render retryButtons()}
     {:else if isPaused}
       <span class="text-xs text-amber-400 ml-auto">Paused</span>
       <button
         class="text-xs px-2.5 py-1 rounded border border-amber-600 text-amber-300 hover:bg-amber-900/30 transition-colors"
         onclick={handleResume}>▶ Resume</button
       >
-      {#if hasFunctionInputs}
-        <button
-          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-          title="Re-run with the same resolved values from the previous run"
-          onclick={onRetry}>↺ Retry (same)</button
-        >
-        <button
-          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-          title="Re-run and re-evaluate all JS functions to generate new values"
-          onclick={onRetryFresh}>↺ Retry (fresh)</button
-        >
-      {:else}
-        <button
-          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-          onclick={onRetry}>↺ Retry</button
-        >
-      {/if}
+      {@render retryButtons()}
     {:else}
       <span class="text-xs text-cyan-400 ml-auto animate-pulse">Running…</span>
     {/if}

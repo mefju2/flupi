@@ -214,6 +214,16 @@ fn test_mixed_steps_with_pause() {
 }
 
 #[test]
+fn test_pause_step_false_is_rejected() {
+    // `pause: false` must not deserialize as a PauseStep — the discriminator
+    // must be `true`. With untagged + deny_unknown_fields, the whole step
+    // should fail to deserialize.
+    let json = r#"{"id": "p1", "name": "Bad", "pause": false}"#;
+    let result: Result<ScenarioStep, _> = serde_json::from_str(json);
+    assert!(result.is_err(), "pause: false should be rejected");
+}
+
+#[test]
 fn test_extraction_round_trip() {
     let ext = Extraction {
         variable: "token".to_string(),

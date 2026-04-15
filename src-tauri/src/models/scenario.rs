@@ -1,6 +1,20 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use indexmap::IndexMap;
 use crate::models::extraction::Extraction;
+
+fn deserialize_must_be_true<'de, D>(d: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let b = bool::deserialize(d)?;
+    if b {
+        Ok(true)
+    } else {
+        Err(serde::de::Error::custom(
+            "pause field must be `true`; got `false`",
+        ))
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Scenario {
@@ -89,9 +103,11 @@ pub struct DelayStep {
 pub struct PauseStep {
     pub id: String,
     pub name: String,
-    /// Discriminator field — always `true` in valid data. Its presence
+    /// Discriminator field — must always be `true`. Its presence (and value)
     /// distinguishes this variant from Delay (has `duration`) and
     /// Request (has `requestId`) during untagged deserialization.
+    /// Deserialization fails if `pause` is `false`.
+    #[serde(deserialize_with = "deserialize_must_be_true")]
     pub pause: bool,
 }
 
