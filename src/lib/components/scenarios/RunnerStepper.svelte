@@ -17,9 +17,11 @@
     inputs?: Record<string, string>;
     onBack: () => void;
     onRetry: () => void;
+    hasFunctionInputs?: boolean;
+    onRetryFresh?: () => void;
   }
 
-  let { scenario, inputs = {}, onBack, onRetry }: Props = $props();
+  let { scenario, inputs = {}, onBack, onRetry, hasFunctionInputs = false, onRetryFresh }: Props = $props();
 
   type StepState = "waiting" | "running" | "paused" | "success" | "error" | "skipped";
 
@@ -139,20 +141,46 @@
       {:else}
         <span class="text-xs text-green-400 ml-auto">Completed</span>
       {/if}
-      <button
-        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-        onclick={onRetry}>↺ Retry</button
-      >
+      {#if hasFunctionInputs}
+        <button
+          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+          title="Re-run with the same resolved values from the previous run"
+          onclick={onRetry}>↺ Retry (same)</button
+        >
+        <button
+          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+          title="Re-run and re-evaluate all JS functions to generate new values"
+          onclick={onRetryFresh}>↺ Retry (fresh)</button
+        >
+      {:else}
+        <button
+          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+          onclick={onRetry}>↺ Retry</button
+        >
+      {/if}
     {:else if isPaused}
       <span class="text-xs text-amber-400 ml-auto">Paused</span>
       <button
         class="text-xs px-2.5 py-1 rounded border border-amber-600 text-amber-300 hover:bg-amber-900/30 transition-colors"
         onclick={handleResume}>▶ Resume</button
       >
-      <button
-        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-        onclick={onRetry}>↺ Retry</button
-      >
+      {#if hasFunctionInputs}
+        <button
+          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+          title="Re-run with the same resolved values from the previous run"
+          onclick={onRetry}>↺ Retry (same)</button
+        >
+        <button
+          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+          title="Re-run and re-evaluate all JS functions to generate new values"
+          onclick={onRetryFresh}>↺ Retry (fresh)</button
+        >
+      {:else}
+        <button
+          class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+          onclick={onRetry}>↺ Retry</button
+        >
+      {/if}
     {:else}
       <span class="text-xs text-cyan-400 ml-auto animate-pulse">Running…</span>
     {/if}
