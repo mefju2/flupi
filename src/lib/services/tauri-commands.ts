@@ -304,13 +304,18 @@ export interface HttpResponse {
   bodyTruncated: boolean;
 }
 
+export interface SendRequestResult {
+  response: HttpResponse;
+  sent_request: SentRequest;
+}
+
 export async function sendRequest(
   projectPath: string,
   requestId: string,
   envFileName: string,
   timeoutMs: number = 30000,
   injectedVars?: Record<string, string>,
-): Promise<HttpResponse> {
+): Promise<SendRequestResult> {
   return invoke('send_request', { projectPath, requestId, envFileName, timeoutMs, injectedVars: injectedVars ?? null });
 }
 

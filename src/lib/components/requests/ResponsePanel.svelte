@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import { lastResponse, isExecuting, lastError } from '$lib/stores/execution';
+  import { lastResponse, lastSentRequest, isExecuting, lastError } from '$lib/stores/execution';
+  import RequestPanelView from './RequestPanelView.svelte';
 
   const COLLAPSED_STORAGE_KEY = 'flupi:response-panel-collapsed';
 
   let headersOpen = $state(false);
   let collapsed = $state(localStorage.getItem(COLLAPSED_STORAGE_KEY) === 'true');
   let panelHeight = $state(240);
+  let activeTab = $state<'response' | 'request'>('response');
 
   const MIN_HEIGHT = 100;
   const MAX_HEIGHT = 800;
@@ -14,6 +16,11 @@
   // Persist collapsed state to localStorage
   $effect(() => {
     localStorage.setItem(COLLAPSED_STORAGE_KEY, String(collapsed));
+  });
+
+  // Reset to response tab when a new response arrives
+  $effect(() => {
+    if ($lastResponse) activeTab = 'response';
   });
 
   function statusClass(status: number): string {
@@ -81,7 +88,6 @@
 
   <!-- Header bar -->
   <div class="flex items-center gap-2 px-3 h-8 shrink-0 border-b border-app-border select-none">
-    <span class="text-xs text-app-text-3 font-medium">Response</span>
     {#if $lastResponse}
       <span class="text-xs font-mono px-1.5 py-px rounded border {statusClass($lastResponse.status)}">
         {$lastResponse.status} {$lastResponse.statusText}
@@ -89,9 +95,31 @@
       <span class="text-xs text-app-text-4">{$lastResponse.durationMs}ms</span>
     {:else if $isExecuting}
       <span class="text-xs text-app-text-4">Sending…</span>
+    {:else}
+      <span class="text-xs text-app-text-3 font-medium">Response</span>
+    {/if}
+    {#if $lastResponse && !collapsed}
+      <div class="flex items-center gap-0.5 ml-auto mr-1">
+        <button
+          class="px-2 py-0.5 text-xs font-medium rounded transition-colors
+            {activeTab === 'response'
+              ? 'text-cyan-300 bg-cyan-950/50'
+              : 'text-app-text-3 hover:text-app-text-2'}"
+          onclick={() => (activeTab = 'response')}
+        >Response</button>
+        <button
+          class="px-2 py-0.5 text-xs font-medium rounded transition-colors
+            {activeTab === 'request'
+              ? 'text-cyan-300 bg-cyan-950/50'
+              : 'text-app-text-3 hover:text-app-text-2'}"
+          onclick={() => (activeTab = 'request')}
+        >Request</button>
+      </div>
+    {:else}
+      <span class="ml-auto"></span>
     {/if}
     <button
-      class="ml-auto text-app-text-4 hover:text-app-text transition-colors p-1 rounded hover:bg-app-hover"
+      class="text-app-text-4 hover:text-app-text transition-colors p-1 rounded hover:bg-app-hover"
       onclick={() => (collapsed = !collapsed)}
       aria-label={collapsed ? 'Expand response panel' : 'Collapse response panel'}
     >
@@ -115,39 +143,43 @@
   <!-- Content -->
   {#if !collapsed}
     <div class="flex-1 overflow-y-auto">
-      {#if $isExecuting}
-        <div class="p-4 text-sm text-app-text-3">Sending...</div>
-      {:else if !$lastResponse && $lastError}
-        <div class="p-4 text-sm text-red-400"><span class="font-mono">Error: {$lastError}</span></div>
-      {:else if !$lastResponse}
-        <div class="p-4 text-sm text-app-text-4">Ready to send — press Ctrl+Enter or click Send</div>
-      {:else}
-        <div class="p-4 space-y-3">
-          <div>
-            <button
-              class="text-xs text-app-text-3 hover:text-app-text hover:bg-app-card rounded px-2 transition-colors flex items-center gap-1 mb-1 -mx-2"
-              onclick={() => (headersOpen = !headersOpen)}
-            >
-              <span>{headersOpen ? '▾' : '▸'}</span>
-              Headers ({Object.keys($lastResponse.headers).length})
-            </button>
-            {#if headersOpen}
-              <div class="space-y-0.5">
-                {#each Object.entries($lastResponse.headers) as [k, v]}
-                  <div class="flex gap-2 text-xs font-mono">
-                    <span class="text-app-text-3 shrink-0">{k}:</span>
-                    <span class="text-app-text-2 break-all">{v}</span>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-          </div>
+      {#if activeTab === 'response'}
+        {#if $isExecuting}
+          <div class="p-4 text-sm text-app-text-3">Sending...</div>
+        {:else if !$lastResponse && $lastError}
+          <div class="p-4 text-sm text-red-400"><span class="font-mono">Error: {$lastError}</span></div>
+        {:else if !$lastResponse}
+          <div class="p-4 text-sm text-app-text-4">Ready to send — press Ctrl+Enter or click Send</div>
+        {:else}
+          <div class="p-4 space-y-3">
+            <div>
+              <button
+                class="text-xs text-app-text-3 hover:text-app-text hover:bg-app-card rounded px-2 transition-colors flex items-center gap-1 mb-1 -mx-2"
+                onclick={() => (headersOpen = !headersOpen)}
+              >
+                <span>{headersOpen ? '▾' : '▸'}</span>
+                Headers ({Object.keys($lastResponse.headers).length})
+              </button>
+              {#if headersOpen}
+                <div class="space-y-0.5">
+                  {#each Object.entries($lastResponse.headers) as [k, v]}
+                    <div class="flex gap-2 text-xs font-mono">
+                      <span class="text-app-text-3 shrink-0">{k}:</span>
+                      <span class="text-app-text-2 break-all">{v}</span>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
 
-          <div>
-            <p class="text-xs text-app-text-3 mb-1">Body</p>
-            <pre class="text-xs font-mono text-app-text bg-app-panel border border-app-border p-3 overflow-auto whitespace-pre-wrap break-all">{formattedBody}</pre>
+            <div>
+              <p class="text-xs text-app-text-3 mb-1">Body</p>
+              <pre class="text-xs font-mono text-app-text bg-app-panel border border-app-border p-3 overflow-auto whitespace-pre-wrap break-all">{formattedBody}</pre>
+            </div>
           </div>
-        </div>
+        {/if}
+      {:else if activeTab === 'request' && $lastSentRequest}
+        <RequestPanelView sentRequest={$lastSentRequest} />
       {/if}
     </div>
   {/if}
