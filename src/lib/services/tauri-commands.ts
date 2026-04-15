@@ -304,13 +304,18 @@ export interface HttpResponse {
   bodyTruncated: boolean;
 }
 
+export interface SendRequestResult {
+  response: HttpResponse;
+  sent_request: SentRequest;
+}
+
 export async function sendRequest(
   projectPath: string,
   requestId: string,
   envFileName: string,
   timeoutMs: number = 30000,
   injectedVars?: Record<string, string>,
-): Promise<HttpResponse> {
+): Promise<SendRequestResult> {
   return invoke('send_request', { projectPath, requestId, envFileName, timeoutMs, injectedVars: injectedVars ?? null });
 }
 
@@ -345,7 +350,13 @@ export interface DelayStep {
   duration: number; // milliseconds
 }
 
-export type ScenarioStep = RequestStep | DelayStep;
+export interface PauseStep {
+  id: string;
+  name: string;
+  pause: true; // discriminator — always true
+}
+
+export type ScenarioStep = RequestStep | DelayStep | PauseStep;
 
 export function isDelayStep(step: ScenarioStep): step is DelayStep {
   return 'duration' in step;
@@ -353,6 +364,10 @@ export function isDelayStep(step: ScenarioStep): step is DelayStep {
 
 export function isRequestStep(step: ScenarioStep): step is RequestStep {
   return 'requestId' in step;
+}
+
+export function isPauseStep(step: ScenarioStep): step is PauseStep {
+  return 'pause' in step;
 }
 
 export interface ScenarioData {
@@ -433,6 +448,10 @@ export async function runScenario(
   injectedVars?: Record<string, string>,
 ): Promise<void> {
   return invoke('run_scenario', { projectPath, scenarioId, envFileName, inputs, timeoutMs, injectedVars: injectedVars ?? null });
+}
+
+export async function resumeScenario(resume: boolean): Promise<void> {
+  return invoke('resume_scenario', { resume });
 }
 
 // === OpenAPI Types ===

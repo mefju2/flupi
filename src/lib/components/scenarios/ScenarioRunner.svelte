@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import type { ScenarioData } from '$lib/services/tauri-commands';
   import PreRunForm from './PreRunForm.svelte';
   import RunnerStepper from './RunnerStepper.svelte';
@@ -13,9 +13,18 @@
   let { scenario, onBack, onRun }: Props = $props();
 
   type Phase = 'form' | 'running';
-  let phase = $state<Phase>(scenario.inputs.length === 0 ? 'running' : 'form');
+  let phase = $state<Phase>(untrack(() => scenario.inputs.length === 0 ? 'running' : 'form'));
   let lastInputs = $state<Record<string, string>>({});
+  let lastInputsRaw = $state<Record<string, string>>({});
   let runKey = $state(0);
+
+  // Detect any JS function call syntax {{$identifier(…)}}.
+  // Using `\(` rather than matching the full call avoids false negatives
+  // when arguments contain closing parentheses (e.g. string literals).
+  const JS_FUNC_RE = /\{\{\$[a-zA-Z_$][a-zA-Z0-9_$]*\(/;
+  const hasFunctionInputs = $derived(
+    Object.values(lastInputsRaw).some((v) => JS_FUNC_RE.test(v))
+  );
 
   onMount(() => {
     if (scenario.inputs.length === 0) {
@@ -24,6 +33,7 @@
   });
 
   async function handleRun(inputs: Record<string, string>) {
+    lastInputsRaw = inputs;
     lastInputs = inputs;
     phase = 'running';
     try {
@@ -42,12 +52,22 @@
       console.error('Scenario retry failed:', e);
     }
   }
+
+  async function retryFresh() {
+    runKey += 1;
+    try {
+      const resolved = await onRun(lastInputsRaw);
+      if (resolved) lastInputs = resolved;
+    } catch (e) {
+      console.error('Scenario fresh retry failed:', e);
+    }
+  }
 </script>
 
 {#if phase === 'form'}
   <PreRunForm {scenario} onRun={handleRun} {onBack} />
 {:else}
   {#key runKey}
-    <RunnerStepper {scenario} inputs={lastInputs} onBack={() => (phase = 'form')} onRetry={retryRun} />
+    <RunnerStepper {scenario} inputs={lastInputs} onBack={() => (phase = 'form')} onRetry={retryRun} {hasFunctionInputs} onRetryFresh={retryFresh} />
   {/key}
 {/if}

@@ -7,7 +7,7 @@
   } from "$lib/stores/requests";
   import { project } from "$lib/stores/project";
   import { activeEnvironment, environments } from "$lib/stores/environment";
-  import { isExecuting, lastResponse, lastError } from "$lib/stores/execution";
+  import { isExecuting, lastResponse, lastSentRequest, lastError } from "$lib/stores/execution";
   import { driftedRequestIds } from "$lib/stores/openapi";
   import {
     saveRequest,
@@ -93,8 +93,12 @@
   ]);
 
   // When the active request changes: restore last-used tab, but force Schema if drifted.
+  // Also clear response/request data so the previous result doesn't bleed through.
   $effect(() => {
     const id = $activeRequestId;
+    lastResponse.set(null);
+    lastSentRequest.set(null);
+    lastError.set(null);
     if (id && $driftedRequestIds.has(id) && $activeRequest?.templateRef) {
       activeTab = "Schema";
     } else {
@@ -304,10 +308,12 @@
 
     isExecuting.set(true);
     lastResponse.set(null);
+    lastSentRequest.set(null);
     lastError.set(null);
     try {
-      const response = await sendRequest(path, id, env, 30000, injectedVars);
-      lastResponse.set(response);
+      const result = await sendRequest(path, id, env, 30000, injectedVars);
+      lastResponse.set(result.response);
+      lastSentRequest.set(result.sent_request);
       // If the request has extractions and an env is active, refresh the env
       // store so extracted values (including secrets) are immediately visible.
       if (env && $activeRequest?.extractions?.length) {
@@ -335,6 +341,7 @@
         }
       }
     } catch (e) {
+      lastSentRequest.set(null);
       lastError.set(
         typeof e === "string"
           ? e

@@ -26,9 +26,9 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+  role="none"
   onclick={handleBackdrop}
 >
   <div class="bg-app-panel border border-app-border-2 rounded-lg p-5 w-72 flex flex-col gap-4 shadow-lg">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { ScenarioData } from '$lib/services/tauri-commands';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
   import ToolBar from '$lib/components/shared/ToolBar.svelte';
@@ -13,7 +14,13 @@
   let { scenario, onRun, onBack }: Props = $props();
 
   let inputValues = $state<Record<string, string>>(
-    Object.fromEntries(scenario.inputs.map((i) => [i.name, i.default ?? '']))
+    untrack(() => Object.fromEntries(scenario.inputs.map((i) => [i.name, i.default ?? ''])))
+  );
+
+  let allRequiredFilled = $derived(
+    scenario.inputs
+      .filter((i) => i.required)
+      .every((i) => (inputValues[i.name] ?? '').trim() !== '')
   );
 
   function handleRun() {
@@ -38,11 +45,12 @@
     {:else}
       <div class="space-y-4 mb-6">
         {#each scenario.inputs as input}
-          <div class="{input.required ? 'border-l-2 border-red-500 pl-2' : ''}">
+          {@const isInvalid = input.required && (inputValues[input.name] ?? '').trim() === ''}
+          <div class="{isInvalid ? 'border-l-2 border-red-500 pl-2' : ''}">
             <label for={input.name} class="flex items-center gap-2 text-sm text-app-text-2 mb-1">
               <span id={input.name} class="font-mono">{input.name}</span>
               {#if input.required}
-                <span class="text-xs text-red-400">required</span>
+                <span class="text-xs {isInvalid ? 'text-red-400' : 'text-app-text-3'}">required</span>
               {/if}
             </label>
             {#if input.description}
@@ -59,8 +67,9 @@
     {/if}
 
     <button
-      class="px-4 py-2 text-sm text-zinc-900 bg-cyan-400 hover:bg-cyan-300 rounded font-medium transition-colors"
+      class="px-4 py-2 text-sm text-zinc-900 bg-cyan-400 hover:bg-cyan-300 rounded font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       onclick={handleRun}
+      disabled={!allRequiredFilled}
     >Run Scenario</button>
   </div>
 </div>

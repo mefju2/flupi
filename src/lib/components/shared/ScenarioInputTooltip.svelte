@@ -105,8 +105,9 @@
     <p class="text-app-text-4 text-xs mb-2">{description}</p>
   {/if}
 
-  <label class="block text-xs text-app-text-3 mb-1">Default value</label>
+  <label for="scenario-input-{varName}" class="block text-xs text-app-text-3 mb-1">Default value</label>
   <input
+    id="scenario-input-{varName}"
     bind:this={inputEl}
     type="text"
     value={currentValue}

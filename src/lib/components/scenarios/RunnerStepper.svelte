@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, untrack } from "svelte";
   import { listen } from "@tauri-apps/api/event";
   import type {
     ScenarioData,
     StepResult,
   } from "$lib/services/tauri-commands";
-  import { isDelayStep } from "$lib/services/tauri-commands";
+  import { isDelayStep, isPauseStep, resumeScenario } from "$lib/services/tauri-commands";
   import StepResultCard from "./StepResultCard.svelte";
   import VariableStatePanel from "./VariableStatePanel.svelte";
   import SectionHeader from "$lib/components/shared/SectionHeader.svelte";
@@ -17,11 +17,13 @@
     inputs?: Record<string, string>;
     onBack: () => void;
     onRetry: () => void;
+    hasFunctionInputs?: boolean;
+    onRetryFresh?: () => void;
   }
 
-  let { scenario, inputs = {}, onBack, onRetry }: Props = $props();
+  let { scenario, inputs = {}, onBack, onRetry, hasFunctionInputs = false, onRetryFresh }: Props = $props();
 
-  type StepState = "waiting" | "running" | "success" | "error" | "skipped";
+  type StepState = "waiting" | "running" | "paused" | "success" | "error" | "skipped";
 
   interface StepStatus {
     state: StepState;
@@ -29,19 +31,34 @@
   }
 
   let stepStatuses = $state<Record<string, StepStatus>>(
-    Object.fromEntries(
+    untrack(() => Object.fromEntries(
       scenario.steps.map((s) => [s.id, { state: "waiting" as StepState }]),
-    ),
+    )),
   );
   let currentVariables = $state<Record<string, string>>({});
   let runComplete = $state(false);
   let runFailed = $derived(
     Object.values(stepStatuses).some((s) => s.state === "error"),
   );
+  let isPaused = $derived(
+    Object.values(stepStatuses).some((s) => s.state === "paused"),
+  );
 
   let unlisten: (() => void) | null = null;
+  let unlistenPause: (() => void) | null = null;
+
+  async function handleResume() {
+    await resumeScenario(true).catch(() => {});
+  }
 
   onMount(async () => {
+    unlistenPause = await listen<string>("scenario-paused", (event) => {
+      stepStatuses = {
+        ...stepStatuses,
+        [event.payload]: { state: "paused" },
+      };
+    });
+
     unlisten = await listen<StepResult>("scenario-step-result", (event) => {
       const result = event.payload;
       const state: StepState =
@@ -89,6 +106,8 @@
 
   onDestroy(() => {
     unlisten?.();
+    unlistenPause?.();
+    resumeScenario(false).catch(() => {});
   });
 
   $effect(() => {
@@ -108,6 +127,25 @@
 </script>
 
 <div class="flex flex-col h-full bg-app-bg">
+  {#snippet retryButtons()}
+    {#if hasFunctionInputs}
+      <button
+        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+        title="Re-run with the same resolved values from the previous run"
+        onclick={onRetry}>↺ Retry (same)</button
+      >
+      <button
+        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+        title="Re-run and re-evaluate all JS functions to generate new values"
+        onclick={onRetryFresh}>↺ Retry (fresh)</button
+      >
+    {:else}
+      <button
+        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
+        onclick={onRetry}>↺ Retry</button
+      >
+    {/if}
+  {/snippet}
   <ToolBar>
     <button
       class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors"
@@ -122,10 +160,14 @@
       {:else}
         <span class="text-xs text-green-400 ml-auto">Completed</span>
       {/if}
+      {@render retryButtons()}
+    {:else if isPaused}
+      <span class="text-xs text-amber-400 ml-auto">Paused</span>
       <button
-        class="text-xs px-2.5 py-1 rounded border border-app-border-2 text-app-text-2 hover:bg-app-hover transition-colors"
-        onclick={onRetry}>↺ Retry</button
+        class="text-xs px-2.5 py-1 rounded border border-amber-600 text-amber-300 hover:bg-amber-900/30 transition-colors"
+        onclick={handleResume}>▶ Resume</button
       >
+      {@render retryButtons()}
     {:else}
       <span class="text-xs text-cyan-400 ml-auto animate-pulse">Running…</span>
     {/if}
@@ -147,14 +189,18 @@
                 ? 'bg-app-hover text-app-text-3'
                 : status.state === 'running'
                   ? 'bg-cyan-900 text-cyan-300'
-                  : status.state === 'success'
-                    ? 'bg-green-900 text-green-300'
-                    : status.state === 'skipped'
-                      ? 'bg-app-hover text-app-text-4'
-                      : 'bg-red-900 text-red-300'}"
+                  : status.state === 'paused'
+                    ? 'bg-amber-900 text-amber-300'
+                    : status.state === 'success'
+                      ? 'bg-green-900 text-green-300'
+                      : status.state === 'skipped'
+                        ? 'bg-app-hover text-app-text-4'
+                        : 'bg-red-900 text-red-300'}"
             >
               {#if status.state === "running"}
                 <span class="animate-spin text-xs">◌</span>
+              {:else if status.state === "paused"}
+                ⏸
               {:else if status.state === "success"}
                 ✓
               {:else if status.state === "error"}
@@ -176,18 +222,19 @@
               <StepResultCard {step} result={status.result} />
             {:else}
               <div
-                class="border border-app-border rounded bg-app-panel px-3 py-2 {status.state ===
-                'running'
-                  ? 'ring-1 ring-cyan-500/30'
-                  : ''}"
+                class="border border-app-border rounded bg-app-panel px-3 py-2
+                  {status.state === 'running' ? 'ring-1 ring-cyan-500/30' : ''}
+                  {status.state === 'paused' ? 'ring-1 ring-amber-500/30' : ''}"
               >
                 <span
                   class="text-sm {status.state === 'running'
                     ? 'text-cyan-300'
-                    : status.state === 'skipped'
-                      ? 'text-app-text-4 line-through'
-                      : 'text-app-text-3'}"
-                >{step.name}{#if isDelayStep(step)}<span class="text-app-text-4"> — ⏱ {step.duration}ms</span>{/if}</span
+                    : status.state === 'paused'
+                      ? 'text-amber-300'
+                      : status.state === 'skipped'
+                        ? 'text-app-text-4 line-through'
+                        : 'text-app-text-3'}"
+                >{step.name}{#if isDelayStep(step)}<span class="text-app-text-4"> — ⏱ {step.duration}ms</span>{:else if isPauseStep(step)}<span class="text-app-text-4"> — ⏸</span>{/if}</span
                 >
               </div>
             {/if}

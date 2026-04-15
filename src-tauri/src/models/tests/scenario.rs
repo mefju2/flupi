@@ -161,6 +161,69 @@ fn test_mixed_steps_round_trip() {
 }
 
 #[test]
+fn test_pause_step_round_trip() {
+    let json = r#"{
+        "id": "p1",
+        "name": "Wait for user",
+        "pause": true
+    }"#;
+
+    let step: ScenarioStep = serde_json::from_str(json).unwrap();
+    let ScenarioStep::Pause(ref p) = step else {
+        panic!("expected pause step");
+    };
+    assert_eq!(p.id, "p1");
+    assert_eq!(p.name, "Wait for user");
+    assert!(p.pause);
+
+    let serialized = serde_json::to_string(&step).unwrap();
+    let re_parsed: ScenarioStep = serde_json::from_str(&serialized).unwrap();
+    let ScenarioStep::Pause(ref p2) = re_parsed else {
+        panic!("expected pause step after round-trip");
+    };
+    assert_eq!(p2.id, "p1");
+    assert!(p2.pause);
+}
+
+#[test]
+fn test_mixed_steps_with_pause() {
+    let json = r#"{
+        "name": "With Pause",
+        "steps": [
+            {"id": "r1", "name": "Login", "requestId": "auth/login"},
+            {"id": "p1", "name": "Check manually", "pause": true},
+            {"id": "r2", "name": "Fetch", "requestId": "api/data"}
+        ]
+    }"#;
+
+    let scenario: Scenario = serde_json::from_str(json).unwrap();
+    assert_eq!(scenario.steps.len(), 3);
+    assert!(matches!(scenario.steps[0], ScenarioStep::Request(_)));
+    assert!(matches!(scenario.steps[1], ScenarioStep::Pause(_)));
+    assert!(matches!(scenario.steps[2], ScenarioStep::Request(_)));
+
+    let ScenarioStep::Pause(ref p) = scenario.steps[1] else { panic!() };
+    assert_eq!(p.name, "Check manually");
+
+    // Round-trip
+    let serialized = serde_json::to_string(&scenario).unwrap();
+    let re_parsed: Scenario = serde_json::from_str(&serialized).unwrap();
+    assert!(matches!(re_parsed.steps[0], ScenarioStep::Request(_)));
+    assert!(matches!(re_parsed.steps[1], ScenarioStep::Pause(_)));
+    assert!(matches!(re_parsed.steps[2], ScenarioStep::Request(_)));
+}
+
+#[test]
+fn test_pause_step_false_is_rejected() {
+    // `pause: false` must not deserialize as a PauseStep — the discriminator
+    // must be `true`. With untagged + deny_unknown_fields, the whole step
+    // should fail to deserialize.
+    let json = r#"{"id": "p1", "name": "Bad", "pause": false}"#;
+    let result: Result<ScenarioStep, _> = serde_json::from_str(json);
+    assert!(result.is_err(), "pause: false should be rejected");
+}
+
+#[test]
 fn test_extraction_round_trip() {
     let ext = Extraction {
         variable: "token".to_string(),

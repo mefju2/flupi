@@ -34,6 +34,8 @@
   let rows = $derived(Object.entries(overrides));
   let suggestions = $derived(buildOverrideSuggestions(requestSchema, requestPath));
 
+  let duplicateKeys = $state(new Set<string>());
+
   function addRow() {
     onUpdate({ ...overrides, '': '' });
   }
@@ -41,10 +43,20 @@
   function removeRow(key: string) {
     const next = { ...overrides };
     delete next[key];
+    if (duplicateKeys.has(key)) {
+      duplicateKeys = new Set([...duplicateKeys].filter((k) => k !== key));
+    }
     onUpdate(next);
   }
 
   function updateKey(oldKey: string, newKey: string) {
+    if (newKey !== oldKey && newKey in overrides) {
+      duplicateKeys = new Set([...duplicateKeys, oldKey]);
+      return;
+    }
+    if (duplicateKeys.has(oldKey)) {
+      duplicateKeys = new Set([...duplicateKeys].filter((k) => k !== oldKey));
+    }
     const next: Record<string, string> = {};
     for (const [k, v] of Object.entries(overrides)) {
       next[k === oldKey ? newKey : k] = v;
@@ -71,23 +83,29 @@
     </div>
   {/if}
 
-  {#each rows as [key, value], i}
-    <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-      <SchemaAutocomplete
-        {suggestions}
-        value={key}
-        placeholder="body.fieldName"
-        inputClass="w-full bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
-        onSelect={(path) => updateKey(key, path)}
-        onInput={(v) => updateKey(key, v)}
-      />
+  {#each rows as [key, value]}
+    {@const isDuplicate = duplicateKeys.has(key)}
+    <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
+      <div>
+        <SchemaAutocomplete
+          {suggestions}
+          value={key}
+          placeholder="body.fieldName"
+          inputClass="w-full bg-app-card border rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none {isDuplicate ? 'border-red-500 focus:border-red-500' : 'border-app-border-2 focus:border-app-border-2'}"
+          onSelect={(path) => updateKey(key, path)}
+          onInput={(v) => updateKey(key, v)}
+        />
+        {#if isDuplicate}
+          <p class="text-xs text-red-400 mt-0.5 font-mono">Duplicate key</p>
+        {/if}
+      </div>
       <VariableAutocomplete
         value={value}
         onChange={(v) => updateValue(key, v)}
         placeholder={"{{variable}} or literal"}
         extraVars={extraVarItems}        onExtraVarEdit={onInputEdit}      />
       <button
-        class="text-app-text-4 hover:text-red-400 transition-colors text-lg leading-none"
+        class="text-app-text-4 hover:text-red-400 transition-colors text-lg leading-none mt-1.5"
         onclick={() => removeRow(key)}
         aria-label="Remove override"
       >×</button>

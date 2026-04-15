@@ -133,9 +133,9 @@
 </script>
 
 {#if $searchOpen}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div
     class="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-app-bg/60 backdrop-blur-sm"
+    role="none"
     onclick={handleBackdropClick}
   >
     <div class="w-full max-w-[560px] mx-4 bg-app-panel border border-app-border-2 rounded-lg shadow-xl">

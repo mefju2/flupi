@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type { ScenarioData, ScenarioStep, RequestStep, DelayStep } from '$lib/services/tauri-commands';
-  import { isDelayStep, isRequestStep } from '$lib/services/tauri-commands';
+  import type { ScenarioData, ScenarioStep, RequestStep, DelayStep, PauseStep } from '$lib/services/tauri-commands';
+  import { isDelayStep, isRequestStep, isPauseStep } from '$lib/services/tauri-commands';
   import { requestTree } from '$lib/stores/requests';
   import InputsList from './InputsList.svelte';
   import StepCard from './StepCard.svelte';
   import DelayStepCard from './DelayStepCard.svelte';
+  import PauseStepCard from './PauseStepCard.svelte';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
   import ToolBar from '$lib/components/shared/ToolBar.svelte';
 
@@ -57,6 +58,15 @@
       id: crypto.randomUUID(),
       name: 'Delay',
       duration: 500,
+    };
+    onUpdate({ ...scenario, steps: [...scenario.steps, newStep] });
+  }
+
+  function addPause() {
+    const newStep: PauseStep = {
+      id: crypto.randomUUID(),
+      name: 'Pause',
+      pause: true,
     };
     onUpdate({ ...scenario, steps: [...scenario.steps, newStep] });
   }
@@ -166,6 +176,15 @@
               onMoveUp={i > 0 ? () => moveStep(i, 'up') : undefined}
               onMoveDown={i < scenario.steps.length - 1 ? () => moveStep(i, 'down') : undefined}
             />
+          {:else if isPauseStep(step)}
+            <PauseStepCard
+              {step}
+              index={i}
+              onUpdate={(s) => updateStep(i, s)}
+              onDelete={() => deleteStep(i)}
+              onMoveUp={i > 0 ? () => moveStep(i, 'up') : undefined}
+              onMoveDown={i < scenario.steps.length - 1 ? () => moveStep(i, 'down') : undefined}
+            />
           {:else}
             <StepCard
               step={step as RequestStep}
@@ -195,6 +214,11 @@
           class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors"
           onclick={addDelay}
         >+ Add Delay</button>
+        <button
+          type="button"
+          class="text-xs text-app-text-3 hover:text-app-text-2 transition-colors"
+          onclick={addPause}
+        >+ Add Pause</button>
       </div>
     </section>
   </div>

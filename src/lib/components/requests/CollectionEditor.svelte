@@ -16,7 +16,7 @@
   let { folderName, collection, onUpdate }: Props = $props();
 
   // Local mutable copy — reset when switching to a different collection (folderName changes)
-  let local = $state<CollectionData>({ ...collection, headers: { ...collection.headers } });
+  let local = $state<CollectionData>(untrack(() => ({ ...collection, headers: { ...collection.headers } })));
 
   $effect(() => {
     folderName; // track folderName as the reset signal

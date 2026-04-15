@@ -20,6 +20,7 @@
     { keys: 'Ctrl+Enter', action: 'Send / Run / Sync' },
     { keys: 'Ctrl+S', action: 'Save (scenarios page)' },
     { keys: 'Ctrl+E', action: 'Next environment' },
+    { keys: 'F2', action: 'Rename active item' },
   ];
 </script>
 

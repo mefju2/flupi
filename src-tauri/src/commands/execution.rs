@@ -7,6 +7,12 @@ use tauri::command;
 
 pub use request_executor::execute_single_request;
 
+#[derive(Debug, serde::Serialize)]
+pub struct SendRequestResult {
+    pub response: http_client::HttpResponse,
+    pub sent_request: http_client::ExecutableRequest,
+}
+
 #[command]
 pub async fn send_request(
     state: tauri::State<'_, AppState>,
@@ -15,7 +21,7 @@ pub async fn send_request(
     env_file_name: String,
     timeout_ms: u64,
     injected_vars: Option<HashMap<String, String>>,
-) -> Result<http_client::HttpResponse, FlupiError> {
+) -> Result<SendRequestResult, FlupiError> {
     // Read extractions once before the request is sent to avoid a race where
     // the user saves new extractions while a slow request is in flight.
     let req_path = request_path::resolve_request_path(&project_path, &request_id);
@@ -35,15 +41,15 @@ pub async fn send_request(
         &HashMap::new(),
     )
     .await
-    .map(|(_, response)| response);
+    .map(|(sent_req, response)| SendRequestResult { response, sent_request: sent_req });
 
-    if let Ok(ref response) = result {
+    if let Ok(ref r) = result {
         if !extractions.is_empty() {
             if let Err(e) = request_executor::apply_extractions_to_env(
                 &project_path,
                 &env_file_name,
                 &extractions,
-                response,
+                &r.response,
             ) {
                 eprintln!("[flupi] extraction write failed: {e}");
             }
