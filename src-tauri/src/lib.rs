@@ -5,7 +5,7 @@ pub mod services;
 pub mod utils;
 
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, oneshot};
 
 /// Shared application state injected via Tauri's managed state system.
 pub struct AppState {
@@ -16,6 +16,9 @@ pub struct AppState {
     /// (rather than AtomicBool) guarantees the lock is always released when the
     /// guard is dropped, even on panic.
     pub execution_lock: Arc<Mutex<()>>,
+    /// Holds the oneshot sender for a currently-paused scenario step.
+    /// `true` = resume, `false` = abort. `None` when no pause is active.
+    pub pause_sender: Arc<Mutex<Option<oneshot::Sender<bool>>>>,
 }
 
 impl Default for AppState {
@@ -23,6 +26,7 @@ impl Default for AppState {
         Self {
             sources_lock: Arc::new(Mutex::new(())),
             execution_lock: Arc::new(Mutex::new(())),
+            pause_sender: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -74,6 +78,7 @@ pub fn run() {
             commands::collection::rename_collection,
             commands::execution::send_request,
             commands::execution_runner::run_scenario,
+            commands::execution_runner::resume_scenario,
             commands::scenario::load_scenario_tree,
             commands::scenario::get_scenario,
             commands::scenario::save_scenario,

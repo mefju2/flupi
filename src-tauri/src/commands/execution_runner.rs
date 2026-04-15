@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tauri::{command, AppHandle, Emitter};
+use tokio::sync::{Mutex, oneshot};
 use serde::Serialize;
 use crate::AppState;
 use crate::error::FlupiError;
@@ -40,6 +42,7 @@ pub async fn run_scenario(
     injected_vars: Option<HashMap<String, String>>,
 ) -> Result<(), FlupiError> {
     let _guard = state.execution_lock.lock().await;
+    let pause_sender = Arc::clone(&state.pause_sender);
     run_scenario_inner(
         &app,
         &project_path,
@@ -48,8 +51,21 @@ pub async fn run_scenario(
         inputs,
         timeout_ms,
         injected_vars.unwrap_or_default(),
+        pause_sender,
     )
     .await
+}
+
+#[command]
+pub async fn resume_scenario(
+    state: tauri::State<'_, AppState>,
+    resume: bool,
+) -> Result<(), FlupiError> {
+    let mut guard = state.pause_sender.lock().await;
+    if let Some(sender) = guard.take() {
+        let _ = sender.send(resume);
+    }
+    Ok(())
 }
 
 fn status_is_expected(status: u16, expected: &[String]) -> bool {
@@ -191,6 +207,7 @@ async fn run_scenario_inner(
     inputs: HashMap<String, String>,
     timeout_ms: u64,
     injected_vars: HashMap<String, String>,
+    pause_sender: Arc<Mutex<Option<oneshot::Sender<bool>>>>,
 ) -> Result<(), FlupiError> {
     let scenario_path = project_path
         .join("scenarios")
@@ -211,6 +228,25 @@ async fn run_scenario_inner(
                 tokio::time::sleep(tokio::time::Duration::from_millis(delay_step.duration)).await;
                 let result = StepResult {
                     step_id: delay_step.id.clone(),
+                    status: "success".to_string(),
+                    response: None,
+                    error: None,
+                    extracted: HashMap::new(),
+                    sent_request: None,
+                };
+                let _ = app.emit("scenario-step-result", &result);
+            }
+            ScenarioStep::Pause(pause_step) => {
+                let (tx, rx) = oneshot::channel();
+                *pause_sender.lock().await = Some(tx);
+                let _ = app.emit("scenario-paused", &pause_step.id);
+                let should_resume = rx.await.unwrap_or(false);
+                *pause_sender.lock().await = None;
+                if !should_resume {
+                    return Err(FlupiError::Custom("Scenario aborted at pause".to_string()));
+                }
+                let result = StepResult {
+                    step_id: pause_step.id.clone(),
                     status: "success".to_string(),
                     response: None,
                     error: None,
