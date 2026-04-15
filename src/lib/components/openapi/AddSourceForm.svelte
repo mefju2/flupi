@@ -88,8 +88,9 @@
 
   <!-- Name field -->
   <div class="flex flex-col gap-1">
-    <label class="text-xs text-app-text-3">Name</label>
+    <label for="add-source-name" class="text-xs text-app-text-3">Name</label>
     <input
+      id="add-source-name"
       class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm text-app-text focus:outline-none focus:border-cyan-600"
       bind:value={name}
       placeholder="My API"
@@ -103,8 +104,9 @@
   <!-- URL or file input -->
   {#if tab === 'url'}
     <div class="flex flex-col gap-1">
-      <label class="text-xs text-app-text-3">URL</label>
+      <label for="add-source-url" class="text-xs text-app-text-3">URL</label>
       <input
+        id="add-source-url"
         class="bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
         bind:value={url}
         placeholder="https://api.example.com/openapi.json"
@@ -112,9 +114,10 @@
     </div>
   {:else}
     <div class="flex flex-col gap-1">
-      <label class="text-xs text-app-text-3">File</label>
+      <label for="add-source-file" class="text-xs text-app-text-3">File</label>
       <div class="flex gap-2">
         <input
+          id="add-source-file"
           class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1.5 text-sm font-mono text-app-text focus:outline-none focus:border-cyan-600"
           bind:value={filePath}
           placeholder="/path/to/openapi.yaml"

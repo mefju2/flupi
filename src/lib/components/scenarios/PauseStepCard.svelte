@@ -60,8 +60,9 @@
   {#if expanded}
     <div class="px-3 pb-3 border-t border-app-border space-y-3 pt-3">
       <div class="flex items-center gap-3">
-        <label class="text-xs text-app-text-3 w-16 shrink-0">Name</label>
+        <label for="pause-name-{step.id}" class="text-xs text-app-text-3 w-16 shrink-0">Name</label>
         <input
+          id="pause-name-{step.id}"
           class="flex-1 bg-app-card border border-app-border-2 rounded px-2 py-1 text-sm text-app-text font-mono placeholder:text-app-text-4 focus:outline-none focus:border-app-border-2"
           value={step.name}
           oninput={(e) => onUpdate({ ...step, name: e.currentTarget.value })}

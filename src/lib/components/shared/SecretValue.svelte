@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { Eye, EyeOff } from "lucide-svelte";
 
   interface Props {
@@ -9,7 +10,7 @@
 
   let { value, class: className = "", onchange }: Props = $props();
 
-  let revealed = $state(!value);
+  let revealed = $state(untrack(() => !value));
 </script>
 
 {#if onchange}

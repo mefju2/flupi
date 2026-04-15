@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import type { ScenarioData } from '$lib/services/tauri-commands';
   import PreRunForm from './PreRunForm.svelte';
   import RunnerStepper from './RunnerStepper.svelte';
@@ -13,7 +13,7 @@
   let { scenario, onBack, onRun }: Props = $props();
 
   type Phase = 'form' | 'running';
-  let phase = $state<Phase>(scenario.inputs.length === 0 ? 'running' : 'form');
+  let phase = $state<Phase>(untrack(() => scenario.inputs.length === 0 ? 'running' : 'form'));
   let lastInputs = $state<Record<string, string>>({});
   let runKey = $state(0);
 

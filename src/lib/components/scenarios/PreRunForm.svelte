@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { ScenarioData } from '$lib/services/tauri-commands';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
   import ToolBar from '$lib/components/shared/ToolBar.svelte';
@@ -13,7 +14,7 @@
   let { scenario, onRun, onBack }: Props = $props();
 
   let inputValues = $state<Record<string, string>>(
-    Object.fromEntries(scenario.inputs.map((i) => [i.name, i.default ?? '']))
+    untrack(() => Object.fromEntries(scenario.inputs.map((i) => [i.name, i.default ?? ''])))
   );
 
   let allRequiredFilled = $derived(

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { tryParseJson } from "$lib/utils/format";
   import type { ScenarioStep, StepResult } from "$lib/services/tauri-commands";
   import { isDelayStep, isPauseStep } from "$lib/services/tauri-commands";
@@ -12,7 +13,7 @@
 
   let { step, result }: Props = $props();
 
-  let expanded = $state(result.status === "error");
+  let expanded = $state(untrack(() => result.status === "error"));
   let bodyExpanded = $state(false);
   let expandedExtracted = $state(new Set<string>());
 

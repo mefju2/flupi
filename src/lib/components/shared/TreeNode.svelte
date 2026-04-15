@@ -38,6 +38,9 @@
     <div
       class="flex items-center gap-1.5 px-2 py-1 text-sm select-none rounded
         {isActiveCollection ? 'bg-app-card text-app-text' : 'text-app-text-2 hover:bg-app-card/50 hover:text-app-text'}"
+      role="treeitem"
+      tabindex="-1"
+      aria-selected={isActiveCollection}
       oncontextmenu={(e) => { e.preventDefault(); onContextMenu(e, node); }}
     >
       <button

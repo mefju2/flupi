@@ -252,10 +252,13 @@
         {:else}
           <span
             class="truncate"
+            role="button"
+            tabindex="0"
             ondblclick={(e) => {
               e.stopPropagation();
               startRenaming(entry.fileName, entry.environment.name);
             }}
+            onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); startRenaming(entry.fileName, entry.environment.name); } }}
             title="Double-click to rename">{entry.environment.name}</span
           >
         {/if}

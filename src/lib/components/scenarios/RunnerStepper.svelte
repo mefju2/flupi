@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, untrack } from "svelte";
   import { listen } from "@tauri-apps/api/event";
   import type {
     ScenarioData,
@@ -29,9 +29,9 @@
   }
 
   let stepStatuses = $state<Record<string, StepStatus>>(
-    Object.fromEntries(
+    untrack(() => Object.fromEntries(
       scenario.steps.map((s) => [s.id, { state: "waiting" as StepState }]),
-    ),
+    )),
   );
   let currentVariables = $state<Record<string, string>>({});
   let runComplete = $state(false);
