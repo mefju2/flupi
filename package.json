@@ -1,11 +1,11 @@
 {
   "name": "flupi",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

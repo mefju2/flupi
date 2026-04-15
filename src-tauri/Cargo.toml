@@ -1,6 +1,6 @@
 [package]
 name = "flupi"
-version = "0.1.9"
+version = "0.1.10"
 description = "flupi"
 authors = ["Mateusz Michno"]
 edition = "2021"
