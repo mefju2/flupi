@@ -25,13 +25,14 @@
     index: number;
     extractedVars?: VarMeta[];
     onUpdate: (step: RequestStep) => void;
+    onDuplicate: () => void;
     onDelete: () => void;
     onMoveUp?: () => void;
     onMoveDown?: () => void;
     onInputEdit?: (name: string, value: string) => void;
   }
 
-  let { step, requestTree, index, extractedVars = [], onUpdate, onDelete, onMoveUp, onMoveDown, onInputEdit }: Props = $props();
+  let { step, requestTree, index, extractedVars = [], onUpdate, onDuplicate, onDelete, onMoveUp, onMoveDown, onInputEdit }: Props = $props();
 
   let expanded = $state(false);
   let requestSchema = $state<unknown>(null);
@@ -142,11 +143,20 @@
       {/if}
     </div>
 
-    <div class="flex items-center gap-2 shrink-0">
+    <div class="flex items-center gap-1 shrink-0">
       <button
-        class="text-app-text-4 hover:text-red-400 transition-colors text-base"
+        type="button"
+        class="flex h-7 w-7 items-center justify-center rounded text-sm text-app-text-4 hover:bg-app-card hover:text-cyan-400 transition-colors"
+        onclick={(e) => { e.stopPropagation(); onDuplicate(); }}
+        aria-label="Duplicate step"
+        title="Duplicate step"
+      >⧉</button>
+      <button
+        type="button"
+        class="flex h-7 w-7 items-center justify-center rounded text-lg leading-none text-app-text-4 hover:bg-app-card hover:text-red-400 transition-colors"
         onclick={(e) => { e.stopPropagation(); onDelete(); }}
         aria-label="Delete step"
+        title="Delete step"
       >×</button>
       <span class="text-app-text-3 text-xs">{expanded ? '▾' : '▸'}</span>
     </div>
@@ -204,7 +214,7 @@
           {#if !step.expectedStatus?.length}
             <span class="text-xs text-app-text-4 italic">empty — any 2xx passes</span>
           {:else}
-            {#each step.expectedStatus as code}
+            {#each step.expectedStatus as code (code)}
               <span class="font-mono text-xs bg-app-card border border-app-border-2 rounded px-1.5 py-0.5 flex items-center gap-1">
                 {code}
                 <button

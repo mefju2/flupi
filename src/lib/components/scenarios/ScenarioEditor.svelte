@@ -8,6 +8,7 @@
   import PauseStepCard from './PauseStepCard.svelte';
   import SectionHeader from '$lib/components/shared/SectionHeader.svelte';
   import ToolBar from '$lib/components/shared/ToolBar.svelte';
+  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte';
 
   interface VarMeta {
     name: string;
@@ -27,6 +28,12 @@
   let { scenario, onUpdate, onSave, onRun, isDirty = false }: Props = $props();
 
   let nameDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingDeleteStepId = $state<string | null>(null);
+  let pendingDeleteStep = $derived(
+    pendingDeleteStepId
+      ? scenario.steps.find((step) => step.id === pendingDeleteStepId) ?? null
+      : null
+  );
 
   function handleNameInput(value: string) {
     if (nameDebounceTimer) clearTimeout(nameDebounceTimer);
@@ -77,8 +84,33 @@
     onUpdate({ ...scenario, steps });
   }
 
-  function deleteStep(index: number) {
-    onUpdate({ ...scenario, steps: scenario.steps.filter((_, i) => i !== index) });
+  function requestDeleteStep(stepId: string) {
+    pendingDeleteStepId = stepId;
+  }
+
+  function confirmDeleteStep() {
+    if (!pendingDeleteStepId) return;
+    onUpdate({
+      ...scenario,
+      steps: scenario.steps.filter((step) => step.id !== pendingDeleteStepId),
+    });
+    pendingDeleteStepId = null;
+  }
+
+  function cancelDeleteStep() {
+    pendingDeleteStepId = null;
+  }
+
+  function duplicateStep(index: number) {
+    const step = scenario.steps[index];
+    const duplicate: ScenarioStep = {
+      ...step,
+      id: crypto.randomUUID(),
+      name: getDuplicateStepName(step.name),
+    };
+    const steps = [...scenario.steps];
+    steps.splice(index + 1, 0, duplicate);
+    onUpdate({ ...scenario, steps });
   }
 
   function moveStep(index: number, dir: 'up' | 'down') {
@@ -124,9 +156,39 @@
     }
     return result;
   }
+
+  function getDuplicateStepName(name: string): string {
+    const trimmedName = name.trim();
+    const baseName = (trimmedName.match(/^(.*?)(?: \(\d+\))?$/)?.[1] ?? trimmedName).trimEnd() || 'Step';
+    const escapedBaseName = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const duplicatePattern = new RegExp(`^${escapedBaseName}(?: \\((\\d+)\\))?$`);
+    const usedNumbers = new Set(
+      scenario.steps
+        .map((step) => step.name.trim().match(duplicatePattern))
+        .filter((match): match is RegExpMatchArray => match !== null)
+        .map((match) => (match[1] ? Number(match[1]) : 0))
+    );
+
+    let nextNumber = 1;
+    while (usedNumbers.has(nextNumber)) {
+      nextNumber += 1;
+    }
+
+    return `${baseName} (${nextNumber})`;
+  }
 </script>
 
 <div class="flex flex-col h-full bg-app-bg">
+  {#if pendingDeleteStep}
+    <ConfirmDialog
+      message="Delete this step?"
+      detail={`This will delete "${pendingDeleteStep.name || 'Unnamed Step'}" from the scenario.`}
+      confirmLabel="Delete"
+      onConfirm={confirmDeleteStep}
+      onCancel={cancelDeleteStep}
+    />
+  {/if}
+
   <!-- Top bar -->
   <ToolBar>
     <input
@@ -172,7 +234,8 @@
               {step}
               index={i}
               onUpdate={(s) => updateStep(i, s)}
-              onDelete={() => deleteStep(i)}
+              onDuplicate={() => duplicateStep(i)}
+              onDelete={() => requestDeleteStep(step.id)}
               onMoveUp={i > 0 ? () => moveStep(i, 'up') : undefined}
               onMoveDown={i < scenario.steps.length - 1 ? () => moveStep(i, 'down') : undefined}
             />
@@ -181,7 +244,8 @@
               {step}
               index={i}
               onUpdate={(s) => updateStep(i, s)}
-              onDelete={() => deleteStep(i)}
+              onDuplicate={() => duplicateStep(i)}
+              onDelete={() => requestDeleteStep(step.id)}
               onMoveUp={i > 0 ? () => moveStep(i, 'up') : undefined}
               onMoveDown={i < scenario.steps.length - 1 ? () => moveStep(i, 'down') : undefined}
             />
@@ -192,7 +256,8 @@
               index={i}
               extractedVars={extractedVarsBefore(i)}
               onUpdate={(s) => updateStep(i, s)}
-              onDelete={() => deleteStep(i)}
+              onDuplicate={() => duplicateStep(i)}
+              onDelete={() => requestDeleteStep(step.id)}
               onMoveUp={i > 0 ? () => moveStep(i, 'up') : undefined}
               onMoveDown={i < scenario.steps.length - 1 ? () => moveStep(i, 'down') : undefined}
               onInputEdit={(name, val) => updateInputDefault(name, val)}

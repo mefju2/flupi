@@ -5,12 +5,13 @@
     step: PauseStep;
     index: number;
     onUpdate: (step: PauseStep) => void;
+    onDuplicate: () => void;
     onDelete: () => void;
     onMoveUp?: () => void;
     onMoveDown?: () => void;
   }
 
-  let { step, index, onUpdate, onDelete, onMoveUp, onMoveDown }: Props = $props();
+  let { step, index, onUpdate, onDuplicate, onDelete, onMoveUp, onMoveDown }: Props = $props();
 
   let expanded = $state(false);
 </script>
@@ -47,12 +48,20 @@
       <span class="text-xs text-app-text-4 shrink-0">⏸</span>
     </div>
 
-    <div class="flex items-center gap-2 shrink-0">
+    <div class="flex items-center gap-1 shrink-0">
       <button
         type="button"
-        class="text-app-text-4 hover:text-red-400 transition-colors text-base"
+        class="flex h-7 w-7 items-center justify-center rounded text-sm text-app-text-4 hover:bg-app-card hover:text-cyan-400 transition-colors"
+        onclick={(e) => { e.stopPropagation(); onDuplicate(); }}
+        aria-label="Duplicate pause step"
+        title="Duplicate step"
+      >⧉</button>
+      <button
+        type="button"
+        class="flex h-7 w-7 items-center justify-center rounded text-lg leading-none text-app-text-4 hover:bg-app-card hover:text-red-400 transition-colors"
         onclick={(e) => { e.stopPropagation(); onDelete(); }}
         aria-label="Delete pause step"
+        title="Delete step"
       >×</button>
     </div>
   </div>
